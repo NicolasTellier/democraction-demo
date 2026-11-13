@@ -1,0 +1,657 @@
+{
+  "meta": {
+    "title": "11e circonscription de la Gironde",
+    "millesime": 2026,
+    "statut": "liste communale et rattachements validés, centroïdes à compléter via API publique",
+    "sources": [
+      {
+        "titre": "Insee – Table de correspondance communes/circonscriptions, juin 2026",
+        "url": "https://www.insee.fr/fr/statistiques/6436476"
+      },
+      {
+        "titre": "Légifrance – Délimitation cantonale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000028638247/2026-05-13"
+      },
+      {
+        "titre": "BANATIC – Liste des communes de Latitude Nord Gironde",
+        "url": "https://www.banatic.interieur.gouv.fr/intercommunalite/243301181-cc-latitude-nord-gironde"
+      },
+      {
+        "titre": "CC de l’Estuaire – Communes",
+        "url": "https://www.cc-estuaire.fr/"
+      },
+      {
+        "titre": "CC de Blaye – Communes",
+        "url": "https://www.ccb-blaye.com/la-communaute-de-communes/le-territoire-communautaire/portrait-de-territoire/"
+      },
+      {
+        "titre": "INSEE – géographie législative, géographie 2021",
+        "url": "https://elmarq.fr/legislatives/gironde/11"
+      }
+    ],
+    "note": "La correspondance des bureaux de vote, adresses et géométries reste à valider avant toute utilisation opérationnelle. Les cantons sont ceux de 2014 et les circonscriptions suivent les limites des anciens cantons."
+  },
+  "communes": [
+    {
+      "nom": "Abzac",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Anglade",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Bayas",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Bayon-sur-Gironde",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Berson",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Blaye",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Bonzac",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Bourg",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Braud-et-Saint-Louis",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Camps-sur-l'Isle",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Campugnan",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Cars",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Cartelègue",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Cavignac",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Cézac",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Chamadelle",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Civrac-de-Blaye",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Comps",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Coutras",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Cubnezais",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Cubzac-les-Ponts",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Donnezac",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Eyrans",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Étauliers",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Fours",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Gauriac",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Gauriaguet",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Générac",
+      "canton": "Le Nord-Gironde",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Guîtres",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Lagorce",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Lansac",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Lapouyade",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Laruscade",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Le Fieu",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Les Églisottes-et-Chalaures",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Les Peintures",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Maransin",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Marcenais",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Marsas",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Mazion",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Mombrier",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Peujard",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Plassac",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Pleine-Selve",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Porchères",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Prignac-et-Marcamps",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Pugnac",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Reignac",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Sablons",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-André-de-Cubzac",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Androny",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Antoine-sur-l'Isle",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Aubin-de-Blaye",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Christoly-de-Blaye",
+      "canton": "Le Nord-Gironde",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Christophe-de-Double",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Ciers-d'Abzac",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Ciers-de-Canesse",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Ciers-sur-Gironde",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Denis-de-Pile",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Genès-de-Blaye",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Gervais",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Girons-d'Aiguevives",
+      "canton": "Le Nord-Gironde",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Laurent-d'Arce",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Mariens",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Martin-de-Laye",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Martin-du-Bois",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Martin-Lacaussade",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Médard-de-Guizières",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Palais",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Paul",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Savin",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Seurin-de-Bourg",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Seurin-de-Cursac",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Seurin-sur-l'Isle",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Trojan",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Vivien-de-Blaye",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saint-Yzan-de-Soudiac",
+      "canton": "Le Nord-Gironde",
+      "epci": "Latitude Nord Gironde",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Samonac",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Saugon",
+      "canton": "Le Nord-Gironde",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Savignac-de-l'Isle",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Tauriac",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Teuillac",
+      "canton": "L’Estuaire",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Tizac-de-Lapouyade",
+      "canton": "Le Nord-Libournais",
+      "epci": "La Cali",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Val de Virvée",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Val-de-Livenne",
+      "canton": "L’Estuaire",
+      "epci": "CC de l'Estuaire",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Villeneuve",
+      "canton": "L’Estuaire",
+      "epci": "CC de Blaye",
+      "codeInsee": null,
+      "centre": null
+    },
+    {
+      "nom": "Virsac",
+      "canton": "Le Nord-Gironde",
+      "epci": "Grand Cubzaguais",
+      "codeInsee": null,
+      "centre": null
+    }
+  ],
+  "epci": [
+    "Grand Cubzaguais",
+    "CC de Blaye",
+    "CC de l'Estuaire",
+    "Latitude Nord Gironde",
+    "La Cali"
+  ],
+  "cantons": [
+    "L’Estuaire",
+    "Le Nord-Gironde",
+    "Le Nord-Libournais"
+  ]
+}
