@@ -1,7 +1,7 @@
 /** Coeur métier pur : exécutable dans navigateur et dans node --test (ES modules). */
 export const VERSION=3;
 export const STATUSES=['À faire','En cours','Terminée'];
-export const TYPE_ACTIONS=['Porte-à-porte (couverture)','Distribution','Réunion publique','Rencontre','Affichage','Autre'];
+export const TYPE_ACTIONS=['Porte-à-porte (couverture)','Distribution','Marché','Réunion publique','Rencontre','Affichage','Autre'];
 export const DEFAULT_CAMPAIGN={id:'demo',nom:'Campagne de démonstration',annee:2026,description:'Toutes les informations de démonstration sont fictives.'};
 export const emptyState=()=>({version:VERSION,campaigns:[{...DEFAULT_CAMPAIGN}],current:'demo',missions:[],results:[],team:[],archives:[],drafts:[],lastSaved:null});
 export const clone=v=>JSON.parse(JSON.stringify(v));
@@ -67,9 +67,9 @@ export function mergeResults(state,newRows){
 }
 const BACKUP_FIELDS={
  campaign:['id','nom','annee','description'],
- mission:['id','campaignId','title','type','commune','secteur','assignee','status','date','notes','created'],
+ mission:['id','campaignId','title','type','commune','secteur','rues','tags','satisfaction','assignee','status','date','notes','notifyApp','notifyEmail','created'],
  result:['id','commune','scrutin','inscrits','votants','exprimes','source','bureau','tour','annee','codeInsee'],
- team:['id','campaignId','name','commune'],
+ team:['id','campaignId','name','commune','volunteer','volunteerActions'],
  archive:['id','campaignId','title','category','content','created'],
  draft:['id','campaignId','channel','subject','content','created']
 };
