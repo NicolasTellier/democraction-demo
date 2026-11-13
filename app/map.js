@@ -44,8 +44,8 @@ export async function drawMap(target,communes,notify){
     const geo=index.get(norm(c.nom));const pt=geo?.centre?.coordinates;
     if(!pt||pt.length<2)continue;
     const point=[pt[1],pt[0]];
-    const marker=window.L.circleMarker(point,{radius:6,weight:2,color:'#f7faf9',fillColor:'#267b76',fillOpacity:0.9});
-    marker.bindPopup(`<strong>${escapeHTML(c.nom)}</strong><div>${escapeHTML(c.epci)}</div><small>Centre de commune approximatif — ne constitue pas une adresse</small>`);
+    const value=Number(c.mapValue);const fill=value>=70?'#155e75':value>=55?'#267b76':value>=40?'#d97706':'#b91c1c';const marker=window.L.circleMarker(point,{radius:7,weight:2,color:'#f7faf9',fillColor:fill,fillOpacity:0.9});
+    marker.bindPopup(`<strong>${escapeHTML(c.nom)}</strong><div>${escapeHTML(c.epci)}</div><div>${escapeHTML(c.mapLabel||'Carte de mobilisation')}</div><small>Centre de commune approximatif — ne constitue pas une adresse</small>`);
     marker.addTo(leafletMap);currentMarkers.push(marker);
   }
   if(currentMarkers.length){const group=window.L.featureGroup(currentMarkers);leafletMap.fitBounds(group.getBounds().pad(.16),{maxZoom:11})}
