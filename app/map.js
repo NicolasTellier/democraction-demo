@@ -57,7 +57,7 @@ export async function loadContours(communes=[]){
  try{const cached=JSON.parse(localStorage.getItem(CONTOUR_KEY)||'null');if(cached&&cached.requested===requested&&Date.now()-cached.at<1000*3600*24*30){currentContours=cached.data;currentContours._requested=requested;return currentContours}}catch{}
  let features=[];
  try{
-  const r=await fetch('./data/communes-33-11.geojson?v=20261113',{cache:'no-store'});
+  const r=await fetch('../data/communes-33-11.geojson?v=20261113',{cache:'no-store'});
   if(!r.ok)throw new Error('Contours statiques indisponibles');
   const data=await r.json();const wanted=new Set(codes);
   features=asFeatureList(data);
