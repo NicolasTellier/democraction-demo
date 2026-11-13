@@ -1,4 +1,5 @@
 /** Coeur métier pur : exécutable dans navigateur et dans node --test (ES modules). */
+import {validZone} from './geo-utils.js';
 export const VERSION=3;
 export const STATUSES=['À faire','En cours','Terminée'];
 export const TYPE_ACTIONS=['Porte-à-porte (couverture)','Distribution','Marché','Réunion publique','Rencontre','Affichage','Autre'];
@@ -67,7 +68,7 @@ export function mergeResults(state,newRows){
 }
 const BACKUP_FIELDS={
  campaign:['id','nom','annee','description'],
- mission:['id','campaignId','title','type','commune','secteur','rues','tags','satisfaction','assignee','status','date','notes','notifyApp','notifyEmail','created'],
+ mission:['id','campaignId','title','type','commune','secteur','rues','tags','satisfaction','assignee','status','date','notes','notifyApp','notifyEmail','created','zoneKind','zoneId','zoneCommunes','zoneGeometry'],
  result:['id','commune','scrutin','inscrits','votants','exprimes','source','bureau','tour','annee','codeInsee'],
  team:['id','campaignId','name','commune','volunteer','volunteerActions'],
  archive:['id','campaignId','title','category','content','created'],
@@ -99,7 +100,7 @@ export function validateBackup(obj){
  if(!obj.campaigns.every(c=>typeof c.id==='string'&&typeof c.nom==='string'))throw new Error('Campagnes invalides.');
  if(!obj.campaigns.some(c=>c.id===obj.current))throw new Error('Campagne active inconnue.');
  for(const r of obj.results){if(!r||typeof r.commune!=='string'||typeof r.scrutin!=='string'||typeof r.source!=='string'|| !Number.isSafeInteger(r.inscrits)||!Number.isSafeInteger(r.votants)||!Number.isSafeInteger(r.exprimes)||r.exprimes<0||r.exprimes>r.votants||r.votants>r.inscrits)throw new Error('Résultats invalides.');}
- for(const m of obj.missions){if(!m||typeof m.title!=='string'||typeof m.commune!=='string'||!STATUSES.includes(m.status)||typeof m.campaignId!=='string')throw new Error('Missions invalides.');}
+ for(const m of obj.missions){if(!m||typeof m.title!=='string'||typeof m.commune!=='string'||!STATUSES.includes(m.status)||typeof m.campaignId!=='string')throw new Error('Missions invalides.');if(m.zoneGeometry!==undefined&&!validZone(m.zoneGeometry))throw new Error('Géométrie de mission invalide.');if(m.zoneCommunes!==undefined&&(!Array.isArray(m.zoneCommunes)||m.zoneCommunes.length>87||m.zoneCommunes.some(c=>typeof c!=='string')))throw new Error('Communes de mission invalides.');}
 for(const n of obj.archives){if(typeof n.title!=='string'||typeof n.content!=='string'||typeof n.created!=='string'||!Number.isFinite(new Date(n.created).getTime()))throw new Error('Archive invalide.');}
  for(const t of obj.team){if(typeof t.name!=='string'||typeof t.campaignId!=='string')throw new Error('Groupe invalide.');}
  for(const d of obj.drafts){if(typeof d.subject!=='string'||typeof d.content!=='string'||typeof d.campaignId!=='string')throw new Error('Brouillon invalide.');}

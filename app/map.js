@@ -1,7 +1,8 @@
 import {norm,escapeHTML} from './core.js';
+import {validPolygon,classification,classIndex} from './geo-utils.js';
 
 const GEO_KEY='democraction-33-geo-v2';
-const CONTOUR_KEY='democraction-33-contours-v4';
+const CONTOUR_KEY='democraction-33-contours-v5';
 const maps=new Map();
 const mapLayers=new Map();
 let currentGeo=[];
@@ -57,10 +58,10 @@ export async function loadContours(communes=[]){
  try{const cached=JSON.parse(localStorage.getItem(CONTOUR_KEY)||'null');if(cached&&cached.requested===requested&&Date.now()-cached.at<1000*3600*24*30){currentContours=cached.data;currentContours._requested=requested;return currentContours}}catch{}
  let features=[];
  try{
-  const r=await fetch('../data/communes-33-11.geojson?v=20261113',{cache:'no-store'});
+  const r=await fetch(new URL('../data/communes-33-11.geojson',import.meta.url));
   if(!r.ok)throw new Error('Contours statiques indisponibles');
   const data=await r.json();const wanted=new Set(codes);
-  features=asFeatureList(data);
+  features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||''))&&validFeature(f));
  }catch{}
  if(!features.length){
   try{
@@ -73,22 +74,51 @@ export async function loadContours(communes=[]){
  return currentContours;
 }
 
-function colour(value,selected){
- if(selected)return {color:'#ee4b23',fillColor:'#ffb71b',fillOpacity:.34,weight:3};
- const n=Number(value);if(!Number.isFinite(n))return {color:'#67857d',fillColor:'#bfd8ce',fillOpacity:.32,weight:1.2};
- return {color:'#507d72',fillColor:n>=70?'#155e75':n>=55?'#267b76':n>=40?'#d97706':'#b91c1c',fillOpacity:.48,weight:1.4};
+export function selectionGeometry(codes=[]){
+ const wanted=new Set(codes.map(String)),parts=[];
+ for(const feature of currentContours){
+  if(!wanted.has(String(feature.properties?.code)))continue;
+  if(feature.geometry?.type==='Polygon')parts.push(feature.geometry.coordinates);
+  else if(feature.geometry?.type==='MultiPolygon')parts.push(...feature.geometry.coordinates);
+ }
+ return parts.length?{type:'MultiPolygon',coordinates:parts}:null;
+}
+
+function colour(value,selected,legend){
+ const i=classIndex(value,legend),fill=i<0?'#c8d0d7':legend.colors[i];
+ return {color:selected?'#16163f':'#5f667c',fillColor:selected?'#ffb71b':fill,fillOpacity:selected?.67:.68,weight:selected?3:1};
 }
 
 function addDrawingTools(box,map,target,options){
  const tools=document.createElement('div');tools.className='map-overlay-tools';
- tools.innerHTML='<button type="button" class="btn btn-light btn-sm" data-map-draw-start>Dessiner un secteur</button><button type="button" class="btn btn-primary btn-sm" data-map-draw-finish disabled>Terminer</button><button type="button" class="btn btn-light btn-sm" data-map-draw-cancel disabled>Annuler</button>';
+ tools.innerHTML='<button type="button" class="btn btn-light btn-sm" data-map-draw-start>Dessiner un secteur</button><button type="button" class="btn btn-primary btn-sm" data-map-draw-finish disabled>Enregistrer le contour</button><button type="button" class="btn btn-light btn-sm" data-map-draw-cancel disabled>Annuler</button>';
  box.appendChild(tools);
- let drawing=false,points=[],preview=null;
- const start=()=>{drawing=true;points=[];preview?.remove();preview=null;tools.querySelector('[data-map-draw-start]').disabled=true;tools.querySelector('[data-map-draw-finish]').disabled=false;tools.querySelector('[data-map-draw-cancel]').disabled=false;tools.classList.add('active');map.getContainer().classList.add('map-drawing');options.onNotice?.('Cliquez au moins trois points sur la carte pour dessiner le secteur.');};
- const cancel=()=>{drawing=false;points=[];preview?.remove();preview=null;tools.querySelector('[data-map-draw-start]').disabled=false;tools.querySelector('[data-map-draw-finish]').disabled=true;tools.querySelector('[data-map-draw-cancel]').disabled=true;tools.classList.remove('active');map.getContainer().classList.remove('map-drawing');};
- const finish=()=>{if(points.length<3){options.onNotice?.('Ajoutez au moins trois points avant d’enregistrer le secteur.','warning');return}const coordinates=points.map(p=>[p.lng,p.lat]);coordinates.push(coordinates[0]);options.onSectorComplete?.({type:'Polygon',coordinates:[coordinates]});cancel();};
+ let drawing=false,points=[],preview=null,handles=[];
+ const refresh=()=>{preview?.remove();handles.forEach(h=>h.remove());handles=[];if(!points.length)return;
+  preview=window.L.polygon(points,{color:'#16163f',weight:2,dashArray:'5 5',fillColor:'#ffb71b',fillOpacity:.24}).addTo(map);
+  points.forEach((p,i)=>{const h=window.L.marker(p,{draggable:true,icon:window.L.divIcon({className:'sector-vertex',html:'<span></span>',iconSize:[18,18]})}).addTo(map);
+   h.on('dragend',()=>{points[i]=h.getLatLng();refresh()});h.on('contextmenu',()=>{if(points.length>3){points.splice(i,1);refresh()}});handles.push(h)});
+  if(points.length>1)points.forEach((p,i)=>{const next=points[(i+1)%points.length];const mid=window.L.latLng((p.lat+next.lat)/2,(p.lng+next.lng)/2);
+   const h=window.L.marker(mid,{icon:window.L.divIcon({className:'sector-midpoint',html:'<span>+</span>',iconSize:[16,16]})}).addTo(map);
+   h.on('click',e=>{window.L.DomEvent.stopPropagation(e);points.splice(i+1,0,mid);refresh()});handles.push(h)});
+ };
+ const start=()=>{drawing=true;points=[];refresh();tools.querySelector('[data-map-draw-start]').disabled=true;tools.querySelector('[data-map-draw-finish]').disabled=false;tools.querySelector('[data-map-draw-cancel]').disabled=false;tools.classList.add('active');map.getContainer().classList.add('map-drawing');options.onNotice?.('Cliquez trois points ou plus. Déplacez un sommet, cliquez sur + pour en ajouter, clic droit pour en supprimer.');};
+ const cancel=()=>{drawing=false;points=[];refresh();tools.querySelector('[data-map-draw-start]').disabled=false;tools.querySelector('[data-map-draw-finish]').disabled=true;tools.querySelector('[data-map-draw-cancel]').disabled=true;tools.classList.remove('active');map.getContainer().classList.remove('map-drawing');};
+ const finish=()=>{if(points.length<3){options.onNotice?.('Ajoutez au moins trois points.','warning');return}const coordinates=points.map(p=>[p.lng,p.lat]);coordinates.push([...coordinates[0]]);const geometry={type:'Polygon',coordinates:[coordinates]};if(!validPolygon(geometry)){options.onNotice?.('Contour invalide : vérifiez les croisements et les sommets.','warning');return}options.onSectorComplete?.(geometry,options.editSector?.id||null);cancel();};
  tools.querySelector('[data-map-draw-start]').addEventListener('click',start);tools.querySelector('[data-map-draw-finish]').addEventListener('click',finish);tools.querySelector('[data-map-draw-cancel]').addEventListener('click',cancel);
- map.on('click',e=>{if(!drawing)return;points.push(e.latlng);preview?.remove();preview=window.L.polygon(points,{color:'#b47c2d',weight:2,dashArray:'5 5',fillColor:'#e4bd6d',fillOpacity:.25}).addTo(map);});
+ map.on('click',e=>{if(!drawing)return;points.push(e.latlng);refresh()});
+ if(options.editSector?.geometry?.type==='Polygon'){
+  start();points=options.editSector.geometry.coordinates[0].slice(0,-1).map(([lng,lat])=>window.L.latLng(lat,lng));refresh();map.fitBounds(window.L.polygon(points).getBounds().pad(.25));
+ }
+}
+
+function addLegend(map,legend,options){
+ const control=window.L.control({position:'bottomleft'});
+ control.onAdd=()=>{const el=window.L.DomUtil.create('div','map-legend');window.L.DomEvent.disableClickPropagation(el);
+  const format=n=>Number(n).toLocaleString('fr-FR',{maximumFractionDigits:1});
+  let previous=legend.method==='fixed-percent'?0:null;
+  const classes=legend.breaks.map((limit,i)=>{const low=previous;previous=limit;return `<span><i style="background:${legend.colors[i]}"></i>${low===null?'≤ '+format(limit):`${format(low)}–${format(limit)}`} ${escapeHTML(legend.unit)}</span>`}).join('');
+  el.innerHTML=`<strong>${escapeHTML(options.legendTitle||'Indicateur')}</strong><small>${escapeHTML(options.sourceLabel||'Données agrégées')} · ${legend.method==='quantile'?'classes par quantiles':'intervalles réguliers'}</small><div>${classes}<span><i style="background:#c8d0d7"></i>Indisponible</span></div>`;return el};control.addTo(map);
 }
 
 export async function drawMap(target,communes,notify,options={}){
@@ -97,37 +127,40 @@ export async function drawMap(target,communes,notify,options={}){
  box.innerHTML='<div class="map-loading">Chargement des contours communaux officiels…</div>';
  try{
   await ensureLeaflet();
-  const [coords,contours]=await Promise.all([loadGeodata(),loadContours(communes)]);
+  const contours=await loadContours(communes);
   if(!document.getElementById(target))return;
   box.innerHTML='';const map=window.L.map(box,{zoomControl:true,scrollWheelZoom:true}).setView([45.07,-0.48],9);maps.set(target,map);
   const ign='https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
   window.L.tileLayer(ign,{attribution:'© <a href="https://www.ign.fr/" target="_blank" rel="noopener noreferrer">IGN</a> — données géographiques françaises',maxZoom:18}).addTo(map);
-  const coordIndex=new Map(coords.map(c=>[String(c.code||''),c]));
   const contourIndex=new Map(contours.map(f=>[String(f.properties?.code||''),f]));
-  const group=window.L.featureGroup(),fitPoints=[],selection=new Set((options.selectedNames||[]).map(norm));
-  const byName=new Map(communes.map(c=>[norm(c.nom),c]));
+  const group=window.L.featureGroup(),selectedGroup=window.L.featureGroup(),selection=new Set((options.selectedNames||[]).map(norm));
+  const legend=classification(options.legendValues||communes.map(c=>c.mapValue),{unit:options.legendUnit||'%',method:options.legendMethod||'quantile'});
+  let rendered=0;
   for(const c of communes){
    const code=String(c.codeInsee||'');const feature=contourIndex.get(code);const selected=selection.has(norm(c.nom));
    if(feature){try{
-    const layer=window.L.geoJSON(feature,{style:colour(c.mapValue,selected),onEachFeature:(_,polygon)=>{
+    const layer=window.L.geoJSON(feature,{style:colour(c.mapValue,selected,legend),onEachFeature:(_,polygon)=>{
      polygon.bindTooltip(`${escapeHTML(c.nom)} · ${escapeHTML(c.mapLabel||'Donnée indisponible')}`,{sticky:true});
      polygon.bindPopup(`<strong>${escapeHTML(c.nom)}</strong><div>${escapeHTML(c.epci||'')}</div><div>${escapeHTML(c.mapLabel||'Donnée indisponible')}</div><small>Contour communal officiel · Source : geo.api.gouv.fr</small>`);
-     polygon.on('click',event=>options.onSelect?.(c,event));
-    }}).addTo(map);group.addLayer(layer);
-   }catch{}}
-   const point=coordIndex.get(code)?.centre?.coordinates;const lat=Number(point?.[1]),lon=Number(point?.[0]);if(Number.isFinite(lat)&&Number.isFinite(lon)){fitPoints.push([lat,lon]);
-    const marker=window.L.circleMarker([lat,lon],{radius:selected?4:2,weight:1,color:'#fff',fillColor:'#173f39',fillOpacity:.8});
-    marker.bindTooltip(escapeHTML(c.nom));marker.addTo(map);group.addLayer(marker);
-   }
+     polygon.on('click',event=>{if(!map.getContainer().classList.contains('map-drawing'))options.onSelect?.(c,event)});
+    }}).addTo(map);group.addLayer(layer);if(selected)selectedGroup.addLayer(layer);rendered++;
+   }catch(error){notify?.(`Contour ${c.nom} invalide : ${error.message}`,'warning')}}
   }
-  for(const bureau of options.bureauFeatures||[]){if(!validFeature(bureau))continue;const p=bureau.properties||{},key=String(p.id||p.code||p.bureau||''),selected=(options.selectedBureauIds||[]).includes(key);window.L.geoJSON(bureau,{style:{color:selected?'#ee4b23':'#7a1838',weight:selected?3:1.2,dashArray:selected?null:'4 4',fillColor:selected?'#ffb71b':'#7a1838',fillOpacity:selected ? .34 : .08},onEachFeature:(_,polygon)=>{polygon.bindTooltip(escapeHTML(p.nom||p.bureau||'Bureau de vote'));polygon.bindPopup('<strong>'+escapeHTML(p.nom||p.bureau||'Bureau de vote')+'</strong><small>Strate géographique · contour fourni par la collectivité</small>');}}).addTo(map);}
-for(const sector of options.sectors||[]){if(!sector.geometry)continue;const selected=options.selectedSectorId===sector.id;window.L.geoJSON(sector.geometry,{style:{color:selected?'#ee4b23':sector.color||'#7a1838',weight:selected?4:2,dashArray:selected?null:'7 5',fillColor:selected?'#ffb71b':sector.color||'#ffb71b',fillOpacity:selected ? .34 : .16},onEachFeature:(_,polygon)=>polygon.bindTooltip(escapeHTML(sector.name||'Secteur enregistré'))}).addTo(map);}
+  for(const bureau of options.bureauFeatures||[]){if(!validFeature(bureau))continue;const p=bureau.properties||{},key=String(p.id||p.code||p.bureau||''),selected=(options.selectedBureauIds||[]).includes(key);const layer=window.L.geoJSON(bureau,{style:{color:selected?'#ee4b23':'#7a1838',weight:selected?3:1.2,dashArray:selected?null:'4 4',fillColor:selected?'#ffb71b':'#7a1838',fillOpacity:selected ? .34 : .08},onEachFeature:(_,polygon)=>{polygon.bindTooltip(escapeHTML(p.nom||p.bureau||'Bureau de vote'));polygon.bindPopup('<strong>'+escapeHTML(p.nom||p.bureau||'Bureau de vote')+'</strong><small>Strate géographique · contour fourni par la collectivité</small>');polygon.on('click',e=>options.onBureauSelect?.(key,e))}}).addTo(map);if(selected)selectedGroup.addLayer(layer)}
+  for(const sector of options.sectors||[]){if(!validPolygon(sector.geometry)||sector.id===options.editSector?.id)continue;const selected=options.selectedSectorId===sector.id;const layer=window.L.geoJSON(sector.geometry,{style:{color:selected?'#16163f':sector.color||'#7a1838',weight:selected?4:2,dashArray:selected?null:'7 5',fillColor:selected?'#ffb71b':sector.color||'#ffb71b',fillOpacity:selected?.5:.16},onEachFeature:(_,polygon)=>{polygon.bindTooltip(escapeHTML(sector.name||'Secteur enregistré'));polygon.on('click',e=>options.onSectorSelect?.(sector.id,e))}}).addTo(map);if(selected)selectedGroup.addLayer(layer)}
+  for(const mission of options.missions||[]){if(!validFeature({geometry:mission.zoneGeometry}))continue;window.L.geoJSON(mission.zoneGeometry,{style:{color:mission.status==='Terminée'?'#2b6e46':mission.status==='En cours'?'#ee4b23':'#1e3ac8',weight:2,dashArray:'4 4',fillOpacity:.06},onEachFeature:(_,polygon)=>polygon.bindPopup(`<strong>${escapeHTML(mission.title)}</strong><div>${escapeHTML(mission.status)}</div><small>Action enregistrée localement</small>`)}).addTo(map)}
   for(const street of options.streets||[]){if(Number.isFinite(Number(street.lat))&&Number.isFinite(Number(street.lon)))window.L.circleMarker([Number(street.lat),Number(street.lon)],{radius:6,weight:2,color:'#fff',fillColor:'#6d3e8c',fillOpacity:.95}).addTo(map).bindPopup(`<strong>${escapeHTML(street.name)}</strong><small>Voie sélectionnée · API Adresse</small>`);}
-  map.setView([45.07,-0.48],9);
-  addDrawingTools(box,map,target,options);
+  if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.08),{maxZoom:11});
+  if(options.focusSelection&&selectedGroup.getLayers().length)map.fitBounds(selectedGroup.getBounds().pad(.2),{maxZoom:13});
+  addLegend(map,legend,options);
+  if(options.allowDraw)addDrawingTools(box,map,target,options);
+  if(target==='map-left'||target==='map-right'){
+   const other=maps.get(target==='map-left'?'map-right':'map-left');
+   if(other){let moving=false;for(const [a,b] of [[map,other],[other,map]])a.on('moveend',()=>{if(moving)return;moving=true;b.setView(a.getCenter(),a.getZoom(),{animate:false});moving=false});}
+  }
   setTimeout(()=>map.invalidateSize(),150);
-  notify?.(`Contours affichés : ${contours.length} / ${communes.length} communes.`,contours.length?'info':'warning');
- }catch(e){box.innerHTML='<div class="map-loading">Les contours ne sont pas disponibles. Vérifiez la connexion à l’API géographique ; la liste des communes reste utilisable.</div>';notify?.(String(e.stack||e.message||e),'warning')}
+  notify?.(`Contours affichés : ${rendered} / ${communes.length} communes.`,rendered?'info':'warning');
+ }catch(e){box.innerHTML='<div class="map-loading">Contours indisponibles : le fichier géographique local n’a pas pu être chargé. Réessayez en ligne.</div>';notify?.(String(e.message||e),'warning')}
 }
 
 export function locate(){const map=[...maps.values()][0];if(!map)return false;if(!navigator.geolocation)return false;navigator.geolocation.getCurrentPosition(p=>{const {latitude,longitude}=p.coords;window.L.marker([latitude,longitude]).addTo(map).bindPopup('Position ponctuelle (non enregistrée)').openPopup();map.setView([latitude,longitude],13)},()=>{alert('Géolocalisation refusée ou indisponible. Aucune position n’est stockée.')},{enableHighAccuracy:false,timeout:10000});return true}

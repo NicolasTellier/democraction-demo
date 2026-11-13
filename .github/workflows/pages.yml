@@ -23,12 +23,32 @@ jobs:
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Installer les dépendances de test
+        run: npm ci
+      - name: Contrôler la syntaxe et les données
+        run: npm run check && npm test
+      - name: Installer Chromium pour la recette
+        run: npx playwright install --with-deps chromium
+      - name: Vérifier les parcours dans quatre formats
+        run: npm run test:e2e
+      - name: Construire uniquement les fichiers publics
+        run: |
+          mkdir -p site/app site/assets site/data
+          cp index.html manifest.webmanifest sw.js site/
+          cp app/*.js site/app/
+          cp assets/style.css assets/icon.svg site/assets/
+          cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json site/data/
+          test -f site/data/communes-33-11.geojson
       - name: Configurer GitHub Pages
         uses: actions/configure-pages@v5
       - name: Publier l’interface
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: site
       - name: Déployer
         id: deployment
         uses: actions/deploy-pages@v4

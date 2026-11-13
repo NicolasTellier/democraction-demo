@@ -139,6 +139,12 @@ td strong{color:var(--cobalt)}
 .priority-controls input[type=range]{accent-color:var(--cobalt);min-height:20px;padding:0}
 .priority-controls strong{font-size:11px;color:var(--cobalt)}
 .map-scope-value{margin-top:8px}
+.map-legend{background:#fffdf5;border:2px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);padding:9px 11px;max-width:230px;font:12px/1.35 Arial,sans-serif;color:var(--ink)}
+.map-legend strong,.map-legend small{display:block;margin-bottom:4px}.map-legend small{font-size:10px;color:#4d5067}.map-legend div{display:flex;flex-wrap:wrap;gap:4px 9px}.map-legend span{display:inline-flex;align-items:center;gap:4px;font-size:10px}.map-legend i{display:inline-block;width:12px;height:12px;border:1px solid #6e7485}
+.sector-entry{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;padding-bottom:8px;border-bottom:1px solid #ddd}.sector-entry .sector-item{grid-column:1/-1;width:100%}.sector-entry .btn{font-size:10px;padding:5px 3px}
+.sector-vertex span,.sector-midpoint span{display:block;border:2px solid #16163f;border-radius:50%;background:#ffb71b;box-shadow:0 0 0 2px #fff;width:14px;height:14px;cursor:move}.sector-midpoint span{background:white;color:#16163f;width:14px;height:14px;line-height:10px;text-align:center;font-size:12px;cursor:pointer}
+.map-compare-table{background:#fff;border:1px solid #dfeae4;border-radius:8px;margin-top:10px;padding:10px;max-height:250px;overflow:auto}.map-compare-table strong{display:block;margin-bottom:7px}.map-compare-table table{font-size:11px}
+@media(max-width:600px){.map-legend{max-width:185px;padding:6px}.map-overlay-tools{top:54px;right:5px;max-width:210px}.map-overlay-tools .btn{padding:5px;font-size:10px}}
 .map-selection-summary{display:grid;gap:7px;padding:13px;margin-bottom:14px;background:var(--cobalt);color:var(--cream);border:2px solid var(--ink);border-radius:6px;box-shadow:4px 4px 0 var(--ink)}
 .map-selection-summary strong{font-family:Shrikhand,Georgia,serif;font-weight:400;font-size:16px}
 .map-selection-summary span{font-size:12px;font-weight:800;color:var(--sun)}

@@ -1,0 +1,1808 @@
+[
+  {
+    "id": "ban-33366-001",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allee de Verdun",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-002",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allee des Pins",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-003",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allee du Jugeau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-004",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allee du Moulin de Seignan",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-005",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allee du Pont de Lozes",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-006",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée Besnard",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-007",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de Baylot",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-008",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de la Cabeyre",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-009",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de la Fontaine",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-010",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de la Garosse",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-011",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de Lapouyade",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-012",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de l’Affut",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-013",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de Romefort",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-014",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée de Rouchereau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-015",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée des Chevreuils",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-016",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée des Fougères",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-017",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée des Pécheurs",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-018",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée du Champ de Foire",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-019",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée du Granger",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-020",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée du Lavoir",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-021",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Allée Jean Raymond Guyon",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-022",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue Boucicaut",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-023",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue de l'Aérodrome",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-024",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue de la Gare",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-025",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue de la Republique",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-026",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue de l’Europe",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-027",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue Eiffel",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-028",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue Jean-Baptiste Godin",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-029",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue Jean-Honoré Olibet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-030",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue Jules Ferry",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-031",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue Michel de Montaigne",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-032",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Avenue Montesquieu",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-033",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Bois de Lafont",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-034",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Bois Milon-Ouest",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-035",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Champ de Foire",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-036",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Badebec",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-037",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Baylot",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-038",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Belle Queue",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-039",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Bellegrappe",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-040",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Bois-Milon",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-041",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Bourg",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-042",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Bourliemont",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-043",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Cabarieu",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-044",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Calonge",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-045",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Canteloudette",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-046",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Daubiac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-047",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Gastineau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-048",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Gombaud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-049",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Barrière",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-050",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Cale du Centre",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-051",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Cale du Sud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-052",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Carre",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-053",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Garosse",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-054",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Grave",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-055",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Matte",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-056",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Mouliere",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-057",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Mouliere Est",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-058",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Prévoté",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-059",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de la Rousse",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-060",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Labry",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-061",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Lapouyade",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-062",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Lombagne",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-063",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de l’Estalot",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-064",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de l’Hippodrome",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-065",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Machedis",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-066",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Mailhos",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-067",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Meilhac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-068",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Mercey",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-069",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Millet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-070",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Millet Est",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-071",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Mona",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-072",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Monein",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-073",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Mouna",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-074",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Papelotte",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-075",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Paradis",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-076",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Patoche",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-077",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Perret",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-078",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Peyrelebade",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-079",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Peyrot",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-080",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Pineau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-081",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Rastouillet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-082",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Reden",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-083",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Rigaud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-084",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Romefort",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-085",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Seignan",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-086",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Seignan Nord",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-087",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Seignan Sud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-088",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Soubiole",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-089",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Terrefort",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-090",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Timberlay",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-091",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Trety",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-092",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin de Virsac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-093",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin des Roquettes",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-094",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Bois de Lafont",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-095",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Bourrut",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-096",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Grand Ormeau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-097",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Granger",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-098",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Gymnase",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-099",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Lavoir",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-100",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Moulin de Seignan",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-101",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Mouton",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-102",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Pas de Monac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-103",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Peuy",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-104",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Plantier",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-105",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Port d’Augey",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-106",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Rivet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-107",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Sablot",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-108",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Six",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-109",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Tasta",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-110",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Village de Cabarieu",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-111",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin du Village de Granger",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-112",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin Fontdeville Gastineau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-113",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Chemin Jean Fortin",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-114",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Château du Bouilh",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-115",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Cours Georges Clémenceau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-116",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Ferme du Bouilh",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-117",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Anne Eymery",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-118",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Caillet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-119",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Camille Flammarion",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-120",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Dalzac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-121",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de Calonge",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-122",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de Fonboudeau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-123",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de la Batisse",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-124",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de la Rousse",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-125",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de la Tour du Pin",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-126",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de l’Alose",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-127",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de l’Aurore",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-128",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse de l’Esturgeon",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-129",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse des Associations",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-130",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse des Carriers",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-131",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse des Chenes Verts",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-132",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse des Cyprès",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-133",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse des Merlots",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-134",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse des Sarments",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-135",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du 45e Parallele",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-136",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Banquet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-137",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Chateau d’Eau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-138",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Couvent",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-139",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Grain",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-140",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Lavoir",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-141",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Maréchal Ferrant",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-142",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Pas de Monac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-143",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse du Passeron",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-144",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Elie Faure",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-145",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Gabriel Faure",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-146",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Jean Vige",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-147",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Jean Vigo",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-148",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Jeanne Naud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-149",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Jugeau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-150",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Mailhos",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-151",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Marie-Louise Gachet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-152",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Robillard",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-153",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Impasse Rue Nationale",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-154",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Jugeau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-155",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "La Cabeyre",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-156",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "La Garosse-Est",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-157",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "La Joselle",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-158",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Le Bourg-Nord",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-159",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Les Quatre Chemins",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-160",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Les Roquettes",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-161",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Moneins",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-162",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Paradis",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-163",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage Amelina",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-164",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage de la Cabeyre",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-165",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage de la Fontaine",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-166",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage de l’Angelique",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-167",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage de l’Europe",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-168",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage de Trety",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-169",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage des Associations",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-170",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage des Jardins",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-171",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage des Lavandieres",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-172",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage des Lilas",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-173",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage des Quatre Vents",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-174",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage du Croissant",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-175",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage du Grain",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-176",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage du Parc",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-177",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage du Pas de Monac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-178",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage du Rivet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-179",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage du Tasta",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-180",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage Jacques Boehlinger",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-181",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage Jugeau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-182",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage Laurent Coureaud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-183",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage Peyrot",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-184",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Passage Route de Blaye",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-185",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Peyrelebade",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-186",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Place de la Libération",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-187",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Place de l’Eglise",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-188",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Place du Chp de Foire",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-189",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Place du General de Gaulle",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-190",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Place Peyrelebade",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-191",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Place Raoul Larche",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-192",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Plagne",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-193",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Quai Laurent Coureaud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-194",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Reden",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-195",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Blaye",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-196",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Bordeaux",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-197",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Bourg",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-198",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Libourne",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-199",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Plagne",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-200",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Port Neuf",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-201",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Saint-Romain",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-202",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Salignac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-203",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de St Gervais",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-204",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route de Virsac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-205",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Route du Bouilh",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-206",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Adrienne Bolland",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-207",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Alexandre Nicolaï",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-208",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Alexis Millardet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-209",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Alice Guy",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-210",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Arnaudin",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-211",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Ausone",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-212",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Berthe Morisot",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-213",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Blanche Maupas",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-214",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Claire Démar",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-215",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Colette Duval",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-216",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Constantin",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-217",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Couraud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-218",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Croix de l’Avocat",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-219",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Dalzac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-220",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Daniel Fournier",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-221",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de Fonboudeau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-222",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de la Cabeyre",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-223",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de la Dauge",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-224",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de la Fontaine",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-225",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de la Gare",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-226",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de la Gendarmerie",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-227",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de la Tour du Pin",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-228",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de Lucias",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-229",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de l’Eglise",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-230",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue de Montalon",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-231",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue des Cordiers",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-232",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue des Droits de l’Homme",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-233",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue des Marguerites",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-234",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue des Meuniers",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-235",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue des Moulins",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-236",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue des Places",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-237",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue des Roses",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-238",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du 19 Mars",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-239",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du 8 Mai",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-240",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Collège",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-241",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Colonel Rol Tanguy",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-242",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Commandant Cousteau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-243",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Coteau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-244",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Docteur Christian Eyraud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-245",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Docteur Metreaud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-246",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Docteur Remy Moure",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-247",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue du Gimbalet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-248",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Dubourdieu",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-249",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Elie Faure",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-250",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Elisabeth Tible",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-251",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Elisee Reclus",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-252",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Emile Martin Dantagnan",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-253",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Flora Tristan",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-254",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Francois Mauriac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-255",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Georges Brassens",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-256",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Gustave Favre",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-257",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Helene Boucher",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-258",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Henri Amédée Bellivier",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-259",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Henri Krazucki",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-260",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Hubert de l’Isle",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-261",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Irene Joliot Curie",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-262",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Jacques Brel",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-263",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Jacques Prévert",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-264",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Jean Adrien Pioceau",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-265",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Jean Jaures",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-266",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Jean Lavidalie",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-267",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Jeanne Barret",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-268",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Jules Vallès",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-269",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Lanessan",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-270",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Louise Michel",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-271",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Louise Weiss",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-272",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Lucie Aubrac",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-273",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Lucie Dillon",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-274",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Léo Ferré",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-275",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Madeleine Braun",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-276",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Marie Curie",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-277",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Marie Laurencin",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-278",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Marie Marvingt",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-279",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Maryse Bastie",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-280",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Max Linder",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-281",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Maxime Astier",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-282",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Mondenard",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-283",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Nationale",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-284",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Nicolas Copernic",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-285",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Olympe de Gouges",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-286",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Pablo Picasso",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-287",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Paul Valery",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-288",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Perret",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-289",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Peychaud",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-290",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Pierre Traverse",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-291",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Pierre-André Charron",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-292",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Pouyalet",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-293",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Robert Orlier",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-294",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Robillard",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-295",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Rosa Bonheur",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-296",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Sainte Anne",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-297",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Simone Buisson",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-298",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Simone Signoret",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-299",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Soucarros",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-300",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Rue Yves Montand",
+    "created": "2026-11-13T00:00:00.000Z"
+  },
+  {
+    "id": "ban-33366-301",
+    "commune": "Saint-André-de-Cubzac",
+    "name": "Square Francois Mitterrand",
+    "created": "2026-11-13T00:00:00.000Z"
+  }
+]
