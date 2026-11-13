@@ -70,7 +70,9 @@ root.addEventListener('click',async e=>{
  if(t.dataset.editMission){if(!fullEditor())return;editingMission=app.missions.find(x=>x.id===t.dataset.editMission);modal='mission';render();return}
  if(t.dataset.selectCampaign){app=save({...app,current:t.dataset.selectCampaign});render();enqueueSync();return}
  for(const [key,store] of [['deleteNote','archives'],['deleteTeam','team'],['deleteDraft','drafts']]){if(t.dataset[key]){if(confirm('Supprimer cet élément ?'))mutate(s=>({...s,[store]:s[store].filter(x=>x.id!==t.dataset[key])}));return}}
- if(t.dataset.copyDraft){const d=app.drafts.find(x=>x.id===t.dataset.copyDraft);if(d)try{await navigator.clipboard.writeText(`${d.subject}\n\n${d.content}`);toast('Brouillon copié.')}catch{toast('Copie indisponible dans ce navigateur.', 'warning')}}
+ if(t.dataset.copyDraft){const d=app.drafts.find(x=>x.id===t.dataset.copyDraft);if(d)try{await navigator.clipboard.writeText(`${d.subject}
+
+${d.content}`);toast('Brouillon copié.')}catch{toast('Copie indisponible dans ce navigateur.', 'warning')}}
 });
 root.addEventListener('click',e=>{const action=e.target.closest('[data-action]')?.dataset.action;if(action==='clear-socio'){filters.socioIndicator='';filters.socioMin='';filters.socioMax='';render()}if(action==='clear-election'){filters.electionType='';filters.electionYear='';filters.electionTour='';render()}});
 root.addEventListener('change',async e=>{
@@ -99,7 +101,8 @@ root.addEventListener('change',e=>{const map={'socio-indicator':'socioIndicator'
 root.addEventListener('input',e=>{if(e.target.id==='filter-query'){filters.query=e.target.value;const p=e.target.selectionStart;render();const el=document.getElementById('filter-query');el?.focus();el?.setSelectionRange(p,p)}});
 root.addEventListener('submit',e=>{
  const form=e.target;if(!['mission-form','team-form','memo-form','campaign-form','draft-form','fundraising-form','event-form','event-register-form','login-form'].includes(form.id))return;e.preventDefault();const fd=new FormData(form),get=n=>String(fd.get(n)||'').trim();
- if(form.id==='login-form'){void loginServer(get('username'),get('password'));return}\n if(form.id==='fundraising-form'){const amount=Number(get('amount'));if(!Number.isFinite(amount)||amount<=0){toast('Montant invalide.','warning');return}demoFunds.push({id:id(),kind:get('kind'),amount,status:get('status'),reference:get('reference'),created:new Date().toISOString()});localStorage.setItem('democraction-demo-funds',JSON.stringify(demoFunds));render();toast('Transaction fictive enregistrée.');return}
+ if(form.id==='login-form'){void loginServer(get('username'),get('password'));return}
+ if(form.id==='fundraising-form'){const amount=Number(get('amount'));if(!Number.isFinite(amount)||amount<=0){toast('Montant invalide.','warning');return}demoFunds.push({id:id(),kind:get('kind'),amount,status:get('status'),reference:get('reference'),created:new Date().toISOString()});localStorage.setItem('democraction-demo-funds',JSON.stringify(demoFunds));render();toast('Transaction fictive enregistrée.');return}
  if(form.id==='event-form'){const capacity=Number(get('capacity'));if(!get('title')||!get('commune')||!get('date')||!Number.isInteger(capacity)||capacity<1){toast('Événement incomplet.','warning');return}demoEvents.push({id:id(),title:get('title'),commune:get('commune'),date:get('date'),capacity,description:get('description'),registrations:[]});localStorage.setItem('democraction-demo-events',JSON.stringify(demoEvents));render();toast('Événement publié en simulation.');return}
  if(form.id==='event-register-form'){const eventId=form.dataset.eventId,event=demoEvents.find(x=>x.id===eventId);if(!event||event.registrations.length>=event.capacity){toast('Inscription impossible : événement complet ou introuvable.','warning');return}event.registrations.push({name:get('name'),email:get('email'),created:new Date().toISOString()});localStorage.setItem('democraction-demo-events',JSON.stringify(demoEvents));render();toast('Inscription fictive enregistrée. Aucun e-mail envoyé.');return}
  
