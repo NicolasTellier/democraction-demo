@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DemocrAction">
-  <rect width="512" height="512" rx="100" fill="#153e39"/>
-  <path d="M150 127v258h103c88 0 142-51 142-129S341 127 253 127H150Z" fill="none" stroke="#e6f5ed" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="151" cy="133" r="25" fill="#d7b76d"/>
-  <circle cx="149" cy="382" r="25" fill="#d7b76d"/>
-  <circle cx="383" cy="255" r="26" fill="#d7b76d"/>
+  <rect width="512" height="512" rx="70" fill="#16163f"/>
+  <path d="M150 127v258h103c88 0 142-51 142-129S341 127 253 127H150Z" fill="none" stroke="#fff4e0" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="151" cy="133" r="25" fill="#ffb71b"/>
+  <circle cx="149" cy="382" r="25" fill="#ee4b23"/>
+  <circle cx="383" cy="255" r="26" fill="#1e3ac8"/>
 </svg>
