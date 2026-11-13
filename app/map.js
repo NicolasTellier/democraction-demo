@@ -60,12 +60,12 @@ export async function loadContours(communes=[]){
   const r=await fetch('./data/communes-33-11.geojson?v=20261113',{cache:'no-store'});
   if(!r.ok)throw new Error('Contours statiques indisponibles');
   const data=await r.json();const wanted=new Set(codes);
-  features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||''))&&validFeature(f));
+  features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||'')));
  }catch{}
  if(!features.length){
   try{
    const r=await fetch('https://geo.api.gouv.fr/departements/33/communes?fields=nom,code&format=geojson&geometry=contour',{mode:'cors'});
-   if(r.ok){const data=await r.json();const wanted=new Set(codes);features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||''))&&validFeature(f))}
+   if(r.ok){const data=await r.json();const wanted=new Set(codes);features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||'')))}
   }catch{}
  }
  currentContours=features;currentContours._requested=requested;
@@ -108,7 +108,7 @@ export async function drawMap(target,communes,notify,options={}){
   const byName=new Map(communes.map(c=>[norm(c.nom),c]));
   for(const c of communes){
    const code=String(c.codeInsee||'');const feature=contourIndex.get(code);const selected=selection.has(norm(c.nom));
-   if(feature&&validFeature(feature)){try{
+   if(feature){try{
     const layer=window.L.geoJSON(feature,{style:colour(c.mapValue,selected),onEachFeature:(_,polygon)=>{
      polygon.bindTooltip(`${escapeHTML(c.nom)} · ${escapeHTML(c.mapLabel||'Donnée indisponible')}`,{sticky:true});
      polygon.bindPopup(`<strong>${escapeHTML(c.nom)}</strong><div>${escapeHTML(c.epci||'')}</div><div>${escapeHTML(c.mapLabel||'Donnée indisponible')}</div><small>Contour communal officiel · Source : geo.api.gouv.fr</small>`);
