@@ -55,22 +55,17 @@ export async function loadContours(communes=[]){
  const requested=codes.join(',');
  if(currentContours.length&&currentContours._requested===requested)return currentContours;
  try{const cached=JSON.parse(localStorage.getItem(CONTOUR_KEY)||'null');if(cached&&cached.requested===requested&&Date.now()-cached.at<1000*3600*24*30){currentContours=cached.data;currentContours._requested=requested;return currentContours}}catch{}
- const params=new URLSearchParams();codes.forEach(code=>params.append('code',code));
- params.set('fields','nom,code,centre');params.set('format','geojson');params.set('geometry','contour');
- let features=[];
- try{
-  const r=await fetch(`https://geo.api.gouv.fr/communes?${params.toString()}`,{mode:'cors'});
-  if(!r.ok)throw new Error(`Réponse contours ${r.status}`);
-  features=asFeatureList(await r.json()).filter(validFeature);
- }catch{
-  const batches=[];
-  for(let i=0;i<codes.length;i+=8)batches.push(codes.slice(i,i+8));
-  const responses=await Promise.all(batches.map(async batch=>{
-   const p=new URLSearchParams();batch.forEach(code=>p.append('code',code));p.set('fields','nom,code,centre');p.set('format','geojson');p.set('geometry','contour');
-   try{const r=await fetch(`https://geo.api.gouv.fr/communes?${p.toString()}`,{mode:'cors'});return r.ok?asFeatureList(await r.json()):[]}catch{return []}
-  }));
-  features=responses.flat().filter(validFeature);
- }
+ const batches=[];
+ for(let i=0;i<codes.length;i+=10)batches.push(codes.slice(i,i+10));
+ const responses=await Promise.all(batches.map(async batch=>{
+  const p=new URLSearchParams();
+  batch.forEach(code=>p.append('code',code));
+  p.set('fields','nom,code');
+  p.set('format','geojson');
+  p.set('geometry','contour');
+  try{const r=await fetch(\`https://geo.api.gouv.fr/communes?\${p.toString()}\`,{mode:'cors'});if(!r.ok)return [];return asFeatureList(await r.json())}catch{return []}
+ }));
+ const features=responses.flat().filter(validFeature);
  currentContours=features;currentContours._requested=requested;
  try{localStorage.setItem(CONTOUR_KEY,JSON.stringify({at:Date.now(),requested,data:features}))}catch{}
  return currentContours;
