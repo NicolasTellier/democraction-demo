@@ -1,7 +1,7 @@
 import {norm,escapeHTML} from './core.js';
 
 const GEO_KEY='democraction-33-geo-v2';
-const CONTOUR_KEY='democraction-33-contours-v3';
+const CONTOUR_KEY='democraction-33-contours-v4';
 const maps=new Map();
 const mapLayers=new Map();
 let currentGeo=[];
@@ -60,7 +60,7 @@ export async function loadContours(communes=[]){
   const r=await fetch('./data/communes-33-11.geojson?v=20261113',{cache:'no-store'});
   if(!r.ok)throw new Error('Contours statiques indisponibles');
   const data=await r.json();const wanted=new Set(codes);
-  features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||'')));
+  features=asFeatureList(data);
  }catch{}
  if(!features.length){
   try{
