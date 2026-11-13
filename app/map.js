@@ -116,8 +116,8 @@ export async function drawMap(target,communes,notify,options={}){
      polygon.on('click',event=>options.onSelect?.(c,event));
     }}).addTo(map);group.addLayer(layer);
    }
-   const point=coordIndex.get(code)?.centre?.coordinates;if(point?.length>=2){fitPoints.push([point[1],point[0]]);
-    const marker=window.L.circleMarker([point[1],point[0]],{radius:selected?4:2,weight:1,color:'#fff',fillColor:'#173f39',fillOpacity:.8});
+   const point=coordIndex.get(code)?.centre?.coordinates;const lat=Number(point?.[1]),lon=Number(point?.[0]);if(Number.isFinite(lat)&&Number.isFinite(lon)){fitPoints.push([lat,lon]);
+    const marker=window.L.circleMarker([lat,lon],{radius:selected?4:2,weight:1,color:'#fff',fillColor:'#173f39',fillOpacity:.8});
     marker.bindTooltip(escapeHTML(c.nom));marker.addTo(map);group.addLayer(marker);
    }
   }
