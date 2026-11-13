@@ -1,0 +1,46 @@
+const INDICATORS = [
+  ['population', 'Population', 'habitants'],
+  ['part15_24', '15–24 ans', '%'],
+  ['part65plus', '65 ans ou plus', '%'],
+  ['tauxChomage', 'Chômage', '%'],
+  ['tauxPauvrete', 'Taux de pauvreté', '%'],
+  ['revenuMedian', 'Revenu médian par UC', '€'],
+  ['partLocataires', 'Ménages locataires', '%'],
+  ['partLogementsVacants', 'Logements vacants', '%'],
+  ['partDiplomesSup', 'Diplômés du supérieur', '%'],
+  ['partFamillesMonoparentales', 'Familles monoparentales', '%']
+];
+
+const value = (v, unit) => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return '—';
+  if (unit === '%') return `${Number(v).toFixed(1).replace('.', ',')} %`;
+  if (unit === '€') return `${Math.round(Number(v)).toLocaleString('fr-FR')} €`;
+  return Math.round(Number(v)).toLocaleString('fr-FR');
+};
+
+export function viewPublicProfile({ socio, matching, filters, esc, attr, fmtNumber, panel, empty }) {
+  const byCode = new Map((socio?.indicators || []).map(row => [row.codeInsee, row]));
+  const byName = new Map((socio?.indicators || []).map(row => [row.commune, row]));
+  const rows = matching().map(commune => ({ ...commune, ...(byCode.get(commune.codeInsee) || byName.get(commune.nom) || {}) })).filter(row => row.population !== undefined);
+  const indicator = INDICATORS.find(row => row[0] === filters.socioIndicator) || INDICATORS[0];
+  const min = filters.socioMin === '' ? null : Number(filters.socioMin);
+  const max = filters.socioMax === '' ? null : Number(filters.socioMax);
+  const filtered = rows.filter(row => { const n = Number(row[indicator[0]]); return Number.isFinite(n) && (min === null || n >= min) && (max === null || n <= max); });
+  const average = filtered.length ? filtered.reduce((sum, row) => sum + Number(row[indicator[0]]), 0) / filtered.length : null;
+  const ranked = [...filtered].sort((a, b) => Number(b[indicator[0]]) - Number(a[indicator[0]])).slice(0, 30);
+  return `${panel('Profils socio-démographiques', `<p class="description">Filtres agrégés à l’échelle communale à partir des données publiques Insee. Ils servent à comparer les communes et à préparer des priorités de terrain ; ils ne décrivent jamais une personne et ne permettent pas de déduire un vote individuel.</p><div class="form-inline profile-controls"><label>Indicateur<select id="socio-indicator">${INDICATORS.map(row => `<option value="${row[0]}" ${filters.socioIndicator === row[0] ? 'selected' : ''}>${esc(row[1])}</option>`).join('')}</select></label><label>Valeur min.<input id="socio-min" type="number" step="0.1" value="${attr(filters.socioMin)}" placeholder="—"></label><label>Valeur max.<input id="socio-max" type="number" step="0.1" value="${attr(filters.socioMax)}" placeholder="—"></label><button class="btn btn-light" data-action="clear-socio">Réinitialiser</button></div><div class="statgrid"><div class="stat"><span>Communes répondant au filtre</span><strong>${filtered.length}<small> / ${rows.length}</small></strong><small>Périmètre géographique actif</small></div><div class="stat"><span>Valeur moyenne</span><strong>${value(average, indicator[2])}</strong><small>${esc(indicator[1])}</small></div><div class="stat"><span>Dernier millésime</span><strong>${socio?.meta?.millesime || '—'}</strong><small>Source Insee</small></div><div class="stat"><span>Variables disponibles</span><strong>${INDICATORS.length}</strong><small>Filtres de lecture</small></div></div>`) }${panel('Communes classées', ranked.length ? `<div class="tablewrap"><table><thead><tr><th>Commune</th><th>Canton</th><th>Intercommunalité</th><th>${esc(indicator[1])}</th><th>Population</th></tr></thead><tbody>${ranked.map(row => `<tr><td><strong>${esc(row.nom)}</strong></td><td>${esc(row.canton)}</td><td>${esc(row.epci)}</td><td class="num">${value(row[indicator[0]], indicator[2])}</td><td class="num">${fmtNumber(row.population)}</td></tr>`).join('')}</tbody></table></div>${filtered.length > 30 ? '<p class="hint">30 premières communes affichées. Affinez le filtre géographique ou le seuil.</p>' : ''}` : empty('Aucune commune ne répond à ce filtre.'))}${panel('Sources et précautions', `<p class="hint">${esc(socio?.meta?.description || 'Base Insee du comparateur de territoires, à la maille communale.')} Les seuils de diffusion et le secret statistique sont ceux de la source officielle.</p><div class="links"><a href="https://www.insee.fr/fr/statistiques/2521169" target="_blank" rel="noopener noreferrer">Insee — Base du comparateur de territoires ↗</a></div>`)}`;
+}
+
+export function viewElectionHistory({ elections, matching, filters, esc, attr, fmtNumber, pct, rate, panel, empty }) {
+  const all = (elections?.elections || []).filter(row => matching().some(commune => commune.codeInsee === row.codeInsee));
+  const types = [...new Set(all.map(row => row.type))].sort();
+  const years = [...new Set(all.map(row => row.annee))].sort((a, b) => b - a);
+  const chosenType = filters.electionType || '';
+  const chosenYear = filters.electionYear || '';
+  const chosenTour = filters.electionTour || '';
+  const rows = all.filter(row => (!chosenType || row.type === chosenType) && (!chosenYear || String(row.annee) === String(chosenYear)) && (!chosenTour || row.tour === chosenTour));
+  const grouped = new Map();
+  rows.forEach(row => { if (!grouped.has(row.id)) grouped.set(row.id, { ...row, communes: 0, inscrits: 0, votants: 0 }); const group = grouped.get(row.id); group.communes += 1; group.inscrits += row.inscrits; group.votants += row.votants; });
+  const summaries = [...grouped.values()].sort((a, b) => b.annee - a.annee || a.libelle.localeCompare(b.libelle, 'fr'));
+  return `${panel('Historique électoral communal', `<p class="description">Résultats agrégés par commune à partir des bureaux de vote publiés par le ministère de l’Intérieur et consolidés par data.gouv.fr. Les scrutins disponibles couvrent 2008 à 2026. Aucun fichier nominatif ni historique individuel n’est utilisé.</p><div class="form-inline profile-controls"><label>Type de scrutin<select id="election-type"><option value="">Tous</option>${types.map(type => `<option value="${type}" ${chosenType === type ? 'selected' : ''}>${esc(type)}</option>`).join('')}</select></label><label>Année<select id="election-year"><option value="">Toutes</option>${years.map(year => `<option value="${year}" ${String(chosenYear) === String(year) ? 'selected' : ''}>${year}</option>`).join('')}</select></label><label>Tour<select id="election-tour"><option value="">Tous</option><option value="t1" ${chosenTour === 't1' ? 'selected' : ''}>1er</option><option value="t2" ${chosenTour === 't2' ? 'selected' : ''}>2e</option></select></label><button class="btn btn-light" data-action="clear-election">Réinitialiser</button></div>`) }${panel('Participation par scrutin', summaries.length ? `<div class="chartlist">${summaries.map(row => `<div class="chart-item"><div><strong>${esc(row.libelle)}</strong><small>${row.communes} commune(s) · ${fmtNumber(row.inscrits)} inscrits</small></div><div class="chartbar"><i style="width:${Math.min(100, rate(row.votants, row.inscrits) || 0)}%"></i></div><span class="chartnum">${pct(row.votants, row.inscrits)}</span></div>`).join('')}</div>` : empty('Aucun scrutin pour ce périmètre et ces filtres.'))}${panel('Résultats communaux', rows.length ? `<div class="tablewrap"><table><thead><tr><th>Commune</th><th>Scrutin</th><th>Inscrits</th><th>Votants</th><th>Participation</th><th>Premier résultat agrégé</th></tr></thead><tbody>${rows.slice(0, 250).map(row => { const top = row.candidats?.[0]; return `<tr><td><strong>${esc(row.commune)}</strong></td><td>${esc(row.libelle)}</td><td class="num">${fmtNumber(row.inscrits)}</td><td class="num">${fmtNumber(row.votants)}</td><td class="num">${pct(row.votants, row.inscrits)}</td><td>${top ? esc([top.liste || top.nom, top.nuance].filter(Boolean).join(' · ')) : '—'}${top ? ` <small>(${top.pctExprimes} % des exprimés)</small>` : ''}</td></tr>`; }).join('')}</tbody></table></div>${rows.length > 250 ? '<p class="hint">250 premières lignes affichées ; les données complètes restent embarquées dans le référentiel public.</p>' : ''}` : empty('Aucun résultat disponible.'))}`;
+}
