@@ -77,7 +77,7 @@ export async function loadContours(communes=[]){
 }
 
 function colour(value,selected){
- if(selected)return {color:'#143c37',fillColor:'#e4bd6d',fillOpacity:.82,weight:3};
+ if(selected)return {color:'#ee4b23',fillColor:'#ffb71b',fillOpacity:.34,weight:3};
  const n=Number(value);if(!Number.isFinite(n))return {color:'#67857d',fillColor:'#bfd8ce',fillOpacity:.32,weight:1.2};
  return {color:'#507d72',fillColor:n>=70?'#155e75':n>=55?'#267b76':n>=40?'#d97706':'#b91c1c',fillOpacity:.48,weight:1.4};
 }
@@ -123,7 +123,8 @@ export async function drawMap(target,communes,notify,options={}){
     marker.bindTooltip(escapeHTML(c.nom));marker.addTo(map);group.addLayer(marker);
    }
   }
-  for(const sector of options.sectors||[]){if(!sector.geometry)continue;window.L.geoJSON(sector.geometry,{style:{color:sector.color||'#9c6b2a',weight:3,dashArray:'7 5',fillColor:sector.color||'#e4bd6d',fillOpacity:.2}}).addTo(map);}
+  for(const bureau of options.bureauFeatures||[]){if(!validFeature(bureau))continue;const p=bureau.properties||{},key=String(p.id||p.code||p.bureau||''),selected=(options.selectedBureauIds||[]).includes(key);window.L.geoJSON(bureau,{style:{color:selected?'#ee4b23':'#7a1838',weight:selected?3:1.2,dashArray:selected?null:'4 4',fillColor:selected?'#ffb71b':'#7a1838',fillOpacity:selected?.34:.08},onEachFeature:(_,polygon)=>{polygon.bindTooltip(escapeHTML(p.nom||p.bureau||'Bureau de vote'));polygon.bindPopup('<strong>'+escapeHTML(p.nom||p.bureau||'Bureau de vote')+'</strong><small>Strate géographique · contour fourni par la collectivité</small>');}}).addTo(map);}
+for(const sector of options.sectors||[]){if(!sector.geometry)continue;const selected=options.selectedSectorId===sector.id;window.L.geoJSON(sector.geometry,{style:{color:selected?'#ee4b23':sector.color||'#7a1838',weight:selected?4:2,dashArray:selected?null:'7 5',fillColor:selected?'#ffb71b':sector.color||'#ffb71b',fillOpacity:selected?.34:.16},onEachFeature:(_,polygon)=>polygon.bindTooltip(escapeHTML(sector.name||'Secteur enregistré'))}).addTo(map);}
   for(const street of options.streets||[]){if(Number.isFinite(Number(street.lat))&&Number.isFinite(Number(street.lon)))window.L.circleMarker([Number(street.lat),Number(street.lon)],{radius:6,weight:2,color:'#fff',fillColor:'#6d3e8c',fillOpacity:.95}).addTo(map).bindPopup(`<strong>${escapeHTML(street.name)}</strong><small>Voie sélectionnée · API Adresse</small>`);}
   if(fitPoints.length)map.fitBounds(fitPoints,{maxZoom:12,paddingTopLeft:[18,18],paddingBottomRight:[18,18]});else map.setView([45.07,-0.48],9);
   addDrawingTools(box,map,target,options);
