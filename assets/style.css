@@ -151,3 +151,5 @@ td strong{color:var(--cobalt)}
 .sector-item small{display:block;color:var(--muted);font-size:10px}
 .sector-item.selected{background:var(--sun);box-shadow:3px 3px 0 var(--coquelicot)}
 .warning-note code{font-size:10px;background:var(--cream);padding:2px 4px;border:1px solid var(--ink)}
+
+.contact-list{display:grid;gap:12px}.contact-card{border:2px solid var(--ink);border-radius:14px;padding:14px;background:var(--cream);box-shadow:4px 4px 0 var(--ink)}.contact-card-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.contact-card p{margin:.45rem 0}.contact-card small{color:var(--ink);opacity:.7}.contact-card textarea{min-height:88px}.warning-note{margin-bottom:16px}
