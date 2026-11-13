@@ -99,7 +99,7 @@ export async function drawMap(target,communes,notify,options={}){
   await ensureLeaflet();
   const [coords,contours]=await Promise.all([loadGeodata(),loadContours(communes)]);
   if(!document.getElementById(target))return;
-  box.innerHTML='';const map=window.L.map(box,{zoomControl:true,scrollWheelZoom:true});maps.set(target,map);
+  box.innerHTML='';const map=window.L.map(box,{zoomControl:true,scrollWheelZoom:true}).setView([45.07,-0.48],9);maps.set(target,map);
   const ign='https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
   window.L.tileLayer(ign,{attribution:'© <a href="https://www.ign.fr/" target="_blank" rel="noopener noreferrer">IGN</a> — données géographiques françaises',maxZoom:18}).addTo(map);
   const coordIndex=new Map(coords.map(c=>[String(c.code||''),c]));
