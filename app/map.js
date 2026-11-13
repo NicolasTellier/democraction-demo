@@ -63,7 +63,7 @@ export async function loadContours(communes=[]){
   p.set('fields','nom,code');
   p.set('format','geojson');
   p.set('geometry','contour');
-  try{const r=await fetch(\`https://geo.api.gouv.fr/communes?\${p.toString()}\`,{mode:'cors'});if(!r.ok)return [];return asFeatureList(await r.json())}catch{return []}
+  try{const r=await fetch(`https://geo.api.gouv.fr/communes?${p.toString()}`,{mode:'cors'});if(!r.ok)return [];return asFeatureList(await r.json())}catch{return []}
  }));
  const features=responses.flat().filter(validFeature);
  currentContours=features;currentContours._requested=requested;
