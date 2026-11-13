@@ -93,6 +93,7 @@ function addDrawingTools(box,map,target,options){
  const tools=document.createElement('div');tools.className='map-overlay-tools';
  tools.innerHTML='<button type="button" class="btn btn-light btn-sm" data-map-draw-start>Dessiner un secteur</button><button type="button" class="btn btn-primary btn-sm" data-map-draw-finish disabled>Enregistrer le contour</button><button type="button" class="btn btn-light btn-sm" data-map-draw-cancel disabled>Annuler</button>';
  box.appendChild(tools);
+ window.L.DomEvent.disableClickPropagation(tools);
  let drawing=false,points=[],preview=null,handles=[];
  const refresh=()=>{preview?.remove();handles.forEach(h=>h.remove());handles=[];if(!points.length)return;
   preview=window.L.polygon(points,{color:'#16163f',weight:2,dashArray:'5 5',fillColor:'#ffb71b',fillOpacity:.24}).addTo(map);

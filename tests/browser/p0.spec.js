@@ -65,9 +65,8 @@ test('secteur dessiné, édition et action liée conservés au rechargement',asy
  await page.locator('[data-map-draw-start]').click();
  for(const point of [{x:170,y:140},{x:215,y:140},{x:210,y:185},{x:165,y:190}])
   await page.locator('#map').click({position:point});
- console.log('drawing vertices',await page.locator('#map .sector-vertex').count());
+ await expect(page.locator('#map .sector-vertex')).toHaveCount(4);
  await page.locator('[data-map-draw-finish]').click();
- console.log('drawing result',await page.locator('.notice').allTextContents());
  await expect(page.locator('.map-selection-summary')).toContainText('Secteur test');
  const sector=await page.evaluate(()=>JSON.parse(localStorage.getItem('democraction-demo-sectors')).find(s=>s.name==='Secteur test'));
  expect(sector.geometry.coordinates[0]).toHaveLength(5);
