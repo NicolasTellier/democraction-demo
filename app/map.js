@@ -105,7 +105,7 @@ export async function drawMap(target,communes,notify,options={}){
   window.L.tileLayer(ign,{attribution:'© <a href="https://www.ign.fr/" target="_blank" rel="noopener noreferrer">IGN</a> — données géographiques françaises',maxZoom:18}).addTo(map);
   const coordIndex=new Map(coords.map(c=>[String(c.code||''),c]));
   const contourIndex=new Map(contours.map(f=>[String(f.properties?.code||''),f]));
-  const group=window.L.featureGroup(),selection=new Set((options.selectedNames||[]).map(norm));
+  const group=window.L.featureGroup(),fitPoints=[],selection=new Set((options.selectedNames||[]).map(norm));
   const byName=new Map(communes.map(c=>[norm(c.nom),c]));
   for(const c of communes){
    const code=String(c.codeInsee||'');const feature=contourIndex.get(code);const selected=selection.has(norm(c.nom));
@@ -116,14 +116,14 @@ export async function drawMap(target,communes,notify,options={}){
      polygon.on('click',event=>options.onSelect?.(c,event));
     }}).addTo(map);group.addLayer(layer);
    }
-   const point=coordIndex.get(code)?.centre?.coordinates;if(point?.length>=2){
+   const point=coordIndex.get(code)?.centre?.coordinates;if(point?.length>=2){fitPoints.push([point[1],point[0]]);
     const marker=window.L.circleMarker([point[1],point[0]],{radius:selected?4:2,weight:1,color:'#fff',fillColor:'#173f39',fillOpacity:.8});
     marker.bindTooltip(escapeHTML(c.nom));marker.addTo(map);group.addLayer(marker);
    }
   }
   for(const sector of options.sectors||[]){if(!sector.geometry)continue;window.L.geoJSON(sector.geometry,{style:{color:sector.color||'#9c6b2a',weight:3,dashArray:'7 5',fillColor:sector.color||'#e4bd6d',fillOpacity:.2}}).addTo(map);}
   for(const street of options.streets||[]){if(Number.isFinite(Number(street.lat))&&Number.isFinite(Number(street.lon)))window.L.circleMarker([Number(street.lat),Number(street.lon)],{radius:6,weight:2,color:'#fff',fillColor:'#6d3e8c',fillOpacity:.95}).addTo(map).bindPopup(`<strong>${escapeHTML(street.name)}</strong><small>Voie sélectionnée · API Adresse</small>`);}
-  if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.12),{maxZoom:12});else map.setView([45.07,-0.48],9);
+  if(fitPoints.length)map.fitBounds(fitPoints,{maxZoom:12,padding:[[18,18],[18,18]]});else map.setView([45.07,-0.48],9);
   addDrawingTools(box,map,target,options);
   setTimeout(()=>map.invalidateSize(),150);
   notify?.(`Contours affichés : ${contours.length} / ${communes.length} communes.`,contours.length?'info':'warning');
