@@ -33,6 +33,8 @@ function asFeatureList(data){
  if(Array.isArray(data))return data.map(row=>({type:'Feature',geometry:row.contour||row.geometry||null,properties:row})).filter(f=>f.geometry);
  return [];
 }
+function validCoordinates(value){if(!Array.isArray(value)||value.length<2)return false;if(typeof value[0]==='number'||typeof value[0]==='string'&&value[0].trim()!==''){return Number.isFinite(Number(value[0]))&&Number.isFinite(Number(value[1]))}return value.every(validCoordinates)}
+function validFeature(feature){return Boolean(feature?.geometry?.type&&validCoordinates(feature.geometry.coordinates))}
 
 export async function loadGeodata(){
  if(currentGeo.length)return currentGeo;
@@ -59,7 +61,7 @@ export async function loadContours(communes=[]){
  try{
   const r=await fetch(`https://geo.api.gouv.fr/communes?${params.toString()}`,{mode:'cors'});
   if(!r.ok)throw new Error(`Réponse contours ${r.status}`);
-  features=asFeatureList(await r.json());
+  features=asFeatureList(await r.json()).filter(validFeature);
  }catch{
   const batches=[];
   for(let i=0;i<codes.length;i+=8)batches.push(codes.slice(i,i+8));
@@ -67,7 +69,7 @@ export async function loadContours(communes=[]){
    const p=new URLSearchParams();batch.forEach(code=>p.append('code',code));p.set('fields','nom,code,centre');p.set('format','geojson');p.set('geometry','contour');
    try{const r=await fetch(`https://geo.api.gouv.fr/communes?${p.toString()}`,{mode:'cors'});return r.ok?asFeatureList(await r.json()):[]}catch{return []}
   }));
-  features=responses.flat();
+  features=responses.flat().filter(validFeature);
  }
  currentContours=features;currentContours._requested=requested;
  try{localStorage.setItem(CONTOUR_KEY,JSON.stringify({at:Date.now(),requested,data:features}))}catch{}
@@ -109,13 +111,13 @@ export async function drawMap(target,communes,notify,options={}){
   const byName=new Map(communes.map(c=>[norm(c.nom),c]));
   for(const c of communes){
    const code=String(c.codeInsee||'');const feature=contourIndex.get(code);const selected=selection.has(norm(c.nom));
-   if(feature){
+   if(feature&&validFeature(feature)){try{
     const layer=window.L.geoJSON(feature,{style:colour(c.mapValue,selected),onEachFeature:(_,polygon)=>{
      polygon.bindTooltip(`${escapeHTML(c.nom)} · ${escapeHTML(c.mapLabel||'Donnée indisponible')}`,{sticky:true});
      polygon.bindPopup(`<strong>${escapeHTML(c.nom)}</strong><div>${escapeHTML(c.epci||'')}</div><div>${escapeHTML(c.mapLabel||'Donnée indisponible')}</div><small>Contour communal officiel · Source : geo.api.gouv.fr</small>`);
      polygon.on('click',event=>options.onSelect?.(c,event));
     }}).addTo(map);group.addLayer(layer);
-   }
+   }catch{}}
    const point=coordIndex.get(code)?.centre?.coordinates;const lat=Number(point?.[1]),lon=Number(point?.[0]);if(Number.isFinite(lat)&&Number.isFinite(lon)){fitPoints.push([lat,lon]);
     const marker=window.L.circleMarker([lat,lon],{radius:selected?4:2,weight:1,color:'#fff',fillColor:'#173f39',fillOpacity:.8});
     marker.bindTooltip(escapeHTML(c.nom));marker.addTo(map);group.addLayer(marker);
