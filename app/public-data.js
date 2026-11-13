@@ -20,7 +20,8 @@ const value = (v, unit) => {
 
 export function viewPublicProfile({ socio, matching, filters, esc, attr, fmtNumber, panel, empty }) {
   const byCode = new Map((socio?.indicators || []).map(row => [row.codeInsee, row]));
-  const rows = matching().map(commune => ({ ...commune, ...(byCode.get(commune.codeInsee) || {}) })).filter(row => row.population !== undefined);
+  const byName = new Map((socio?.indicators || []).map(row => [row.commune, row]));
+  const rows = matching().map(commune => ({ ...commune, ...(byCode.get(commune.codeInsee) || byName.get(commune.nom) || {}) })).filter(row => row.population !== undefined);
   const indicator = INDICATORS.find(row => row[0] === filters.socioIndicator) || INDICATORS[0];
   const min = filters.socioMin === '' ? null : Number(filters.socioMin);
   const max = filters.socioMax === '' ? null : Number(filters.socioMax);
