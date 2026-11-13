@@ -57,12 +57,17 @@ export async function loadContours(communes=[]){
  try{const cached=JSON.parse(localStorage.getItem(CONTOUR_KEY)||'null');if(cached&&cached.requested===requested&&Date.now()-cached.at<1000*3600*24*30){currentContours=cached.data;currentContours._requested=requested;return currentContours}}catch{}
  let features=[];
  try{
-  const r=await fetch('https://geo.api.gouv.fr/departements/33/communes?fields=nom,code&format=geojson&geometry=contour',{mode:'cors'});
-  if(!r.ok)throw new Error('Contours indisponibles');
-  const data=await r.json();
-  const wanted=new Set(codes);
+  const r=await fetch('./data/communes-33-11.geojson?v=20261113',{cache:'no-store'});
+  if(!r.ok)throw new Error('Contours statiques indisponibles');
+  const data=await r.json();const wanted=new Set(codes);
   features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||''))&&validFeature(f));
- }catch{features=[]}
+ }catch{}
+ if(!features.length){
+  try{
+   const r=await fetch('https://geo.api.gouv.fr/departements/33/communes?fields=nom,code&format=geojson&geometry=contour',{mode:'cors'});
+   if(r.ok){const data=await r.json();const wanted=new Set(codes);features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||''))&&validFeature(f))}
+  }catch{}
+ }
  currentContours=features;currentContours._requested=requested;
  try{localStorage.setItem(CONTOUR_KEY,JSON.stringify({at:Date.now(),requested,data:features}))}catch{}
  return currentContours;
