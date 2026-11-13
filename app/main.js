@@ -1,7 +1,7 @@
 import {VERSION,emptyState,norm,escapeHTML as esc,rate,fmtNumber,id,STATUSES,TYPE_ACTIONS,parseCsv,validateElectionImport,validateBackup,filteredTerritory,summaryByScrutin,mergeResults,serializeCsv,migrateLegacyV2} from './core.js';
 import {load,save,download,clearLocal} from './store.js';
 import {parseXlsx} from './xlsx.js';
-import {drawMap,locate} from './map.js?v=20261113map12';
+import {drawMap,locate} from './map.js?v=20261113map13';
 import {checkSession,login,logout,fetchRemote,pushRemote,updateRemoteStatus} from './sync.js';
 import {viewPublicProfile,viewElectionHistory} from './public-data-v3.js';
 const NAV=[['dashboard','Vue d’ensemble','▦'],['profil','Profils territoriaux','◌'],['territoires','Territoires','◎'],['carte','Carte','⌖'],['actions','Actions de terrain','☷'],['contacts','Contacts consentants','♙'],['analyse','Résultats électoraux','▥'],['imports','Imports et exports','⇅'],['communication','Communication','✉'],['equipes','Équipes','♧'],['memoire','Mémoire des campagnes','▤'],['financement','Financement (simulation)','€'],['evenements','Événements publics','◫'],['config','Configuration','⚙']];
