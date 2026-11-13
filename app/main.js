@@ -3,7 +3,7 @@ import {load,save,download,clearLocal} from './store.js';
 import {parseXlsx} from './xlsx.js';
 import {drawMap,locate} from './map.js';
 import {checkSession,login,logout,fetchRemote,pushRemote,updateRemoteStatus} from './sync.js';
-import {viewPublicProfile,viewElectionHistory} from './public-data.js';
+import {viewPublicProfile,viewElectionHistory} from './public-data-v2.js';
 const NAV=[['dashboard','Vue d’ensemble','▦'],['profil','Profils territoriaux','◌'],['territoires','Territoires','◎'],['carte','Carte','⌖'],['actions','Actions de terrain','☷'],['analyse','Résultats électoraux','▥'],['imports','Imports et exports','⇅'],['communication','Communication','✉'],['equipes','Équipes','♧'],['memoire','Mémoire des campagnes','▤'],['config','Configuration','⚙']];
 let serverSession=null,serverRevision=null,serverConnected=false,serverBusy=false,serverPending=false;
 let territory=null,socio=null,elections=null,app=load(),tab='dashboard',filters={canton:'',epci:'',commune:'',query:'',socioIndicator:'',socioMin:'',socioMax:'',electionType:'',electionYear:'',electionTour:''},notice='',noticeLevel='info',mapDrawId=0,modal='',draftText='',editingMission=null;
