@@ -1,7 +1,7 @@
 import {norm,escapeHTML} from './core.js';
 
 const GEO_KEY='democraction-33-geo-v2';
-const CONTOUR_KEY='democraction-33-contours-v2';
+const CONTOUR_KEY='democraction-33-contours-v3';
 const maps=new Map();
 const mapLayers=new Map();
 let currentGeo=[];
