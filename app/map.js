@@ -51,21 +51,18 @@ export async function loadGeodata(){
 }
 
 export async function loadContours(communes=[]){
- const codes=communes.map(c=>c.codeInsee).filter(Boolean).sort();
+ const codes=communes.map(c=>String(c.codeInsee||'')).filter(Boolean).sort();
  const requested=codes.join(',');
  if(currentContours.length&&currentContours._requested===requested)return currentContours;
  try{const cached=JSON.parse(localStorage.getItem(CONTOUR_KEY)||'null');if(cached&&cached.requested===requested&&Date.now()-cached.at<1000*3600*24*30){currentContours=cached.data;currentContours._requested=requested;return currentContours}}catch{}
- const batches=[];
- for(let i=0;i<codes.length;i+=10)batches.push(codes.slice(i,i+10));
- const responses=await Promise.all(batches.map(async batch=>{
-  const p=new URLSearchParams();
-  batch.forEach(code=>p.append('code',code));
-  p.set('fields','nom,code');
-  p.set('format','geojson');
-  p.set('geometry','contour');
-  try{const r=await fetch(`https://geo.api.gouv.fr/communes?${p.toString()}`,{mode:'cors'});if(!r.ok)return [];return asFeatureList(await r.json())}catch{return []}
- }));
- const features=responses.flat().filter(validFeature);
+ let features=[];
+ try{
+  const r=await fetch('https://geo.api.gouv.fr/departements/33/communes?fields=nom,code&format=geojson&geometry=contour',{mode:'cors'});
+  if(!r.ok)throw new Error('Contours indisponibles');
+  const data=await r.json();
+  const wanted=new Set(codes);
+  features=asFeatureList(data).filter(f=>wanted.has(String(f.properties?.code||''))&&validFeature(f));
+ }catch{features=[]}
  currentContours=features;currentContours._requested=requested;
  try{localStorage.setItem(CONTOUR_KEY,JSON.stringify({at:Date.now(),requested,data:features}))}catch{}
  return currentContours;
