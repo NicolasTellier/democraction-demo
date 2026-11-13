@@ -60,7 +60,7 @@ test('secteur dessiné, édition et action liée conservés au rechargement',asy
  await page.locator('button[data-nav=carte]:visible').first().click();
  await page.locator('#map-scope-value').selectOption({label:'Saint-André-de-Cubzac'});
  await page.locator('button[data-map-mode=draw]').click();
- await expect.poll(()=>page.locator('#map .leaflet-container').count(),{timeout:20000}).toBe(1);
+ await expect.poll(()=>page.locator('#map.leaflet-container').count(),{timeout:20000}).toBe(1);
  await page.locator('#sector-name').fill('Secteur test');
  await page.locator('[data-map-draw-start]').click();
  for(const point of [{x:170,y:140},{x:215,y:140},{x:210,y:185},{x:165,y:190}])
