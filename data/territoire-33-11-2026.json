@@ -71,7 +71,7 @@
       "nom": "Blaye",
       "canton": "L’Estuaire",
       "epci": "CC de Blaye",
-      "codeInsee": "46022",
+      "codeInsee": "33058",
       "centre": null
     },
     {
@@ -85,7 +85,7 @@
       "nom": "Bourg",
       "canton": "L’Estuaire",
       "epci": "Grand Cubzaguais",
-      "codeInsee": "52062",
+      "codeInsee": "33067",
       "centre": null
     },
     {
@@ -134,7 +134,7 @@
       "nom": "Cézac",
       "canton": "Le Nord-Gironde",
       "epci": "Latitude Nord Gironde",
-      "codeInsee": "46069",
+      "codeInsee": "33123",
       "centre": null
     },
     {
@@ -204,7 +204,7 @@
       "nom": "Fours",
       "canton": "L’Estuaire",
       "epci": "CC de Blaye",
-      "codeInsee": "58118",
+      "codeInsee": "33172",
       "centre": null
     },
     {
@@ -246,7 +246,7 @@
       "nom": "Lansac",
       "canton": "L’Estuaire",
       "epci": "Grand Cubzaguais",
-      "codeInsee": "66092",
+      "codeInsee": "33228",
       "centre": null
     },
     {
@@ -302,7 +302,7 @@
       "nom": "Marsas",
       "canton": "Le Nord-Gironde",
       "epci": "Latitude Nord Gironde",
-      "codeInsee": "65300",
+      "codeInsee": "33272",
       "centre": null
     },
     {
@@ -372,7 +372,7 @@
       "nom": "Sablons",
       "canton": "Le Nord-Libournais",
       "epci": "La Cali",
-      "codeInsee": "38349",
+      "codeInsee": "33362",
       "centre": null
     },
     {
@@ -456,7 +456,7 @@
       "nom": "Saint-Gervais",
       "canton": "Le Nord-Gironde",
       "epci": "Grand Cubzaguais",
-      "codeInsee": "95554",
+      "codeInsee": "33415",
       "centre": null
     },
     {
@@ -512,21 +512,21 @@
       "nom": "Saint-Palais",
       "canton": "L’Estuaire",
       "epci": "CC de l'Estuaire",
-      "codeInsee": "64493",
+      "codeInsee": "33456",
       "centre": null
     },
     {
       "nom": "Saint-Paul",
       "canton": "L’Estuaire",
       "epci": "CC de Blaye",
-      "codeInsee": "97415",
+      "codeInsee": "33458",
       "centre": null
     },
     {
       "nom": "Saint-Savin",
       "canton": "Le Nord-Gironde",
       "epci": "Latitude Nord Gironde",
-      "codeInsee": "86246",
+      "codeInsee": "33473",
       "centre": null
     },
     {
@@ -596,7 +596,7 @@
       "nom": "Tauriac",
       "canton": "L’Estuaire",
       "epci": "Grand Cubzaguais",
-      "codeInsee": "81293",
+      "codeInsee": "33525",
       "centre": null
     },
     {
@@ -631,7 +631,7 @@
       "nom": "Villeneuve",
       "canton": "L’Estuaire",
       "epci": "CC de Blaye",
-      "codeInsee": "63458",
+      "codeInsee": "33551",
       "centre": null
     },
     {
