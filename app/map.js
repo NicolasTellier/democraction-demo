@@ -127,7 +127,7 @@ for(const sector of options.sectors||[]){if(!sector.geometry)continue;const sele
   addDrawingTools(box,map,target,options);
   setTimeout(()=>map.invalidateSize(),150);
   notify?.(`Contours affichés : ${contours.length} / ${communes.length} communes.`,contours.length?'info':'warning');
- }catch(e){box.innerHTML='<div class="map-loading">Les contours ne sont pas disponibles. Vérifiez la connexion à l’API géographique ; la liste des communes reste utilisable.</div>';notify?.(String(e.message||e),'warning')}
+ }catch(e){box.innerHTML='<div class="map-loading">Les contours ne sont pas disponibles. Vérifiez la connexion à l’API géographique ; la liste des communes reste utilisable.</div>';notify?.(String(e.stack||e.message||e),'warning')}
 }
 
 export function locate(){const map=[...maps.values()][0];if(!map)return false;if(!navigator.geolocation)return false;navigator.geolocation.getCurrentPosition(p=>{const {latitude,longitude}=p.coords;window.L.marker([latitude,longitude]).addTo(map).bindPopup('Position ponctuelle (non enregistrée)').openPopup();map.setView([latitude,longitude],13)},()=>{alert('Géolocalisation refusée ou indisponible. Aucune position n’est stockée.')},{enableHighAccuracy:false,timeout:10000});return true}
