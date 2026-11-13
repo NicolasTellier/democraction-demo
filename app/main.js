@@ -167,12 +167,15 @@ const PRIORITY_DEFAULT_DIRECTION = {
   partLogementsVacants: "high",
 };
 const latestElectionRows = (year = "") => {
+  const ballot = typeof year === "string" && year.includes("_") ? year : "";
   const rows = (elections?.elections || []).filter(
     (row) =>
       row.annee >= 2008 &&
-      (!filters.electionType || row.type === filters.electionType) &&
-      (!year || String(row.annee) === String(year)) &&
-      (!filters.electionTour || row.tour === filters.electionTour),
+      (ballot
+        ? row.id === ballot
+        : (!filters.electionType || row.type === filters.electionType) &&
+          (!year || String(row.annee) === String(year)) &&
+          (!filters.electionTour || row.tour === filters.electionTour)),
   );
   const latest = new Map();
   for (const row of rows) {
@@ -346,14 +349,21 @@ const mapCommunesFor = (
 };
 const mapCommunes = () =>
   mapCommunesFor(filters.mapLayer, filters.electionYear);
-const electionYears = () =>
-  [
-    ...new Set(
-      (elections?.elections || [])
-        .filter((row) => row.annee >= 2008)
-        .map((row) => row.annee),
-    ),
-  ].sort((a, b) => b - a);
+const electionBallots = () => {
+  const ballots = new Map();
+  for (const row of elections?.elections || []) {
+    if (row.annee >= 2008 && row.id && !ballots.has(row.id))
+      ballots.set(row.id, { id: row.id, label: row.libelle, type: row.type, tour: row.tour, year: row.annee });
+  }
+  return [...ballots.values()].sort((a, b) => b.year - a.year || a.type.localeCompare(b.type) || a.tour.localeCompare(b.tour));
+};
+const comparedBallots = () => {
+  const ballots = electionBallots();
+  const left = ballots.find(x => x.id === filters.compareLeft) || ballots[0];
+  const right = ballots.find(x => x.id === filters.compareRight) ||
+    ballots.find(x => x.type === left?.type && x.tour === left?.tour && x.year < left.year) || ballots[1];
+  return [left, right];
+};
 const selectedCommune = () =>
   territory?.communes.find((c) => norm(c.nom) === norm(filters.commune));
 async function searchStreets(query, commune) {
@@ -504,7 +514,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.9 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.10 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -523,7 +533,7 @@ function viewDashboard() {
     rs = filteredResults(),
     cs = matching();
   return `<div class="hero"><div><div class="kicker">ESPACE DE DÉMONSTRATION</div><h2>Une campagne. Un territoire.<br/>Une mémoire collective.</h2><p>Coordonnez les missions, explorez les communes et consultez les données électorales agrégées depuis un ordinateur ou un smartphone.</p><div class="hero-actions"><button class="btn btn-primary" data-nav="carte">Ouvrir la carte</button><button class="btn btn-outline" data-nav="actions">${fullEditor() ? "Nouvelle mission" : "Voir les missions"}</button></div></div><div class="hero-decoration" aria-hidden="true"><span class="orbit a"></span><span class="orbit b"></span><span class="orbit c"></span><span class="orb"></span></div></div>
-<div class="statgrid"><div class="stat"><span>Communes correspondant aux filtres</span><strong>${cs.length}<small> / 87</small></strong><small>Référentiel 2026</small></div><div class="stat"><span>Missions de la campagne</span><strong>${ms.length}</strong><small>${done} terminée(s)</small></div><div class="stat"><span>Résultats agrégés</span><strong>${rs.length}</strong><small>Lignes exploitables</small></div><div class="stat"><span>Équipes / groupes</span><strong>${currentTeam().length}</strong><small>Rôles logistiques uniquement</small></div></div><div class="twocol">${panel("Carte interactive", `<div id="map-dashboard" class="map-area" role="region" aria-label="Carte interactive des communes"></div><div class="map-caption"><span>Centres communaux approximatifs</span><button class="linkbtn" data-nav="carte">Ouvrir la carte complète</button></div>`)}${panel("Missions récentes", missionRows(ms.slice(-5).reverse()), '<button class="linkbtn" data-nav="actions">Voir toutes les missions</button>')}${panel("Vos briques", `<div class="module-grid"><button data-nav="territoires">◎ <strong>Territoires</strong><span>87 communes</span></button><button data-nav="imports">⇅ <strong>Import</strong><span>CSV et XLSX</span></button><button data-nav="analyse">▥ <strong>Résultats</strong><span>Participation agrégée</span></button><button data-nav="memoire">▤ <strong>Archives</strong><span>Bilans transmissibles</span></button></div>`)}</div>`;
+<div class="statgrid"><div class="stat"><span>Communes correspondant aux filtres</span><strong>${cs.length}<small> / 87</small></strong><small>Référentiel 2026</small></div><div class="stat"><span>Missions de la campagne</span><strong>${ms.length}</strong><small>${done} terminée(s)</small></div><div class="stat"><span>Résultats agrégés</span><strong>${rs.length}</strong><small>Lignes exploitables</small></div><div class="stat"><span>Équipes / groupes</span><strong>${currentTeam().length}</strong><small>Rôles logistiques uniquement</small></div></div><div class="twocol">${panel("Carte interactive", `<div id="map-dashboard" class="map-area" role="region" aria-label="Carte interactive des communes"></div><div class="map-caption"><span>Contours officiels des communes</span><button class="linkbtn" data-nav="carte">Ouvrir la carte complète</button></div>`)}${panel("Missions récentes", missionRows(ms.slice(-5).reverse()), '<button class="linkbtn" data-nav="actions">Voir toutes les missions</button>')}${panel("Vos briques", `<div class="module-grid"><button data-nav="territoires">◎ <strong>Territoires</strong><span>87 communes</span></button><button data-nav="imports">⇅ <strong>Import</strong><span>CSV et XLSX</span></button><button data-nav="analyse">▥ <strong>Résultats</strong><span>Participation agrégée</span></button><button data-nav="memoire">▤ <strong>Archives</strong><span>Bilans transmissibles</span></button></div>`)}</div>`;
 }
 function viewTerritoires() {
   const c = matching();
@@ -545,9 +555,10 @@ function viewTerritoires() {
 }
 function viewCarte() {
   if (mapSelection.kind === "bureau" && !bureauxLayer) void loadBureauLayer();
-  const years = electionYears(),
-    compareLeft = filters.compareLeft || years[0] || "",
-    compareRight = filters.compareRight || years[1] || "",
+  const ballots = electionBallots(),
+    [leftBallot, rightBallot] = comparedBallots(),
+    compareLeft = leftBallot?.id || "",
+    compareRight = rightBallot?.id || "",
     selectedNames = mapSelectionCommunes();
   const scopeKinds = [
     ["commune", "Commune"],
@@ -634,12 +645,13 @@ function viewCarte() {
         '</small></button><button type="button" class="btn btn-light btn-sm" data-sector-edit="' + attr(x.id) + '">Modifier</button><button type="button" class="btn btn-light btn-sm" data-sector-export="' + attr(x.id) + '">GeoJSON</button><button type="button" class="btn btn-danger btn-sm" data-sector-delete="' + attr(x.id) + '">Supprimer</button></div>',
     )
     .join("");
-  const compareControls = mapMode === "compare" ? `<section><h3>Comparer deux millésimes</h3><label>Carte A<select id="compare-left">${years.map(y => opt(y,String(y),String(compareLeft)===String(y))).join("")}</select></label><label>Carte B<select id="compare-right">${years.map(y => opt(y,String(y),String(compareRight)===String(y))).join("")}</select></label><p class="hint">Écart de participation en points. Choisissez un même type de scrutin dans Résultats électoraux pour une comparaison homogène.</p></section>` : "";
+  const comparable = leftBallot?.type === rightBallot?.type && leftBallot?.tour === rightBallot?.tour;
+  const compareControls = mapMode === "compare" ? `<section><h3>Comparer deux scrutins</h3><label>Carte A<select id="compare-left">${ballots.map(b => opt(b.id,b.label,b.id===compareLeft)).join("")}</select></label><label>Carte B<select id="compare-right">${ballots.map(b => opt(b.id,b.label,b.id===compareRight)).join("")}</select></label><p class="hint">Participation en % des inscrits ; écart en points. ${comparable ? "Même type de scrutin et même tour." : "Attention : types de scrutin ou tours différents, interprétation prudente."} Les communes sans résultat à un tour restent indisponibles.</p></section>` : "";
   const streetsHtml = `<div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>Ajouter cette voie</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div>`;
   const activeSector = demoSectors.find(s => s.id === sectorBeingEdited);
   const sectorForm = mapMode === "draw" ? `<section><h3>${activeSector ? "Modifier le secteur" : "Nouveau secteur"}</h3><label>Nom<input id="sector-name" maxlength="100" value="${attr(activeSector?.name||"")}" placeholder="Ex. Bourg centre"></label><label>Couleur<input id="sector-color" type="color" value="${attr(activeSector?.color||"#9c6b2a")}"></label><p class="hint">Dessinez sur la carte, puis cliquez sur Enregistrer le contour. Clic droit sur un sommet pour le retirer.</p></section>` : "";
   const leftRows = mapCommunesFor(filters.mapLayer, compareLeft),rightIndex = new Map(mapCommunesFor(filters.mapLayer, compareRight).map(c=>[c.codeInsee,c]));
-  const comparison = mapMode === "compare" ? `<div class="map-compare-table"><strong>Écarts A − B · ${esc(MAP_LAYERS.find(x=>x[0]===filters.mapLayer)?.[2]||"")}</strong><div class="tablewrap"><table><thead><tr><th>Commune</th><th>${esc(compareLeft)}</th><th>${esc(compareRight)}</th><th>Écart</th></tr></thead><tbody>${leftRows.filter(a=>Number.isFinite(a.mapValue)&&Number.isFinite(rightIndex.get(a.codeInsee)?.mapValue)).map(a=>{const b=rightIndex.get(a.codeInsee),d=a.mapValue-b.mapValue;return `<tr><td>${esc(a.nom)}</td><td>${a.mapValue.toFixed(1)}</td><td>${b.mapValue.toFixed(1)}</td><td>${d>=0?"+":""}${d.toFixed(1)}</td></tr>`}).join("")}</tbody></table></div></div>` : "";
+  const comparison = mapMode === "compare" ? `<div class="map-compare-table"><strong>Écarts A − B · points de participation</strong><p class="hint">Ministère de l’Intérieur · ${esc(leftBallot?.label || "")} / ${esc(rightBallot?.label || "")}. Seules les communes ayant deux résultats sont comparées.</p><div class="tablewrap"><table><thead><tr><th>Commune</th><th>${esc(leftBallot?.label || "A")}</th><th>${esc(rightBallot?.label || "B")}</th><th>Écart (points)</th></tr></thead><tbody>${leftRows.filter(a=>Number.isFinite(a.mapValue)&&Number.isFinite(rightIndex.get(a.codeInsee)?.mapValue)).map(a=>{const b=rightIndex.get(a.codeInsee),d=a.mapValue-b.mapValue;return `<tr><td>${esc(a.nom)}</td><td>${a.mapValue.toFixed(1)}</td><td>${b.mapValue.toFixed(1)}</td><td>${d>=0?"+":""}${d.toFixed(1)}</td></tr>`}).join("")}</tbody></table></div></div>` : "";
   let priorityControls = "";
   if (filters.mapLayer === "priority") {
     const socioOptions = MAP_LAYERS.filter(
@@ -666,10 +678,10 @@ function viewCarte() {
       : "";
   const maps =
     mapMode === "compare"
-      ? '<div class="compare-maps"><div><div class="map-map-title">Évolution · ' +
-        esc(compareLeft) +
-        '</div><div id="map-left" class="map-area map-compare-area"></div></div><div><div class="map-map-title">Évolution · ' +
-        esc(compareRight) +
+      ? '<div class="compare-maps"><div><div class="map-map-title">Carte A · ' +
+        esc(leftBallot?.label || "") +
+        '</div><div id="map-left" class="map-area map-compare-area"></div></div><div><div class="map-map-title">Carte B · ' +
+        esc(rightBallot?.label || "") +
         '</div><div id="map-right" class="map-area map-compare-area"></div></div></div>'
       : '<div id="map" class="map-area"></div>';
   const modeLabel =
@@ -976,7 +988,7 @@ function missionModal() {
 }
 function render() {
   if (!territory) return;
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.9</span><span>Prototype local · Pas de données personnelles · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.10</span><span>Prototype local · Pas de données personnelles · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -991,8 +1003,9 @@ function render() {
   if (tab === "carte" || tab === "dashboard") {
     const ticket = ++mapDrawId;
     const layer = MAP_LAYERS.find(x => x[0] === filters.mapLayer) || MAP_LAYERS[0];
-    const compareA = mapCommunesFor(filters.mapLayer, filters.compareLeft || electionYears()[0]);
-    const compareB = mapCommunesFor(filters.mapLayer, filters.compareRight || electionYears()[1]);
+    const [leftBallot, rightBallot] = comparedBallots();
+    const compareA = leftBallot ? mapCommunesFor("participation", leftBallot.id) : [];
+    const compareB = rightBallot ? mapCommunesFor("participation", rightBallot.id) : [];
     const mapOptions = {
       selectedNames: mapSelectionCommunes(),
       selectedSectorId:
@@ -1034,13 +1047,13 @@ function render() {
           "map-left",
           compareA,
           console.log,
-          { ...mapOptions, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
+          { ...mapOptions, sourceLabel:`Ministère de l’Intérieur · ${leftBallot?.label || ""}`, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
         );
         void drawMap(
           "map-right",
           compareB,
           console.log,
-          { ...mapOptions, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
+          { ...mapOptions, sourceLabel:`Ministère de l’Intérieur · ${rightBallot?.label || ""}`, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
         );
       } else {
         const mapTarget = tab === "carte" ? "map" : "map-dashboard";
@@ -1972,7 +1985,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261113advanced")
+        .register("./sw.js?v=20261113map15")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;
