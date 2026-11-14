@@ -273,13 +273,14 @@ async function loadBureauLayer() {
     const saved = JSON.parse(localStorage.getItem("democraction-demo-bureaux") || "null");
     if (saved?.type === "FeatureCollection" && Array.isArray(saved.features)) { bureauxLayer = saved; if (tab === "carte") render(); return; }
   } catch {}
-  bureauxLayer = { type: "FeatureCollection", features: [], loading: true };
+  const pending = { type: "FeatureCollection", features: [], loading: true };
+  bureauxLayer = pending;
   try {
     const r = await fetch("./data/bureaux-de-vote.geojson?v=20261113");
-    if (r.ok) bureauxLayer = await r.json();
-    else bureauxLayer = { type: "FeatureCollection", features: [] };
+    const loaded = r.ok ? await r.json() : { type: "FeatureCollection", features: [] };
+    if (bureauxLayer === pending) bureauxLayer = loaded;
   } catch {
-    bureauxLayer = { type: "FeatureCollection", features: [] };
+    if (bureauxLayer === pending) bureauxLayer = { type: "FeatureCollection", features: [] };
   }
   if (tab === "carte") render();
 }
