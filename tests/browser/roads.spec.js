@@ -1,5 +1,7 @@
 import {test,expect} from '@playwright/test';
 
+test.use({serviceWorkers:'block'});
+
 test('voies IGN linéaires, sélection multiple et action géométrique conservée',async({page})=>{
  await page.goto('/');
  await page.locator('button[data-nav=carte]:visible').first().click();

@@ -609,15 +609,15 @@ function toolbar() {
     communes.map((c) => c.nom).sort((a, b) => a.localeCompare(b, "fr")),
     filters.commune,
     "Toutes les communes",
-  )}</select></label><label class="searchwrap">Recherche<input id="filter-query" placeholder="Commune, mission, scrutin..." value="${attr(filters.query)}"/></label><button class="btn btn-light clear" data-action="clear-filters" title="Réinitialiser tous les filtres">Effacer les filtres</button></div>`;
+  )}</select></label><label class="searchwrap">Recherche<input id="filter-query" placeholder="Commune, action, scrutin..." value="${attr(filters.query)}"/></label><button class="btn btn-light clear" data-action="clear-filters" title="Réinitialiser tous les filtres">Effacer les filtres</button></div>`;
 }
 function viewDashboard() {
   const ms = filteredMissions(),
     done = ms.filter((m) => m.status === "Terminée").length,
     rs = filteredResults(),
     cs = matching();
-  return `<div class="hero"><div><div class="kicker">ESPACE DE DÉMONSTRATION</div><h2>Une campagne. Un territoire.<br/>Une mémoire collective.</h2><p>Coordonnez les missions, explorez les communes et consultez les données électorales agrégées depuis un ordinateur ou un smartphone.</p><div class="hero-actions"><button class="btn btn-primary" data-nav="carte">Ouvrir la carte</button><button class="btn btn-outline" data-nav="actions">${fullEditor() ? "Nouvelle mission" : "Voir les missions"}</button></div></div><div class="hero-decoration" aria-hidden="true"><span class="orbit a"></span><span class="orbit b"></span><span class="orbit c"></span><span class="orb"></span></div></div>
-<div class="statgrid"><div class="stat"><span>Communes correspondant aux filtres</span><strong>${cs.length}<small> / 87</small></strong><small>Référentiel 2026</small></div><div class="stat"><span>Missions de la campagne</span><strong>${ms.length}</strong><small>${done} terminée(s)</small></div><div class="stat"><span>Résultats agrégés</span><strong>${rs.length}</strong><small>Lignes exploitables</small></div><div class="stat"><span>Équipes / groupes</span><strong>${currentTeam().length}</strong><small>Rôles logistiques uniquement</small></div></div><div class="twocol">${panel("Carte interactive", `<div id="map-dashboard" class="map-area" role="region" aria-label="Carte interactive des communes"></div><div class="map-caption"><span>Contours officiels des communes</span><button class="linkbtn" data-nav="carte">Ouvrir la carte complète</button></div>`)}${panel("Missions récentes", missionRows(ms.slice(-5).reverse()), '<button class="linkbtn" data-nav="actions">Voir toutes les missions</button>')}${panel("Vos briques", `<div class="module-grid"><button data-nav="territoires">◎ <strong>Territoires</strong><span>87 communes</span></button><button data-nav="imports">⇅ <strong>Import</strong><span>CSV et XLSX</span></button><button data-nav="analyse">▥ <strong>Résultats</strong><span>Participation agrégée</span></button><button data-nav="memoire">▤ <strong>Archives</strong><span>Bilans transmissibles</span></button></div>`)}</div>`;
+  return `<div class="hero"><div><div class="kicker">ESPACE DE DÉMONSTRATION</div><h2>Une campagne. Un territoire.<br/>Une mémoire collective.</h2><p>Coordonnez les actions, explorez les communes et consultez les données électorales agrégées depuis un ordinateur ou un smartphone.</p><div class="hero-actions"><button class="btn btn-primary" data-nav="carte">Ouvrir la carte</button><button class="btn btn-outline" data-nav="actions">${fullEditor() ? "Nouvelle action" : "Voir les actions"}</button></div></div><div class="hero-decoration" aria-hidden="true"><span class="orbit a"></span><span class="orbit b"></span><span class="orbit c"></span><span class="orb"></span></div></div>
+<div class="statgrid"><div class="stat"><span>Communes correspondant aux filtres</span><strong>${cs.length}<small> / 87</small></strong><small>Référentiel 2026</small></div><div class="stat"><span>Actions de la campagne</span><strong>${ms.length}</strong><small>${done} terminée(s)</small></div><div class="stat"><span>Résultats agrégés</span><strong>${rs.length}</strong><small>Lignes exploitables</small></div><div class="stat"><span>Équipes / groupes</span><strong>${currentTeam().length}</strong><small>Rôles logistiques uniquement</small></div></div><div class="twocol">${panel("Carte interactive", `<div id="map-dashboard" class="map-area" role="region" aria-label="Carte interactive des communes"></div><div class="map-caption"><span>Contours officiels des communes</span><button class="linkbtn" data-nav="carte">Ouvrir la carte complète</button></div>`)}${panel("Actions récentes", missionRows(ms.slice(-5).reverse()), '<button class="linkbtn" data-nav="actions">Voir toutes les actions</button>')}${panel("Vos briques", `<div class="module-grid"><button data-nav="territoires">◎ <strong>Territoires</strong><span>87 communes</span></button><button data-nav="imports">⇅ <strong>Import</strong><span>CSV et XLSX</span></button><button data-nav="analyse">▥ <strong>Résultats</strong><span>Participation agrégée</span></button><button data-nav="memoire">▤ <strong>Archives</strong><span>Bilans transmissibles</span></button></div>`)}</div>`;
 }
 function viewTerritoires() {
   const c = matching();
@@ -842,9 +842,9 @@ function viewCarte() {
 }
 function missionRows(data) {
   return data.length
-    ? `<div class="mission-list">${data.map((m) => `<div class="mission-line"><div class="mission-icon">${m.type?.startsWith("Porte") ? "⌂" : "□"}</div><div class="mission-info"><strong>${esc(m.title)}</strong><span>${esc(m.commune)} ${m.secteur ? "· " + esc(m.secteur) : ""}</span><small>${esc(m.type || "Action")} · ${esc(m.assignee || "Non attribuée")}${m.date?" · "+esc(m.date):""}${m.time?" à "+esc(m.time):""}</small>${m.objective?`<small>${esc(m.objective)}</small>`:""}</div><span class="status status-${m.status === "Terminée" ? "done" : m.status === "En cours" ? "progress" : "todo"}">${esc(m.status)}</span>${fullEditor() ? `<button class="icon-btn" data-edit-mission="${attr(m.id)}" aria-label="Modifier la mission ${attr(m.title)}">✎</button>` : fieldEditor() ? `<label class="status-editor"><span class="sr-only">Statut de la mission ${attr(m.title)}</span><select data-mission-status="${attr(m.id)}" aria-label="Modifier le statut de ${attr(m.title)}">${STATUSES.map((s) => `<option ${s === m.status ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>` : ""}</div>`).join("")}</div>`
+    ? `<div class="mission-list">${data.map((m) => `<div class="mission-line"><div class="mission-icon">${m.type?.startsWith("Porte") ? "⌂" : "□"}</div><div class="mission-info"><strong>${esc(m.title)}</strong><span>${esc(m.commune)} ${m.secteur ? "· " + esc(m.secteur) : ""}</span><small>${esc(m.type || "Action")} · ${esc(m.assignee || "Non attribuée")}${m.date?" · "+esc(m.date):""}${m.time?" à "+esc(m.time):""}</small>${m.objective?`<small>${esc(m.objective)}</small>`:""}</div><span class="status status-${m.status === "Terminée" ? "done" : m.status === "En cours" ? "progress" : "todo"}">${esc(m.status)}</span>${fullEditor() ? `<button class="icon-btn" data-edit-mission="${attr(m.id)}" aria-label="Modifier l’action ${attr(m.title)}">✎</button>` : fieldEditor() ? `<label class="status-editor"><span class="sr-only">Statut de l’action ${attr(m.title)}</span><select data-mission-status="${attr(m.id)}" aria-label="Modifier le statut de ${attr(m.title)}">${STATUSES.map((s) => `<option ${s === m.status ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>` : ""}</div>`).join("")}</div>`
     : empty(
-        "Aucune mission",
+        "Aucune action",
         "Ajoutez une action ou modifiez les filtres géographiques.",
       );
 }
@@ -931,8 +931,8 @@ function viewMemoire() {
 }
 function viewConfig() {
   if (!fullEditor())
-    return `${panel("Session", `<p class="description">Connecté : <strong>${esc(serverSession.username)}</strong> (${esc(serverSession.role)}). ${serverConnected ? "Les mises à jour de statut sont envoyées au serveur." : "Compte en lecture seule ou hors connexion."}</p><div class="button-row"><button class="btn btn-light" data-action=\"refresh-server\">Actualiser les missions</button><button class="btn btn-light" data-action=\"logout\">Déconnexion</button></div><p class="hint">Aucune donnée relative aux habitants ni opinion politique ne doit être saisie dans les missions.</p>`)}`;
-  return `${panel("Connexion au serveur", serverSession ? `<p class="description">Connecté en tant que <strong>${esc(serverSession.username)}</strong> (${esc(serverSession.role)}). ${serverConnected ? "Synchronisation activée." : "Choisir explicitement quelle base utiliser."}</p><div class="button-row"><button class="btn btn-primary" data-action="pull-server">Charger la base du serveur</button>${serverSession.role === "admin" ? '<button class="btn btn-light" data-action="publish-server">Publier cette base locale sur le serveur</button>' : ""}<button class="btn btn-light" data-action="logout">Déconnexion</button></div><p class="hint">La synchronisation s’effectue uniquement après sélection. Les conflits entre appareils ne sont jamais fusionnés automatiquement.</p>` : `<p class="description">Pour synchroniser ordinateur et iPhone, déployer le serveur inclus dans ce projet sur un domaine HTTPS, puis se connecter. Ne pas utiliser de données personnelles pendant cette phase pilote.</p><form id="login-form" class="form-inline"><label>Identifiant<input name="username" autocomplete="username" required/></label><label>Mot de passe<input type="password" name="password" autocomplete="current-password" required/></label><button class="btn btn-primary" type="submit">Connexion</button></form><p class="hint">En mode statique, ce service est indisponible. Un compte doit d’abord être créé sur le serveur.</p>`)}${panel("Gérer les campagnes", `<p class="description">Chaque mission, note, groupe et brouillon appartient à une campagne. Les résultats électoraux publics restent dans une bibliothèque transversale.</p><div class="item-list">${app.campaigns.map((c) => `<div class="note-line"><div><strong>${esc(c.nom)}</strong><small>${esc(c.description || "")} ${app.current === c.id ? "· Active" : ""}</small></div>${app.current !== c.id ? `<button class="btn btn-light btn-sm" data-select-campaign="${attr(c.id)}">Activer</button>` : ""}</div>`).join("")}</div><form id="campaign-form" class="form-inline"><label>Nom de campagne<input name="name" maxlength="100" required placeholder="Élection — Année"/></label><label>Année<input type="number" min="1950" max="2100" name="year" value="2027" required/></label><button class="btn btn-primary" type="submit">Créer</button></form>`)}${panel("Protection et fonctionnement", `<div class="privacy-grid"><div><strong>Stockage local</strong><p>Les données se trouvent uniquement dans ce navigateur ; elles ne sont pas protégées par un compte.</p></div><div><strong>Pas de suivi individuel</strong><p>Aucun historique de vote ou appréciation politique d’une personne n’est admis.</p></div><div><strong>Mode hors connexion</strong><p>Les écrans, les données locales et les listes restent accessibles après la première visite. Les tuiles cartographiques nécessitent un réseau.</p></div><div><strong>Conservation</strong><p>Exporter les sauvegardes régulièrement et supprimer les données devenues inutiles.</p></div></div><div class="button-row"><button class="btn btn-light" data-action="backup">Télécharger une sauvegarde</button><button class="btn btn-danger" data-action="reset">Effacer les données locales</button></div>`)}${panel("Sources officielles", `<div class="links">${territory.meta.sources.map((s) => `<a href="${attr(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.titre)} ↗</a>`).join("")}</div><p class="hint">Avant exploitation réelle, faire vérifier les correspondances géographiques, le statut des sources et les droits de réutilisation.</p>`)}`;
+    return `${panel("Session", `<p class="description">Connecté : <strong>${esc(serverSession.username)}</strong> (${esc(serverSession.role)}). ${serverConnected ? "Les mises à jour de statut sont envoyées au serveur." : "Compte en lecture seule ou hors connexion."}</p><div class="button-row"><button class="btn btn-light" data-action=\"refresh-server\">Actualiser les actions</button><button class="btn btn-light" data-action=\"logout\">Déconnexion</button></div><p class="hint">Aucune donnée relative aux habitants ni opinion politique ne doit être saisie dans les missions.</p>`)}`;
+  return `${panel("Connexion au serveur", serverSession ? `<p class="description">Connecté en tant que <strong>${esc(serverSession.username)}</strong> (${esc(serverSession.role)}). ${serverConnected ? "Synchronisation activée." : "Choisir explicitement quelle base utiliser."}</p><div class="button-row"><button class="btn btn-primary" data-action="pull-server">Charger la base du serveur</button>${serverSession.role === "admin" ? '<button class="btn btn-light" data-action="publish-server">Publier cette base locale sur le serveur</button>' : ""}<button class="btn btn-light" data-action="logout">Déconnexion</button></div><p class="hint">La synchronisation s’effectue uniquement après sélection. Les conflits entre appareils ne sont jamais fusionnés automatiquement.</p>` : `<p class="description">Pour synchroniser ordinateur et iPhone, déployer le serveur inclus dans ce projet sur un domaine HTTPS, puis se connecter. Ne pas utiliser de données personnelles pendant cette phase pilote.</p><form id="login-form" class="form-inline"><label>Identifiant<input name="username" autocomplete="username" required/></label><label>Mot de passe<input type="password" name="password" autocomplete="current-password" required/></label><button class="btn btn-primary" type="submit">Connexion</button></form><p class="hint">En mode statique, ce service est indisponible. Un compte doit d’abord être créé sur le serveur.</p>`)}${panel("Gérer les campagnes", `<p class="description">Chaque action, note, groupe et brouillon appartient à une campagne. Les résultats électoraux publics restent dans une bibliothèque transversale.</p><div class="item-list">${app.campaigns.map((c) => `<div class="note-line"><div><strong>${esc(c.nom)}</strong><small>${esc(c.description || "")} ${app.current === c.id ? "· Active" : ""}</small></div>${app.current !== c.id ? `<button class="btn btn-light btn-sm" data-select-campaign="${attr(c.id)}">Activer</button>` : ""}</div>`).join("")}</div><form id="campaign-form" class="form-inline"><label>Nom de campagne<input name="name" maxlength="100" required placeholder="Élection — Année"/></label><label>Année<input type="number" min="1950" max="2100" name="year" value="2027" required/></label><button class="btn btn-primary" type="submit">Créer</button></form>`)}${panel("Protection et fonctionnement", `<div class="privacy-grid"><div><strong>Stockage local</strong><p>Les données se trouvent uniquement dans ce navigateur ; elles ne sont pas protégées par un compte.</p></div><div><strong>Pas de suivi individuel</strong><p>Aucun historique de vote ou appréciation politique d’une personne n’est admis.</p></div><div><strong>Mode hors connexion</strong><p>Les écrans, les données locales et les listes restent accessibles après la première visite. Les tuiles cartographiques nécessitent un réseau.</p></div><div><strong>Conservation</strong><p>Exporter les sauvegardes régulièrement et supprimer les données devenues inutiles.</p></div></div><div class="button-row"><button class="btn btn-light" data-action="backup">Télécharger une sauvegarde</button><button class="btn btn-danger" data-action="reset">Effacer les données locales</button></div>`)}${panel("Sources officielles", `<div class="links">${territory.meta.sources.map((s) => `<a href="${attr(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.titre)} ↗</a>`).join("")}</div><p class="hint">Avant exploitation réelle, faire vérifier les correspondances géographiques, le statut des sources et les droits de réutilisation.</p>`)}`;
 }
 function viewFundraising() {
   const total = demoFunds
@@ -1231,7 +1231,7 @@ const dlTerritory = () =>
 function resetData() {
   if (
     !confirm(
-      "Effacer définitivement les missions, résultats, groupes, archives et brouillons enregistrés dans ce navigateur ? Cette opération est irréversible sans sauvegarde.",
+      "Effacer définitivement les actions, résultats, groupes, archives et brouillons enregistrés dans ce navigateur ? Cette opération est irréversible sans sauvegarde.",
     )
   )
     return;
@@ -1334,7 +1334,7 @@ function dispatchAction(action) {
       render();
       break;
     case "delete-mission":
-      if (editingMission && confirm("Supprimer cette mission ?")) {
+      if (editingMission && confirm("Supprimer cette action ?")) {
         mutate((s) => ({
           ...s,
           missions: s.missions.filter((m) => m.id !== editingMission.id),
@@ -1877,7 +1877,7 @@ root.addEventListener("submit", (e) => {
         ? s.missions.map((m) => (m.id === item.id ? item : m))
         : [...s.missions, item],
     }));
-    toast("Mission enregistrée.");
+    toast("Action enregistrée.");
     return;
   }
   if (form.id === "team-form") {
@@ -1980,7 +1980,7 @@ async function refreshFromServer() {
     app = save(validateBackup(remote.state));
     serverConnected =
       serverSession.role === "terrain" || serverSession.role === "admin";
-    toast("Missions actualisées depuis le serveur.");
+    toast("Actions actualisées depuis le serveur.");
   } catch (e) {
     serverConnected = false;
     toast("Actualisation impossible : " + e.message, "warning");
@@ -1989,7 +1989,7 @@ async function refreshFromServer() {
 async function changeMissionStatus(missionId, status) {
   if (!fieldEditor()) return toast("Connexion terrain nécessaire.", "warning");
   const old = app.missions.find((m) => m.id === missionId);
-  if (!old) return toast("Mission inconnue.", "warning");
+  if (!old) return toast("Action inconnue.", "warning");
   if (old.status === status) return;
   try {
     await updateRemoteStatus(missionId, status, old.status, serverSession.csrf);
@@ -2003,7 +2003,7 @@ async function changeMissionStatus(missionId, status) {
     toast(
       (e.status === 409 ? "Conflit : " : "Envoi impossible : ") +
         e.message +
-        ". Utiliser « Actualiser les missions ».",
+        ". Utiliser « Actualiser les actions ».",
       "warning",
     );
   }
