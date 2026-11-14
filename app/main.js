@@ -275,14 +275,15 @@ async function loadBureauLayer() {
   } catch {}
   const pending = { type: "FeatureCollection", features: [], loading: true };
   bureauxLayer = pending;
+  let needsRender = false;
   try {
     const r = await fetch("./data/bureaux-de-vote.geojson?v=20261113");
     const loaded = r.ok ? await r.json() : { type: "FeatureCollection", features: [] };
-    if (bureauxLayer === pending) bureauxLayer = loaded;
+    if (bureauxLayer === pending) { bureauxLayer = loaded; needsRender = Boolean(loaded.features?.length); }
   } catch {
     if (bureauxLayer === pending) bureauxLayer = { type: "FeatureCollection", features: [] };
   }
-  if (tab === "carte") render();
+  if (tab === "carte" && needsRender) render();
 }
 const mapCommunesFor = (
   layer = filters.mapLayer,
