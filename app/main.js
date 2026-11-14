@@ -19,7 +19,7 @@ import {
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114map19";
+import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114map20";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {
   checkSession,
@@ -2018,7 +2018,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261114map19")
+        .register("./sw.js?v=20261114map20")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;
