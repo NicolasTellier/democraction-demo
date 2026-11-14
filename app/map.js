@@ -33,7 +33,7 @@ function asFeatureList(data){
  if(Array.isArray(data))return data.map(row=>({type:'Feature',geometry:row.contour||row.geometry||null,properties:row})).filter(f=>f.geometry);
  return [];
 }
-function validCoordinates(value){if(!Array.isArray(value)||value.length<2)return false;if(typeof value[0]==='number'||typeof value[0]==='string'&&value[0].trim()!==''){return Number.isFinite(Number(value[0]))&&Number.isFinite(Number(value[1]))}return value.every(validCoordinates)}
+function validCoordinates(value){if(!Array.isArray(value)||!value.length)return false;if(typeof value[0]==='number'||typeof value[0]==='string'){return value.length>=2&&Number.isFinite(Number(value[0]))&&Number.isFinite(Number(value[1]))}return value.every(validCoordinates)}
 function validFeature(feature){return Boolean(feature?.geometry?.type&&validCoordinates(feature.geometry.coordinates))}
 
 export async function loadGeodata(){

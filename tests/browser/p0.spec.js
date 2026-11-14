@@ -101,6 +101,13 @@ test('secteur dessiné, édition et action liée conservés au rechargement',asy
  const mission=await page.evaluate(id=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(m=>m.zoneId===id),sector.id);
  expect(mission.zoneKind).toBe('sector');
  expect(mission.zoneGeometry).toEqual(edited.geometry);
+ await page.locator('button[data-nav=actions]:visible').first().click();
+ await page.locator(`[data-edit-mission="${mission.id}"]`).click();
+ await page.locator('#mission-form [name=status]').selectOption('En cours');
+ await page.locator('#mission-form button[type=submit]').click();
+ await expect(page.getByText('Action sur secteur test')).toBeVisible();
+ await page.locator('button[data-nav=carte]:visible').first().click();
+ await expect.poll(()=>page.locator('#map .leaflet-interactive[stroke="#ee4b23"]').count(),{timeout:20000}).toBeGreaterThanOrEqual(1);
  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('button[data-action=backup]').first().click()]);
  const backup=JSON.parse(await readFile(await download.path(),'utf8'));
  expect(backup.sectors.find(s=>s.id===sector.id)?.geometry).toEqual(edited.geometry);
@@ -116,4 +123,16 @@ test('secteur dessiné, édition et action liée conservés au rechargement',asy
  await expect(page.locator(`[data-sector-select="${sector.id}"]`)).toContainText('Secteur test modifié');
  await page.locator('button[data-nav=actions]:visible').first().click();
  await expect(page.getByText('Action sur secteur test')).toBeVisible();
+});
+
+test('un contour de bureau importé est sélectionnable et visible',async({page})=>{
+ await page.goto('/');
+ await page.locator('button[data-nav=carte]:visible').first().click();
+ await page.locator('#map-scope').selectOption('bureau');
+ const feature={type:'FeatureCollection',features:[{type:'Feature',properties:{id:'B-TEST',nom:'Bureau de recette',codeInsee:'33366'},geometry:{type:'Polygon',coordinates:[[[-0.49,45.02],[-0.47,45.02],[-0.47,45.04],[-0.49,45.04],[-0.49,45.02]]]}}]};
+ await page.locator('#bureau-import').setInputFiles({name:'bureau-test.geojson',mimeType:'application/geo+json',buffer:Buffer.from(JSON.stringify(feature))});
+ await page.locator('#map-scope-value').selectOption('B-TEST');
+ await expect(page.locator('.map-selection-summary')).toContainText('Bureau de vote');
+ await expect(page.locator('.map-detail .panel')).toContainText('Bureau de recette');
+ await expect.poll(()=>page.locator('#map .leaflet-interactive[stroke="#ee4b23"]').count(),{timeout:20000}).toBeGreaterThanOrEqual(1);
 });
