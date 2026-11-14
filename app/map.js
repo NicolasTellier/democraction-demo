@@ -106,7 +106,14 @@ function addDrawingTools(box,map,target,options){
  const cancel=()=>{drawing=false;points=[];refresh();tools.querySelector('[data-map-draw-start]').disabled=false;tools.querySelector('[data-map-draw-finish]').disabled=true;tools.querySelector('[data-map-draw-cancel]').disabled=true;tools.classList.remove('active');map.getContainer().classList.remove('map-drawing');};
  const finish=()=>{if(points.length<3){options.onNotice?.('Ajoutez au moins trois points.','warning');return}const coordinates=points.map(p=>[p.lng,p.lat]);coordinates.push([...coordinates[0]]);const geometry={type:'Polygon',coordinates:[coordinates]};if(!validPolygon(geometry)){options.onNotice?.('Contour invalide : vérifiez les croisements et les sommets.','warning');return}options.onSectorComplete?.(geometry,options.editSector?.id||null);cancel();};
  tools.querySelector('[data-map-draw-start]').addEventListener('click',start);tools.querySelector('[data-map-draw-finish]').addEventListener('click',finish);tools.querySelector('[data-map-draw-cancel]').addEventListener('click',cancel);
- map.on('click',e=>{if(!drawing)return;points.push(e.latlng);refresh()});
+ // Capture clicks on the container: vector layers and their popups can consume
+ // Leaflet's bubbled map click, especially when the selected commune fills it.
+ box.addEventListener('click',event=>{
+  if(!drawing||event.target.closest('.map-overlay-tools,.leaflet-control,.leaflet-marker-icon,.leaflet-popup'))return;
+  event.stopPropagation();
+  points.push(map.mouseEventToLatLng(event));
+  refresh();
+ },true);
  if(options.editSector?.geometry?.type==='Polygon'){
   start();points=options.editSector.geometry.coordinates[0].slice(0,-1).map(([lng,lat])=>window.L.latLng(lat,lng));refresh();map.fitBounds(window.L.polygon(points).getBounds().pad(.25));
  }
