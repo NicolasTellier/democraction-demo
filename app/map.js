@@ -175,9 +175,11 @@ export async function drawMap(target,communes,notify,options={}){
     .addTo(map).bindTooltip(escapeHTML([address.number,address.suffix,address.roadName].filter(Boolean).join(' ')))
     .on('click',e=>{window.L.DomEvent.stopPropagation(e);options.onAddressSelect?.(address)});
   }
-  if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.08),{maxZoom:11});
-  if(options.focusSelection&&selectedGroup.getLayers().length)map.fitBounds(selectedGroup.getBounds().pad(.2),{maxZoom:13});
-  if(options.focusSelection&&roadGroup.getLayers().length)map.fitBounds(roadGroup.getBounds().pad(.35),{maxZoom:16});
+  // Un seul cadrage : plusieurs fitBounds successifs pouvaient se terminer
+  // dans le désordre et rétablir le zoom communal après le zoom sur la rue.
+  if(options.focusSelection&&roadGroup.getLayers().length)map.fitBounds(roadGroup.getBounds().pad(.35),{maxZoom:16,animate:false});
+  else if(options.focusSelection&&selectedGroup.getLayers().length)map.fitBounds(selectedGroup.getBounds().pad(.2),{maxZoom:13,animate:false});
+  else if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.08),{maxZoom:11,animate:false});
   addLegend(map,legend,options);
   if(options.allowDraw)addDrawingTools(box,map,target,options);
   if(target==='map-left'||target==='map-right'){

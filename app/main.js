@@ -19,7 +19,7 @@ import {
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114roads11";
+import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114roads12";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
 import {
@@ -598,7 +598,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.10 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.11 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];

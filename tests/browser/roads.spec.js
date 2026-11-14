@@ -12,6 +12,7 @@ test('voies IGN linéaires, sélection multiple et action géométrique conserv�
  await page.locator('#street-search-form button').click();
  await page.locator('.street-result').filter({hasText:'Rue Elie Faure'}).click();
  await expect.poll(()=>page.locator('#map .road-selected').count(),{timeout:20000}).toBeGreaterThan(0);
+ await expect.poll(()=>page.locator('#map .leaflet-tile').first().getAttribute('src').then(src=>Number(src?.match(/TILEMATRIX=(\d+)/)?.[1]||0)),{timeout:20000}).toBeGreaterThanOrEqual(14);
  await expect(page.locator('.map-selection-summary')).toContainText('Rue · Rue Elie Faure');
  await page.locator('#street-search-form [name=query]').fill('Rue Nationale');
  await page.locator('#street-search-form button').click();
