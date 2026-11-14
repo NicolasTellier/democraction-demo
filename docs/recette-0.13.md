@@ -14,8 +14,9 @@ La fiche affiche l'origine locale, la source déclarée, la date d'import et le 
 |---|---|---|
 | KMZ ZIP Deflate : extraction du KML, taille et intégrité CRC | Réussi en local | `npm test` : fixture KMZ créée indépendamment avec Python `zipfile`, modification d'octet rejetée. |
 | GeoJSON : polygone valide, provenance, code commune ; ligne et commune incohérente rejetées | Réussi en local | Tests Node `tests/bureau-import.test.js` ; 10 tests Node réussis au total. |
-| KML et KMZ dans un navigateur, fiche, contour, persistance ; GeoJSON cumulatif et ligne refusée | En attente de CI | Parcours `tests/browser/bureau-import.spec.js` sur quatre formats. Les captures ordinateur et mobile sont produites dans l'artefact de CI. |
-| Site publié et miroir privé | En attente de publication | Vérifier les commits, les deux CI et la version affichée sur GitHub Pages. |
+| KML et KMZ dans un navigateur, fiche, contour, persistance ; GeoJSON cumulatif et ligne refusée | Réussi | [CI publique 43630102136](https://github.com/NicolasTellier/democraction-demo/actions/runs/43630102136) : 40 parcours Playwright réussis, 4 ignorés, quatre formats. [Captures de CI](https://github.com/NicolasTellier/democraction-demo/actions/runs/43630102136/artifacts/14127084618). |
+| Site publié | Réussi | Code `5d0c64f28bcf8bba0def780edfe37bd3eb19f8ca`, CI et GitHub Pages verts. Ouverture directe de la [démo V0.13](https://nicolastellier.github.io/democraction-demo/) : import d'un KMZ fictif pour le bureau 33366-1, polygone translucide, source et statut « À confirmer » visibles. [Capture de la recette](captures/bureau-import-0.13.jpg). |
+| Miroir privé | En cours | Le code, les tests et cette recette seront copiés dans le dépôt privé, puis vérifiés par ses CI. |
 
 Le service ne récupère pas automatiquement le My Maps cité pour Saint-André-de-Cubzac : son export vérifiable reste à fournir ou à trouver. Les données sont stockées localement et ne sont pas synchronisées entre appareils. L'import n'est pas un registre d'habilitation officiel. Le prochain travail du lot 1 est l'inventaire et le préchargement progressif des voies des 87 communes avec signalement des lacunes.
 
