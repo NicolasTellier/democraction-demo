@@ -14,6 +14,15 @@ test('polygones, échelle et sélection conservés après rechargement',async({p
  await page.locator('#map-scope-value').selectOption('Saint-André-de-Cubzac');
  await expect(page.locator('.map-selection-summary')).toContainText('Saint-André-de-Cubzac');
  await expect.poll(()=>page.locator('#map .leaflet-interactive').count(),{timeout:20000}).toBeGreaterThanOrEqual(87);
+ await page.locator('#map-scope').selectOption('epci');
+ await page.locator('#map-scope-value').selectOption({label:'Grand Cubzaguais'});
+ await expect(page.locator('.map-selection-summary')).toContainText('16 commune(s)');
+ await expect(page.locator('.map-detail .panel')).toContainText('Population Insee 2023');
+ await expect.poll(()=>page.locator('#map .leaflet-interactive').count(),{timeout:20000}).toBeGreaterThanOrEqual(87);
+ await page.locator('#map-scope').selectOption('canton');
+ await page.locator('#map-scope-value').selectOption({label:'Le Nord-Gironde'});
+ await expect(page.locator('.map-selection-summary')).toContainText('24 commune(s)');
+ await expect(page.locator('.map-detail .panel')).toContainText('Canton · Le Nord-Gironde');
  await page.locator('#map-layer').selectOption('revenuMedian');
  await expect(page.locator('#map .map-legend')).toContainText('€');
  await expect(page.locator('#map .map-legend')).toContainText('Insee');

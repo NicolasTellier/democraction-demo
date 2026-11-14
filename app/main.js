@@ -440,6 +440,15 @@ function saveSector(geometry, editId = null) {
 }
 function mapDetail() {
   const c = selectedCommune();
+  if ((mapSelection.kind === "epci" || mapSelection.kind === "canton" || (mapSelection.kind === "commune" && mapSelectedCommunes.length > 1)) && mapSelection.value) {
+    const names = mapSelectionCommunes();
+    const socioByCode = new Map((socio?.indicators || []).map(row => [row.codeInsee, row]));
+    const selected = territory.communes.filter(row => names.includes(row.nom));
+    const populations = selected.map(row => Number(socioByCode.get(row.codeInsee)?.population)).filter(value => Number.isFinite(value) && value > 0);
+    const complete = populations.length === selected.length;
+    const title = mapSelection.kind === "commune" ? "Communes sélectionnées" : mapSelection.kind === "epci" ? "Intercommunalité · " + mapSelection.value : "Canton · " + mapSelection.value;
+    return panel(esc(title), `<div class="territory-card"><div><span class="kicker">Communes</span><strong>${selected.length}</strong></div><div><span class="kicker">Population Insee 2023</span><strong>${complete ? fmtNumber(populations.reduce((sum,value)=>sum+value,0)) : "Indisponible"}</strong></div><div><span class="kicker">Actions locales</span><strong>${currentMissions().filter(m=>names.includes(m.commune)).length}</strong></div><div><span class="kicker">Secteurs sauvegardés</span><strong>${demoSectors.filter(s=>names.includes(s.commune)).length}</strong></div></div><p class="hint">${esc(names.join(", "))}</p><p class="hint">Population additionnée uniquement lorsque chaque commune dispose d’une valeur. Les périmètres réunissent les contours communaux du référentiel 2026.</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button>`);
+  }
   if (mapSelection.kind === "sector") {
     const sector = demoSectors.find(x => x.id === mapSelection.value);
     if (sector) return panel("Secteur · " + esc(sector.name), `<p>${esc(sector.commune || "Secteur libre")}</p><p>Identifiant : ${esc(sector.id)}</p><p>Contour enregistré : ${sector.geometry?.coordinates?.[0]?.length-1 || 0} sommets</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button>`);
@@ -763,12 +772,8 @@ function viewCarte() {
     "</small></div>" +
     mapDetail() +
     '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux depuis 2008 et indicateurs socio-démographiques publics. Les données manquantes restent visibles comme indisponibles.</p><a href="https://geo.api.gouv.fr/decoupage-administratif/communes" target="_blank" rel="noopener noreferrer">Documentation geo.api.gouv.fr ↗</a><a href="https://adresse.data.gouv.fr/api-doc/adresse" target="_blank" rel="noopener noreferrer">Documentation API Adresse ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
-    (filters.commune
-      ? "Commune : " +
-        esc(filters.commune) +
-        " · " +
-        selectedStreets.length +
-        " rue(s)"
+    (mapSelection.value
+      ? esc(mapSelectionLabel()) + " · " + selectedNames.length + " commune(s) · " + selectedStreets.length + " rue(s)"
       : "Sélectionnez une commune ou une zone enregistrée.") +
     '</p><button class="btn btn-primary btn-sm" data-action="new-mission-from-map">Créer une action avec cette sélection</button></div></aside></div>'
   );
