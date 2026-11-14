@@ -26,6 +26,7 @@ test('Un secteur conserve sa géométrie, ses rues et son identifiant à la rest
 
 test('Les polygones croisés et les valeurs manquantes sont refusés',()=>{
  assert.equal(validPolygon({type:'Polygon',coordinates:[[[-.5,45],[-.4,45.1],[-.5,45.1],[-.4,45],[-.5,45]]]}),false);
+ assert.equal(validPolygon({type:'Polygon',coordinates:[[[-.5,45],[-.45,45],[-.4,45],[-.4,45.1],[-.5,45.1],[-.5,45]]]}),true,'Un sommet inséré sur une arête reste valide');
  const legend=classification([null,12,30,50,90],{unit:'%',method:'fixed-percent'});
  assert.equal(classIndex(null,legend),-1);
  assert.equal(classIndex(80,legend),3);
