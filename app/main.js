@@ -19,8 +19,9 @@ import {
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114map21";
+import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114roads11";
 import { validPolygon,validZone } from "./geo-utils.js";
+import {loadRoads,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
 import {
   checkSession,
   login,
@@ -115,8 +116,18 @@ let demoContacts = JSON.parse(
   ),
   selectedStreets = [],
   streetSearchResults = [],
+  roadData = null,
+  roadLoadingCode = '',
+  roadPromise = null,
+  roadFailedCode = '',
+  roadStatus = '',
+  roadQuery = '',
+  addressData = [],
+  addressSelected = null,
+  addressStatus = '',
   mapSelectedCommunes = [],
   mapMode = "explore",
+  actionView = 'list',
   missionPrefill = null,
   mapSelection = { kind: "commune", value: "" },
   bureauxLayer = null,
@@ -129,7 +140,7 @@ function restorePreferences(preferences) {
   for (const key of PREF_KEYS)
     if (typeof preferences.filters?.[key] === "string" && preferences.filters[key].length < 160)
       filters[key] = preferences.filters[key];
-  if (["commune", "epci", "canton", "bureau", "sector"].includes(preferences.mapSelection?.kind) && typeof preferences.mapSelection.value === "string" && preferences.mapSelection.value.length < 160)
+  if (["commune", "epci", "canton", "bureau", "sector", "road"].includes(preferences.mapSelection?.kind) && typeof preferences.mapSelection.value === "string" && preferences.mapSelection.value.length < 160)
     mapSelection = {kind:preferences.mapSelection.kind,value:preferences.mapSelection.value};
   if (["explore", "compare", "draw", "organize"].includes(preferences.mapMode)) mapMode = preferences.mapMode;
 }
@@ -231,6 +242,11 @@ const mapSelectionCommunes = () => {
     const sector = demoSectors.find((x) => x.id === value);
     return sector?.commune ? [sector.commune] : [];
   }
+  if (kind === 'road') {
+    const road=roadData?.features.find(f=>f.properties.id===value);
+    const commune=territory?.communes.find(c=>c.codeInsee===road?.properties.code);
+    return commune?[commune.nom]:filters.commune?[filters.commune]:[];
+  }
   if (kind === "bureau") {
     const feature = (bureauxLayer?.features || []).find(
       (f) =>
@@ -263,6 +279,7 @@ const mapSelectionLabel = () => {
     );
     return `Bureau de vote · ${f?.properties?.nom || f?.properties?.bureau || value}`;
   }
+  if (kind === 'road') return `Rue · ${roadData?.features.find(f=>f.properties.id===value)?.properties.name||value}`;
   return `${kind === "epci" ? "Intercommunalité" : kind === "canton" ? "Canton" : "Commune"} · ${value}`;
 };
 const bureauFeatures = () =>
@@ -302,8 +319,8 @@ const mapCommunesFor = (
   if (layer === "priority") {
     const raw = candidates.map((c) => ({
       c,
-      e: latest.get(c.codeInsee)?.participation,
-      s: socioRows.get(c.codeInsee)?.[filters.prioritySocio] ?? null,
+      e: Number(latest.get(c.codeInsee)?.inscrits)>=30?latest.get(c.codeInsee)?.participation:null,
+      s: Number(socioRows.get(c.codeInsee)?.population)>=100?socioRows.get(c.codeInsee)?.[filters.prioritySocio] ?? null:null,
     }));
     const eVals = raw.map((x) => x.e).filter(Number.isFinite),
       sVals = raw.map((x) => x.s).filter(Number.isFinite),
@@ -385,13 +402,14 @@ const comparedBallots = () => {
 const selectedCommune = () =>
   territory?.communes.find((c) => norm(c.nom) === norm(filters.commune));
 async function searchStreets(query, commune) {
-  if (!query || !commune) {
+  if (!commune) {
     streetSearchResults = [];
-    toast("Choisissez une commune et saisissez une rue.", "warning");
+    toast("Choisissez une commune avant de rechercher ses rues.", "warning");
     return;
   }
   const code = territory.communes.find((c) => c.nom === commune)?.codeInsee;
   if (code) {
+    if(selectedStreets.some(r=>r.code!==code)){selectedStreets=[];addressData=[];addressSelected=null}
     filters.commune = commune;
     mapSelectedCommunes = [commune];
   }
@@ -399,22 +417,42 @@ async function searchStreets(query, commune) {
     toast("Code commune indisponible pour cette recherche.", "warning");
     return;
   }
+  roadQuery=query;addressData=[];addressSelected=null;
+  roadFailedCode='';
   try {
-    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&citycode=${encodeURIComponent(code)}&limit=8&type=street`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Réponse ${response.status}`);
-    const data = await response.json();
-    streetSearchResults = (data.features || []).map((feature) => ({
-      name: feature.properties?.name || feature.properties?.label || query,
-      lat: feature.geometry?.coordinates?.[1],
-      lon: feature.geometry?.coordinates?.[0],
-      citycode: code,
-    }));
+    const roads=await ensureRoads(code);
+    if(!roads||roadQuery!==query)return;
+    streetSearchResults=searchRoads(roads,query).map(f=>({id:f.properties.id,name:f.properties.name,code,geometry:f.geometry}));
+    if(!streetSearchResults.length)roadStatus=`Aucune rue trouvée pour « ${query} » dans le référentiel IGN.`;
     render();
   } catch (error) {
     streetSearchResults = [];
-    toast(`Recherche de rues indisponible : ${error.message}`, "warning");
+    toast(`Tracés de rues indisponibles : ${error.message}`, "warning");
   }
+}
+async function ensureRoads(code){
+ if(roadData?.code===code)return roadData;
+ if(roadLoadingCode===code&&roadPromise)return roadPromise;
+ roadLoadingCode=code;roadStatus='Chargement des tracés IGN…';
+ const pending=(async()=>{try {
+  const result=await loadRoads(code);
+  if(roadLoadingCode!==code)return null;
+  roadData=result;roadStatus=`${result.features.length} voies linéaires · ${result.source} · relevé ${new Date(result.asOf).toLocaleDateString('fr-FR')}`;
+  streetSearchResults=searchRoads(result,roadQuery).map(f=>({id:f.properties.id,name:f.properties.name,code,geometry:f.geometry}));
+  return result;
+ }catch(error){if(roadLoadingCode===code){roadFailedCode=code;roadStatus=`Tracés indisponibles : ${error.message}`;}throw error}
+ finally {if(roadLoadingCode===code){roadLoadingCode='';roadPromise=null;if(tab==='carte')render()}}})();
+ roadPromise=pending;return pending;
+}
+async function showAddresses(){
+ if(!selectedStreets.length){toast('Sélectionnez une ou plusieurs rues avant de charger leurs adresses.','warning');return}
+ addressStatus='Chargement des adresses publiques BAN…';render();
+ try{
+  const results=await Promise.all(selectedStreets.map(road=>loadAddressesForRoad({properties:road})));
+  addressData=results.flatMap(r=>r.features);
+  addressStatus=`${addressData.length} adresses publiques BAN · relevé ${new Date().toLocaleDateString('fr-FR')} · aucun habitant associé`;
+  render();
+ }catch(error){addressData=[];addressStatus=`Adresses indisponibles : ${error.message}`;render()}
 }
 function saveSector(geometry, editId = null) {
   const name = document.getElementById("sector-name")?.value.trim();
@@ -442,6 +480,12 @@ function saveSector(geometry, editId = null) {
 }
 function mapDetail() {
   const c = selectedCommune();
+  if(addressSelected){
+    const a=addressSelected;
+    const associated=currentMissions().filter(m=>m.roadIds?.includes(a.roadId)||m.commune===a.commune&&m.rues?.some(r=>norm(r)===norm(a.roadName)));
+    const sector=demoSectors.find(s=>s.commune===a.commune&&pointInSector(a.coordinates,s.geometry));
+    return panel('Adresse publique · '+esc([a.number,a.suffix,a.roadName].filter(Boolean).join(' ')),`<div class="detail-list"><div><span>Commune</span><strong>${esc(a.commune)}</strong></div><div><span>Code postal</span><strong>${esc(a.postcode)}</strong></div><div><span>Secteur dessiné</span><strong>${esc(sector?.name||'Non rattaché')}</strong></div><div><span>Action(s) sur la rue</span><strong>${associated.length}</strong></div></div>${associated.map(m=>`<p class="hint">${esc(m.title)} · ${esc(m.status)}${m.date?' · '+esc(m.date):''}</p>`).join('')}<p class="hint">BAN · adresse seule. Aucun nom, contact, vote ou opinion n’est associé sur ce site public. La fiche individuelle et la relance nécessitent un espace privé avec droits d’accès.</p>`);
+  }
   if ((mapSelection.kind === "epci" || mapSelection.kind === "canton" || (mapSelection.kind === "commune" && mapSelectedCommunes.length > 1)) && mapSelection.value) {
     const names = mapSelectionCommunes();
     const socioByCode = new Map((socio?.indicators || []).map(row => [row.codeInsee, row]));
@@ -454,6 +498,10 @@ function mapDetail() {
   if (mapSelection.kind === "sector") {
     const sector = demoSectors.find(x => x.id === mapSelection.value);
     if (sector) return panel("Secteur · " + esc(sector.name), `<p>${esc(sector.commune || "Secteur libre")}</p><p>Identifiant : ${esc(sector.id)}</p><p>Contour enregistré : ${sector.geometry?.coordinates?.[0]?.length-1 || 0} sommets</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button>`);
+  }
+  if(mapSelection.kind==='road'){
+    const road=roadData?.features.find(f=>f.properties.id===mapSelection.value);
+    if(road)return panel('Rue · '+esc(road.properties.name),`<p>${esc(territory.communes.find(c=>c.codeInsee===road.properties.code)?.nom||'')} · ${esc(road.properties.id)}</p><p>Tracé linéaire officiel IGN BD TOPO, relevé ${esc(roadData.asOf?.slice(0,10)||'date indisponible')}.</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action sur cette rue</button>`);
   }
   if (mapSelection.kind === "bureau") {
     const feature=bureauFeatures().find(f=>String(f.properties?.id||f.properties?.code||f.properties?.bureau||"")===String(mapSelection.value));
@@ -478,6 +526,15 @@ function mapDetail() {
     c.nom,
     `<div class="territory-card"><div><span class="kicker">Code INSEE</span><strong>${esc(c.codeInsee || "—")}</strong></div><div><span class="kicker">Canton</span><strong>${esc(c.canton)}</strong></div><div><span class="kicker">Intercommunalité</span><strong>${esc(c.epci)}</strong></div><div><span class="kicker">Population</span><strong>${sr?.population ? fmtNumber(sr.population) : "—"}</strong></div></div><div class="detail-list"><div><span>Dernière participation disponible</span><strong>${last ? `${Number(last.participation).toFixed(1).replace(".", ",")} %` : "—"}</strong></div><div><span>Actions enregistrées</span><strong>${missions.length}</strong></div><div><span>Secteurs sauvegardés</span><strong>${sectors.length}</strong></div></div><div class="button-row"><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button><button class="btn btn-light" data-nav="analyse">Voir l’historique</button></div><p class="hint">Les résultats et indicateurs sont agrégés à l’échelle de la commune. Ils ne décrivent aucune personne.</p>`,
   );
+}
+function pointInSector(coordinates,geometry){
+ if(geometry?.type!=='Polygon'||!Array.isArray(coordinates)||coordinates.length<2)return false;
+ const [x,y]=coordinates,ring=geometry.coordinates?.[0]||[];let inside=false;
+ for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+  const [xi,yi]=ring[i],[xj,yj]=ring[j];
+  if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;
+ }
+ return inside;
 }
 
 const filteredMissions = () =>
@@ -593,6 +650,7 @@ function viewCarte() {
     ["canton", "Canton"],
     ["bureau", "Bureau de vote"],
     ["sector", "Secteur enregistré"],
+    ["road", "Rue"],
   ];
   const scopeOptions =
     mapSelection.kind === "commune"
@@ -606,6 +664,8 @@ function viewCarte() {
                 x.id,
                 x.name + (x.commune ? " · " + x.commune : ""),
               ])
+            : mapSelection.kind === 'road'
+              ? (roadData?.features||[]).map(x=>[x.properties.id,x.properties.name])
             : bureauFeatures().map((f) => {
                 const p = f.properties || {};
                 return [
@@ -674,7 +734,7 @@ function viewCarte() {
     .join("");
   const comparable = leftBallot?.type === rightBallot?.type && leftBallot?.tour === rightBallot?.tour;
   const compareControls = mapMode === "compare" ? `<section><h3>Comparer deux scrutins</h3><label>Carte A<select id="compare-left">${ballots.map(b => opt(b.id,b.label,b.id===compareLeft)).join("")}</select></label><label>Carte B<select id="compare-right">${ballots.map(b => opt(b.id,b.label,b.id===compareRight)).join("")}</select></label><p class="hint">Participation en % des inscrits ; écart en points. ${comparable ? "Même type de scrutin et même tour." : "Attention : types de scrutin ou tours différents, interprétation prudente."} Les communes sans résultat à un tour restent indisponibles.</p></section>` : "";
-  const streetsHtml = `<div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>Ajouter cette voie</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div>`;
+  const streetsHtml = `<p class="hint" role="status">${esc(roadStatus||'Choisissez une commune pour charger ses tracés.')}</p><div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>${selectedStreets.some(r=>r.id===s.id)?'Sélectionnée':'Sélectionner le tracé'}</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="show-addresses" ${selectedStreets.length?'':'disabled'}>Afficher les adresses de ces rues</button><p class="hint" role="status">${esc(addressStatus)}</p>`;
   const activeSector = demoSectors.find(s => s.id === sectorBeingEdited);
   const sectorForm = mapMode === "draw" ? `<section><h3>${activeSector ? "Modifier le secteur" : "Nouveau secteur"}</h3><label>Nom<input id="sector-name" maxlength="100" value="${attr(activeSector?.name||"")}" placeholder="Ex. Bourg centre"></label><label>Couleur<input id="sector-color" type="color" value="${attr(activeSector?.color||"#9c6b2a")}"></label><p class="hint">Dessinez sur la carte, puis cliquez sur Enregistrer le contour. Clic droit sur un sommet pour le retirer.</p></section>` : "";
   const leftRows = mapCommunesFor(filters.mapLayer, compareLeft),rightIndex = new Map(mapCommunesFor(filters.mapLayer, compareRight).map(c=>[c.codeInsee,c]));
@@ -697,7 +757,7 @@ function viewCarte() {
       attr(filters.prioritySocioWeight) +
       '"><strong>' +
       filters.prioritySocioWeight +
-      "%</strong></label></div>";
+      "%</strong></label><p class="hint">Calcul par commune : chaque indicateur est ramené entre 0 et 1 sur les communes affichées ; une participation plus faible augmente le score. L’indicateur socio suit la direction indiquée dans le référentiel. Moyenne pondérée des seuls indicateurs disponibles, de 0 à 100. Pas de score si moins de 30 inscrits ou de 100 habitants pour la composante concernée. Le classement varie avec les filtres et ne prédit aucun comportement individuel.</p></div>";
   }
   const bureauWarning =
     mapSelection.kind === "bureau" && !bureauFeatures().length
@@ -744,7 +804,7 @@ function viewCarte() {
     bureauWarning +
     '<section><h3>Recherche de rues</h3><form id="street-search-form"><label>Commune<select name="commune"><option value="">Choisir…</option>' +
     streetOptions +
-    '</select></label><label>Rue<input name="query" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher dans la BAN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont reprises automatiquement dans l’action créée depuis la carte.</p></section>' + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
+    '</select></label><label>Rue<input name="query" value="'+attr(roadQuery)+'" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher les tracés IGN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont surlignées et reprises dans l’action créée depuis la carte. Les adresses BAN ne contiennent aucun habitant.</p></section>' + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
     (demoSectors.length
       ? '<div class="sector-list">' + selectedSector + "</div>"
       : empty(
@@ -773,7 +833,7 @@ function viewCarte() {
       : "Les contours sélectionnés sont affichés avec une transparence renforcée.") +
     "</small></div>" +
     mapDetail() +
-    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux depuis 2008 et indicateurs socio-démographiques publics. Les données manquantes restent visibles comme indisponibles.</p><a href="https://geo.api.gouv.fr/decoupage-administratif/communes" target="_blank" rel="noopener noreferrer">Documentation geo.api.gouv.fr ↗</a><a href="https://adresse.data.gouv.fr/api-doc/adresse" target="_blank" rel="noopener noreferrer">Documentation API Adresse ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
+    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux et indicateurs publics agrégés. Tracés des voies : IGN BD TOPO « voie nommée » (303 lignes locales à Saint-André, WFS à la demande ailleurs). Adresses : BAN WFS, à la demande par rue. Date du relevé affichée au chargement. Aucune géométrie de bureau n’est inventée.</p><a href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/diffusion/wfs/" target="_blank" rel="noopener noreferrer">Documentation WFS IGN ↗</a><a href="https://adresse.data.gouv.fr/commune/33366" target="_blank" rel="noopener noreferrer">Source BAN Saint-André ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
     (mapSelection.value
       ? esc(mapSelectionLabel()) + " · " + selectedNames.length + " commune(s) · " + selectedStreets.length + " rue(s)"
       : "Sélectionnez une commune ou une zone enregistrée.") +
@@ -782,7 +842,7 @@ function viewCarte() {
 }
 function missionRows(data) {
   return data.length
-    ? `<div class="mission-list">${data.map((m) => `<div class="mission-line"><div class="mission-icon">${m.type?.startsWith("Porte") ? "⌂" : "□"}</div><div class="mission-info"><strong>${esc(m.title)}</strong><span>${esc(m.commune)} ${m.secteur ? "· " + esc(m.secteur) : ""}</span><small>${esc(m.type || "Action")} · ${esc(m.assignee || "Non attribuée")}</small></div><span class="status status-${m.status === "Terminée" ? "done" : m.status === "En cours" ? "progress" : "todo"}">${esc(m.status)}</span>${fullEditor() ? `<button class="icon-btn" data-edit-mission="${attr(m.id)}" aria-label="Modifier la mission ${attr(m.title)}">✎</button>` : fieldEditor() ? `<label class="status-editor"><span class="sr-only">Statut de la mission ${attr(m.title)}</span><select data-mission-status="${attr(m.id)}" aria-label="Modifier le statut de ${attr(m.title)}">${STATUSES.map((s) => `<option ${s === m.status ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>` : ""}</div>`).join("")}</div>`
+    ? `<div class="mission-list">${data.map((m) => `<div class="mission-line"><div class="mission-icon">${m.type?.startsWith("Porte") ? "⌂" : "□"}</div><div class="mission-info"><strong>${esc(m.title)}</strong><span>${esc(m.commune)} ${m.secteur ? "· " + esc(m.secteur) : ""}</span><small>${esc(m.type || "Action")} · ${esc(m.assignee || "Non attribuée")}${m.date?" · "+esc(m.date):""}${m.time?" à "+esc(m.time):""}</small>${m.objective?`<small>${esc(m.objective)}</small>`:""}</div><span class="status status-${m.status === "Terminée" ? "done" : m.status === "En cours" ? "progress" : "todo"}">${esc(m.status)}</span>${fullEditor() ? `<button class="icon-btn" data-edit-mission="${attr(m.id)}" aria-label="Modifier la mission ${attr(m.title)}">✎</button>` : fieldEditor() ? `<label class="status-editor"><span class="sr-only">Statut de la mission ${attr(m.title)}</span><select data-mission-status="${attr(m.id)}" aria-label="Modifier le statut de ${attr(m.title)}">${STATUSES.map((s) => `<option ${s === m.status ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>` : ""}</div>`).join("")}</div>`
     : empty(
         "Aucune mission",
         "Ajoutez une action ou modifiez les filtres géographiques.",
@@ -790,7 +850,20 @@ function missionRows(data) {
 }
 function viewActions() {
   let ms = filteredMissions();
-  return `${panel("Planifier les actions", `<p class="description">Organisez les actions de terrain, les marchés, les réunions et la couverture des secteurs. Les données nominatives ne sont pas collectées dans cette démo publique.</p>${fullEditor() ? '<button class="btn btn-primary" data-action="new-mission">+ Ajouter une action</button>' : fieldEditor() ? '<p class="hint">Modifiez uniquement le statut des actions ci-dessous. Pour voir les changements des autres appareils, actualisez les actions.</p><button class="btn btn-light" data-action="refresh-server">Actualiser les actions</button>' : '<p class="hint">Mode lecture seule.</p>'}`, `<span class="tag">${currentMissions().length} actions</span>`)}${panel("Tableau des actions", missionRows(ms))}`;
+  const views=[['list','Liste'],['calendar','Agenda'],['kanban','Kanban'],['history','Historique'],['sector','Bilan par secteur']];
+  const tabs=`<div class="action-view-tabs">${views.map(([key,label])=>`<button type="button" class="btn ${actionView===key?'btn-primary':'btn-light'} btn-sm" data-action-view="${key}">${label}</button>`).join('')}</div>`;
+  let display=missionRows(ms);
+  if(actionView==='calendar'){
+    const dated=[...ms].filter(m=>m.date).sort((a,b)=>a.date.localeCompare(b.date)||String(a.time||'').localeCompare(String(b.time||'')));
+    display=dated.length?missionRows(dated)+'<p class="hint">Les actions sans date restent dans la vue Liste.</p>':empty('Aucune action datée','Choisissez une date pour l’afficher dans l’agenda.');
+  }
+  if(actionView==='kanban')display=`<div class="action-kanban">${STATUSES.map(status=>`<section><h3>${esc(status)} · ${ms.filter(m=>m.status===status).length}</h3>${missionRows(ms.filter(m=>m.status===status))}</section>`).join('')}</div>`;
+  if(actionView==='history')display=missionRows([...ms].sort((a,b)=>String(b.created||'').localeCompare(String(a.created||''))));
+  if(actionView==='sector'){
+    const groups=new Map();for(const m of ms){const key=m.secteur||m.rues?.join(', ')||m.commune;groups.set(key,[...(groups.get(key)||[]),m])}
+    display=[...groups].map(([name,actions])=>`<section class="action-sector"><h3>${esc(name)} · ${actions.length} action(s)</h3><p class="hint">${actions.filter(m=>m.status==='Terminée').length} terminée(s), ${actions.filter(m=>m.status==='En cours').length} en cours</p>${missionRows(actions)}</section>`).join('')||empty('Aucune action','Créez une action depuis la carte.');
+  }
+  return `${panel("Planifier les actions", `<p class="description">Organisez les actions de terrain, les marchés, les réunions et la couverture des secteurs. Les données nominatives ne sont pas collectées dans cette démo publique.</p>${fullEditor() ? '<button class="btn btn-primary" data-action="new-mission">+ Ajouter une action</button>' : fieldEditor() ? '<p class="hint">Modifiez uniquement le statut des actions ci-dessous. Pour voir les changements des autres appareils, actualisez les actions.</p><button class="btn btn-light" data-action="refresh-server">Actualiser les actions</button>' : '<p class="hint">Mode lecture seule.</p>'}`, `<span class="tag">${currentMissions().length} actions</span>`)}${panel("Actions · "+views.find(v=>v[0]===actionView)[1],tabs+display)}`;
 }
 function viewAnalyse() {
   const rows = filteredResults(),
@@ -1007,12 +1080,12 @@ function missionModal() {
     )
     .join(
       "",
-    )}</select></label><label>Statut<select name="status">${STATUSES.map((s) => `<option ${s === (m.status || "À faire") ? "selected" : ""}>${s}</option>`).join("")}</select></label><label>Date prévue<input type="date" name="date" value="${attr(m.date || "")}"/></label><label class="full"><input type="checkbox" name="notifyApp" checked> Notification mobile à prévoir</label><label class="full"><input type="checkbox" name="notifyEmail" checked> Notification e-mail à prévoir</label><label class="full">Compte rendu logistique<textarea name="notes" maxlength="1200" rows="3" placeholder="Matériel, difficulté d’accès, bilan logistique…">${esc(m.notes || "")}</textarea></label><div class="form-actions"><button class="btn btn-light" type="button" data-action="close-modal">Annuler</button>${isEditing ? `<button class="btn btn-danger" type="button" data-action="delete-mission">Supprimer</button>` : ""}<button class="btn btn-primary" type="submit">Enregistrer</button></div></form></div></div>`;
+    )}</select></label><label>Statut<select name="status">${STATUSES.map((s) => `<option ${s === (m.status || "À faire") ? "selected" : ""}>${s}</option>`).join("")}</select></label><label>Date prévue<input type="date" name="date" value="${attr(m.date || "")}"/></label><label>Heure<input type="time" name="time" value="${attr(m.time || "")}"/></label><label class="full">Objectif opérationnel<input name="objective" maxlength="300" value="${attr(m.objective || "")}" placeholder="Ex. couvrir les deux rues et vérifier les accès"/></label><label class="full">Volontaires affectés<select name="volunteers" multiple size="3">${unique(currentTeam().map(t=>t.volunteer)).map(v=>`<option ${(m.volunteers||[]).includes(v)?"selected":""}>${esc(v)}</option>`).join("")}</select><small class="hint">Identifiants fictifs du registre local uniquement.</small></label><label class="full"><input type="checkbox" name="notifyApp" checked> Notification mobile à prévoir</label><label class="full"><input type="checkbox" name="notifyEmail" checked> Notification e-mail à prévoir</label><label class="full">Compte rendu logistique<textarea name="notes" maxlength="1200" rows="3" placeholder="Matériel, difficulté d’accès, bilan logistique…">${esc(m.notes || "")}</textarea></label><label class="full">Bilan de l’action<textarea name="report" maxlength="1200" rows="3" placeholder="Ce qui a été réalisé, sans données nominatives">${esc(m.report || "")}</textarea></label><label>Relance opérationnelle<input name="followUp" maxlength="160" value="${attr(m.followUp || "")}" placeholder="Ex. rappeler l’équipe jeudi"/></label><label>Références de documents<input name="documents" maxlength="300" value="${attr(m.documents || "")}" placeholder="Référence interne ; aucun fichier joint"/></label><div class="form-actions"><button class="btn btn-light" type="button" data-action="close-modal">Annuler</button>${isEditing ? `<button class="btn btn-danger" type="button" data-action="delete-mission">Supprimer</button>` : ""}<button class="btn btn-primary" type="submit">Enregistrer</button></div></form></div></div>`;
 }
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.10</span><span>Prototype local · Pas de données personnelles · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.11</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1030,6 +1103,9 @@ function render() {
     const [leftBallot, rightBallot] = comparedBallots();
     const compareA = leftBallot ? mapCommunesFor("participation", leftBallot.id) : [];
     const compareB = rightBallot ? mapCommunesFor("participation", rightBallot.id) : [];
+    const namesForRoads=mapSelectionCommunes();
+    const activeCode=namesForRoads.length===1?territory.communes.find(c=>c.nom===namesForRoads[0])?.codeInsee:null;
+    if(tab==='carte'&&activeCode&&roadData?.code!==activeCode&&roadLoadingCode!==activeCode&&roadFailedCode!==activeCode)void ensureRoads(activeCode).catch(()=>{});
     const mapOptions = {
       selectedNames: mapSelectionCommunes(),
       selectedSectorId:
@@ -1049,7 +1125,10 @@ function render() {
       sourceLabel: filters.mapLayer === "participation" ? `Ministère de l’Intérieur · ${filters.electionYear || "dernier scrutin disponible"}` : filters.mapLayer === "priority" ? "Indice exploratoire · données agrégées" : `Insee · ${socio?.meta?.millesime || "millésime inconnu"}`,
       focusSelection: tab === "carte" && Boolean(mapSelection.value),
       streets: selectedStreets,
+      roadFeatures:tab==='carte'&&activeCode===roadData?.code?roadData.features:[],
+      addresses:tab==='carte'&&activeCode===roadData?.code?addressData:[],
       onSelect: (commune, event) => {
+        if(roadData?.code!==commune.codeInsee){selectedStreets=[];streetSearchResults=[];roadQuery='';addressData=[];addressSelected=null;addressStatus=''}
         if (event?.originalEvent?.shiftKey || event?.originalEvent?.ctrlKey) {
           mapSelectedCommunes = mapSelectedCommunes.includes(commune.nom)
             ? mapSelectedCommunes.filter((name) => name !== commune.nom)
@@ -1061,6 +1140,8 @@ function render() {
       },
       onSectorSelect: sectorId => {mapSelection={kind:"sector",value:sectorId};filters.commune="";render()},
       onBureauSelect: bureauId => {mapSelection={kind:"bureau",value:bureauId};filters.commune="";render()},
+      onRoadSelect: road=>{const {id,name,code}=road.properties;if(!selectedStreets.some(x=>x.id===id))selectedStreets.push({id,name,code,geometry:road.geometry});mapSelection={kind:'road',value:id};filters.commune=territory.communes.find(c=>c.codeInsee===code)?.nom||'';addressSelected=null;render()},
+      onAddressSelect: address=>{addressSelected=address;render()},
       onSectorComplete: saveSector,
       onNotice: (text, level) => console.log("Carte:", text, level),
     };
@@ -1100,7 +1181,11 @@ function switchTab(next) {
   render();
 }
 function updateFilter(k, v) {
+  if(k==='commune'&&selectedStreets.length&&selectedStreets.some(r=>r.code!==territory.communes.find(c=>c.nom===v)?.codeInsee)){
+    selectedStreets=[];streetSearchResults=[];addressData=[];addressSelected=null;addressStatus='';roadQuery='';
+  }
   filters[k] = v;
+  if(k==='commune'&&tab==='carte'){mapSelection={kind:'commune',value:v};mapSelectedCommunes=v?[v]:[];}
   if (k === "canton" || k === "epci") {
     const match = territory.communes.some(
       (c) =>
@@ -1224,10 +1309,11 @@ function dispatchAction(action) {
         commune: primary,
         rues: selectedStreets.map((x) => x.name),
         secteur: selectedSector?.name || "",
-        zoneKind: mapSelection.kind,
-        zoneId: selectedSector?.id || mapSelection.value || territory.communes.find(c=>c.nom===primary)?.codeInsee || "",
+        zoneKind: selectedStreets.length?'streets':mapSelection.kind,
+        zoneId: selectedStreets.length?territory.communes.find(c=>c.nom===primary)?.codeInsee||'':selectedSector?.id || mapSelection.value || territory.communes.find(c=>c.nom===primary)?.codeInsee || "",
         zoneCommunes: selectedNames.length ? selectedNames : [primary],
-        zoneGeometry: selectedSector?.geometry || selectedBureau?.geometry || selectionGeometry((selectedNames.length?selectedNames:[primary]).map(name=>territory.communes.find(c=>c.nom===name)?.codeInsee).filter(Boolean)),
+        zoneGeometry: selectedStreets.length?roadGeometry(selectedStreets):selectedSector?.geometry || selectedBureau?.geometry || selectionGeometry((selectedNames.length?selectedNames:[primary]).map(name=>territory.communes.find(c=>c.nom===name)?.codeInsee).filter(Boolean)),
+        roadIds:selectedStreets.map(x=>x.id),
       };
       editingMission = null;
       modal = "mission";
@@ -1239,6 +1325,7 @@ function dispatchAction(action) {
       filters.commune = "";
       selectedStreets = [];
       streetSearchResults = [];
+      addressData=[];addressSelected=null;addressStatus='';roadQuery='';
       render();
       break;
     case "close-modal":
@@ -1292,6 +1379,9 @@ function dispatchAction(action) {
     case "locate":
       if (!locate()) toast("Afficher d’abord la carte en ligne.", "warning");
       break;
+    case "show-addresses":
+      void showAddresses();
+      break;
     case "reset":
       resetData();
       break;
@@ -1323,9 +1413,10 @@ root.addEventListener("click", (e) => {
 });
 root.addEventListener("click", async (e) => {
   const t = e.target.closest(
-    "[data-nav],[data-action],[data-choose-commune],[data-map-mode],[data-street-index],[data-remove-street],[data-sector-select],[data-sector-edit],[data-sector-export],[data-sector-delete],[data-edit-mission],[data-delete-note],[data-delete-team],[data-delete-draft],[data-copy-draft],[data-select-campaign]",
+    "[data-nav],[data-action],[data-action-view],[data-choose-commune],[data-map-mode],[data-street-index],[data-remove-street],[data-sector-select],[data-sector-edit],[data-sector-export],[data-sector-delete],[data-edit-mission],[data-delete-note],[data-delete-team],[data-delete-draft],[data-copy-draft],[data-select-campaign]",
   );
   if (!t) return;
+  if(t.dataset.actionView){actionView=t.dataset.actionView;render();return}
   if (t.dataset.nav) {
     switchTab(t.dataset.nav);
     return;
@@ -1354,15 +1445,17 @@ root.addEventListener("click", async (e) => {
     const s=demoSectors.find(x=>x.id===t.dataset.sectorDelete);if(!s||!confirm(`Supprimer « ${s.name} » de ce navigateur ?`))return;
     demoSectors=demoSectors.filter(x=>x.id!==s.id);localStorage.setItem("democraction-demo-sectors",JSON.stringify(demoSectors));sectorBeingEdited=null;if(mapSelection.value===s.id)mapSelection={kind:"commune",value:""};render();return;
   }
-  if (t.dataset.streetIndex) {
+  if (t.hasAttribute('data-street-index')) {
     const street = streetSearchResults[Number(t.dataset.streetIndex)];
-    if (street && !selectedStreets.some((x) => x.name === street.name))
+    if (street && !selectedStreets.some((x) => x.id === street.id))
       selectedStreets.push(street);
+    if(street){mapSelection={kind:'road',value:street.id};addressSelected=null;addressData=[];addressStatus=''}
     render();
     return;
   }
-  if (t.dataset.removeStreet) {
+  if (t.hasAttribute('data-remove-street')) {
     selectedStreets.splice(Number(t.dataset.removeStreet), 1);
+    addressData=[];addressSelected=null;addressStatus='';
     render();
     return;
   }
@@ -1443,6 +1536,7 @@ root.addEventListener("change", async (e) => {
     return;
   }
   if (el.id === "map-scope") {
+    if(!['road','commune'].includes(el.value)){selectedStreets=[];streetSearchResults=[];addressData=[];addressSelected=null;addressStatus='';roadQuery='';}
     mapSelection = { kind: el.value, value: "" };
     mapSelectedCommunes = [];
     if (el.value === "bureau") void loadBureauLayer();
@@ -1450,8 +1544,15 @@ root.addEventListener("change", async (e) => {
     return;
   }
   if (el.id === "map-scope-value") {
+    if(mapSelection.kind==='commune'&&selectedStreets.some(r=>r.code!==territory.communes.find(c=>c.nom===el.value)?.codeInsee)){
+      selectedStreets=[];streetSearchResults=[];addressData=[];addressSelected=null;addressStatus='';roadQuery='';
+    }
     mapSelection.value = el.value;
     if (mapSelection.kind === "commune") filters.commune = el.value;
+    else if(mapSelection.kind==='road'){
+      const road=roadData?.features.find(f=>f.properties.id===el.value);
+      if(road){const {id,name,code}=road.properties;if(!selectedStreets.some(r=>r.id===id))selectedStreets.push({id,name,code,geometry:road.geometry});filters.commune=territory.communes.find(c=>c.codeInsee===code)?.nom||''}
+    }
     else filters.commune = "";
     mapSelectedCommunes = mapSelectionCommunes();
     render();
@@ -1742,6 +1843,7 @@ root.addEventListener("submit", (e) => {
       zoneId: editingMission?.zoneId||missionPrefill?.zoneId||"",
       zoneCommunes: editingMission?.zoneCommunes||missionPrefill?.zoneCommunes||[commune],
       zoneGeometry: editingMission?.zoneGeometry||missionPrefill?.zoneGeometry||null,
+      roadIds:editingMission?.roadIds||missionPrefill?.roadIds||[],
       rues: fd
         .getAll("rues")
         .map((v) => String(v).trim())
@@ -1753,8 +1855,14 @@ root.addEventListener("submit", (e) => {
       satisfaction:
         get("satisfaction") === "" ? null : Number(get("satisfaction")),
       assignee: get("assignee"),
+      volunteers: fd.getAll('volunteers').map(String).filter(Boolean),
       status: get("status"),
       date: get("date"),
+      time: get('time'),
+      objective: get('objective'),
+      report: get('report'),
+      followUp: get('followUp'),
+      documents: get('documents'),
       notes: get("notes"),
       notifyApp: fd.get("notifyApp") === "on",
       notifyEmail: fd.get("notifyEmail") === "on",

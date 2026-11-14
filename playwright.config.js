@@ -3,7 +3,7 @@ import {defineConfig} from '@playwright/test';
 export default defineConfig({
  testDir:'./tests/browser',
  timeout:30000,
- use:{baseURL:'http://127.0.0.1:4173',headless:true},
+ use:{baseURL:'http://127.0.0.1:4173',headless:true,launchOptions:{executablePath:process.env.CHROMIUM_PATH||undefined}},
  projects:[
   {name:'desktop',use:{browserName:'chromium',viewport:{width:1440,height:900}}},
   {name:'portable',use:{browserName:'chromium',viewport:{width:1280,height:800}}},

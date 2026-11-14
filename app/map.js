@@ -159,9 +159,25 @@ export async function drawMap(target,communes,notify,options={}){
   for(const bureau of options.bureauFeatures||[]){if(!validFeature(bureau))continue;const p=bureau.properties||{},key=String(p.id||p.code||p.bureau||''),selected=(options.selectedBureauIds||[]).includes(key);const layer=window.L.geoJSON(bureau,{style:{color:selected?'#ee4b23':'#7a1838',weight:selected?3:1.2,dashArray:selected?null:'4 4',fillColor:selected?'#ffb71b':'#7a1838',fillOpacity:selected ? .34 : .08},onEachFeature:(_,polygon)=>{polygon.bindTooltip(escapeHTML(p.nom||p.bureau||'Bureau de vote'));polygon.bindPopup('<strong>'+escapeHTML(p.nom||p.bureau||'Bureau de vote')+'</strong><small>Strate géographique · contour fourni par la collectivité</small>');polygon.on('click',e=>options.onBureauSelect?.(key,e))}}).addTo(map);if(selected)selectedGroup.addLayer(layer)}
   for(const sector of options.sectors||[]){if(!validPolygon(sector.geometry)||sector.id===options.editSector?.id)continue;const selected=options.selectedSectorId===sector.id;const layer=window.L.geoJSON(sector.geometry,{style:{color:selected?'#16163f':sector.color||'#7a1838',weight:selected?4:2,dashArray:selected?null:'7 5',fillColor:selected?'#ffb71b':sector.color||'#ffb71b',fillOpacity:selected?.5:.16},onEachFeature:(_,polygon)=>{polygon.bindTooltip(escapeHTML(sector.name||'Secteur enregistré'));polygon.on('click',e=>options.onSectorSelect?.(sector.id,e))}}).addTo(map);if(selected)selectedGroup.addLayer(layer)}
   for(const mission of options.missions||[]){if(!validFeature({geometry:mission.zoneGeometry}))continue;window.L.geoJSON(mission.zoneGeometry,{style:{color:mission.status==='Terminée'?'#2b6e46':mission.status==='En cours'?'#ee4b23':'#1e3ac8',weight:2,dashArray:'4 4',fillOpacity:.06},onEachFeature:(_,polygon)=>polygon.bindPopup(`<strong>${escapeHTML(mission.title)}</strong><div>${escapeHTML(mission.status)}</div><small>Action enregistrée localement</small>`)}).addTo(map)}
-  for(const street of options.streets||[]){if(Number.isFinite(Number(street.lat))&&Number.isFinite(Number(street.lon)))window.L.circleMarker([Number(street.lat),Number(street.lon)],{radius:6,weight:2,color:'#fff',fillColor:'#6d3e8c',fillOpacity:.95}).addTo(map).bindPopup(`<strong>${escapeHTML(street.name)}</strong><small>Voie sélectionnée · API Adresse</small>`);}
+  const roadGroup=window.L.featureGroup(),selectedRoads=new Set((options.streets||[]).map(r=>r.id));
+  for(const road of options.roadFeatures||[]){
+   if(!['LineString','MultiLineString'].includes(road.geometry?.type))continue;
+   const selected=selectedRoads.has(road.properties?.id);
+   const layer=window.L.geoJSON(road,{style:{className:selected?'road-selected':'road-line',color:selected?'#ee4b23':'#1e3ac8',weight:selected?6:2.5,opacity:selected?.96:.44},onEachFeature:(_,line)=>{
+    line.bindTooltip(escapeHTML(road.properties?.name||'Voie'),{sticky:true});
+    line.on('click',e=>{window.L.DomEvent.stopPropagation(e);options.onRoadSelect?.(road)});
+   }}).addTo(map);
+   if(selected)roadGroup.addLayer(layer);
+  }
+  for(const address of options.addresses||[]){
+   const [lon,lat]=address.coordinates||[];if(!Number.isFinite(lon)||!Number.isFinite(lat))continue;
+   window.L.circleMarker([lat,lon],{className:'ban-address',radius:4,weight:1,color:'#16163f',fillColor:'#ffb71b',fillOpacity:.8})
+    .addTo(map).bindTooltip(escapeHTML([address.number,address.suffix,address.roadName].filter(Boolean).join(' ')))
+    .on('click',e=>{window.L.DomEvent.stopPropagation(e);options.onAddressSelect?.(address)});
+  }
   if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.08),{maxZoom:11});
   if(options.focusSelection&&selectedGroup.getLayers().length)map.fitBounds(selectedGroup.getBounds().pad(.2),{maxZoom:13});
+  if(options.focusSelection&&roadGroup.getLayers().length)map.fitBounds(roadGroup.getBounds().pad(.35),{maxZoom:16});
   addLegend(map,legend,options);
   if(options.allowDraw)addDrawingTools(box,map,target,options);
   if(target==='map-left'||target==='map-right'){

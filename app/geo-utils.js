@@ -24,6 +24,10 @@ export function validPolygon(geometry){
 
 export function validZone(geometry){
  if(geometry===null)return true;
+ if(['LineString','MultiLineString'].includes(geometry?.type)){
+  const lines=geometry.type==='LineString'?[geometry.coordinates]:geometry.coordinates;
+  return Array.isArray(lines)&&lines.length>0&&lines.length<1000&&lines.every(points=>Array.isArray(points)&&points.length>=2&&points.length<5000&&points.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=180&&Math.abs(p[1])<=90));
+ }
  if(!['Polygon','MultiPolygon'].includes(geometry?.type))return false;
  const polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
  return Array.isArray(polygons)&&polygons.length>0&&polygons.length<200&&polygons.every(rings=>Array.isArray(rings)&&rings.length>0&&rings.every(ring=>Array.isArray(ring)&&ring.length>=4&&ring.length<5000&&ring.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite))&&ring[0][0]===ring.at(-1)[0]&&ring[0][1]===ring.at(-1)[1]));

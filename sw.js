@@ -1,5 +1,5 @@
-const CACHE = 'democraction-demo-v47';
-const SHELL = ['./','./index.html','./manifest.webmanifest','./assets/style.css','./assets/icon.svg','./assets/vendor/leaflet.js','./assets/vendor/leaflet.css','./assets/vendor/images/marker-icon.png','./assets/vendor/images/marker-icon-2x.png','./assets/vendor/images/marker-shadow.png','./app/main.js','./app/public-data-v3.js','./app/core.js','./app/geo-utils.js','./app/store.js','./app/xlsx.js','./app/map.js','./app/sync.js','./data/territoire-33-11-2026.json','./data/street-catalog-33366.json','./data/socio-demographie-v3.json','./data/elections-2008-2026.json.gz','./data/communes-33-11.geojson'];
+const CACHE = 'democraction-demo-v48';
+const SHELL = ['./','./index.html','./manifest.webmanifest','./assets/style.css','./assets/icon.svg','./assets/vendor/leaflet.js','./assets/vendor/leaflet.css','./assets/vendor/images/marker-icon.png','./assets/vendor/images/marker-icon-2x.png','./assets/vendor/images/marker-shadow.png','./app/main.js','./app/public-data-v3.js','./app/core.js','./app/geo-utils.js','./app/roads.js','./app/store.js','./app/xlsx.js','./app/map.js','./app/sync.js','./data/territoire-33-11-2026.json','./data/street-catalog-33366.json','./data/voies-33366.geojson','./data/socio-demographie-v3.json','./data/elections-2008-2026.json.gz','./data/communes-33-11.geojson'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));
  self.skipWaiting();

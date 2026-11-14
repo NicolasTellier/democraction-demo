@@ -159,3 +159,12 @@ td strong{color:var(--cobalt)}
 .warning-note code{font-size:10px;background:var(--cream);padding:2px 4px;border:1px solid var(--ink)}
 
 .contact-list{display:grid;gap:12px}.contact-card{border:2px solid var(--ink);border-radius:14px;padding:14px;background:var(--cream);box-shadow:4px 4px 0 var(--ink)}.contact-card-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.contact-card p{margin:.45rem 0}.contact-card small{color:var(--ink);opacity:.7}.contact-card textarea{min-height:88px}.warning-note{margin-bottom:16px}
+.street-results{max-height:260px;overflow-y:auto;overscroll-behavior:contain}
+.road-line{cursor:pointer}
+.road-selected{cursor:pointer;stroke-linecap:round}
+.ban-address{cursor:pointer}
+.action-view-tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.action-kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.action-kanban section,.action-sector{background:#fffaf0;border:1px solid #dfd8ca;border-radius:10px;padding:11px;margin-bottom:12px;min-width:0}
+.action-kanban h3,.action-sector h3{font-size:13px;margin:0 0 10px;color:#16163f}
+@media(max-width:900px){.action-kanban{grid-template-columns:1fr}}
