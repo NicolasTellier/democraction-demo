@@ -36,7 +36,7 @@ test('adresse publique BAN ouverte sans fiche nominative',async({page})=>{
  await page.route('https://data.geopf.fr/wfs/ows**',async route=>{
   const url=new URL(route.request().url());
   if(url.searchParams.get('TYPENAMES')!=='BAN.DATA.GOUV:ban')return route.continue();
-  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({type:'FeatureCollection',numberMatched:1,features:[{type:'Feature',id:'33366_0265_00001',geometry:{type:'Point',coordinates:[-.48,45.03]},properties:{id:'33366_0265_00001',code_insee:'33366',id_fantoir:'33366_0265',nom_voie:'Rue Elie Faure',numero:1,rep:'',code_postal:'33240',nom_commune:'Saint-André-de-Cubzac',certification_commune:1}}]})});
+  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({type:'FeatureCollection',numberMatched:1,features:[{type:'Feature',id:'33366_0265_00001',geometry:{type:'Point',coordinates:[-.4332,44.9985]},properties:{id:'33366_0265_00001',code_insee:'33366',id_fantoir:'33366_0265',nom_voie:'Rue Elie Faure',numero:1,rep:'',code_postal:'33240',nom_commune:'Saint-André-de-Cubzac',certification_commune:1}}]})});
  });
  await page.goto('/');
  await page.locator('button[data-nav=carte]:visible').first().click();
