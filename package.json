@@ -8,5 +8,10 @@
     "test": "node --test tests/*.test.js",
     "test:e2e": "playwright test"
   },
-  "devDependencies": {"@playwright/test": "1.58.2"}
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
+  },
+  "dependencies": {
+    "leaflet": "1.9.4"
+  }
 }

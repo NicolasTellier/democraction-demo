@@ -19,7 +19,7 @@ import {
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry } from "./map.js?v=20261113map17";
+import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114map18";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {
   checkSession,
@@ -121,6 +121,22 @@ let demoContacts = JSON.parse(
   mapSelection = { kind: "commune", value: "" },
   bureauxLayer = null,
   sectorBeingEdited = null;
+
+const PREFS_KEY = "democraction-demo-preferences";
+const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "electionType", "electionYear", "electionTour", "compareLeft", "compareRight", "prioritySocio", "priorityElectoralWeight", "prioritySocioWeight"];
+function restorePreferences(preferences) {
+  if (!preferences || typeof preferences !== "object") return;
+  for (const key of PREF_KEYS)
+    if (typeof preferences.filters?.[key] === "string" && preferences.filters[key].length < 160)
+      filters[key] = preferences.filters[key];
+  if (["commune", "epci", "canton", "bureau", "sector"].includes(preferences.mapSelection?.kind) && typeof preferences.mapSelection.value === "string" && preferences.mapSelection.value.length < 160)
+    mapSelection = {kind:preferences.mapSelection.kind,value:preferences.mapSelection.value};
+  if (["explore", "compare", "draw", "organize"].includes(preferences.mapMode)) mapMode = preferences.mapMode;
+}
+function savePreferences() {
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({filters:Object.fromEntries(PREF_KEYS.map(key=>[key,filters[key]])),mapSelection,mapMode})); } catch {}
+}
+try { restorePreferences(JSON.parse(localStorage.getItem(PREFS_KEY) || "null")); } catch {}
 
 const options = (values, value, all) =>
   `<option value="">${esc(all)}</option>` +
@@ -789,7 +805,7 @@ function viewAnalyse() {
   )}`;
 }
 function viewImports() {
-  return `${panel("Importer les résultats électoraux", `<p class="description">Import de fichiers <strong>CSV ou Excel XLSX</strong>, avec vérification des colonnes, des effectifs, des doublons et de la présence d’un lien ou titre de source. L’import est entièrement local.</p><div class="import-zone"><label for="import-results" class="file-label">Sélectionner un fichier CSV / XLSX</label><input type="file" id="import-results" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/><p>Colonnes : <code>commune; scrutin; inscrits; votants; exprimes; source</code></p><p>Optionnelles : <code>bureau; tour; annee; code_insee</code></p><button class="btn btn-light" data-action="download-example">Télécharger un modèle fictif</button></div><p class="warning-note">Ne pas importer de listes électorales nominatives, listes d’émargement, coordonnées personnelles, opinions politiques ni préférences de vote. Les colonnes non autorisées bloquent l’import.</p>`)}${panel("Sauvegarder et transférer", `<div class="button-row"><button class="btn btn-primary" data-action="backup">Exporter toute la base locale (JSON)</button><button class="btn btn-light" data-action="export-results">Exporter les résultats (CSV)</button><label class="btn btn-light file-label" for="restore-backup">Restaurer une sauvegarde JSON</label><input id="restore-backup" type="file" accept=".json,application/json" class="sr-only"/></div><p class="hint">La restauration remplace toutes les données locales après confirmation. Les sauvegardes doivent être conservées de façon sécurisée. Aucun compte serveur ni synchronisation pour cette version.</p>`)}`;
+  return `${panel("Importer les résultats électoraux", `<p class="description">Import de fichiers <strong>CSV ou Excel XLSX</strong>, avec vérification des colonnes, des effectifs, des doublons et de la présence d’un lien ou titre de source. L’import est entièrement local.</p><div class="import-zone"><label for="import-results" class="file-label">Sélectionner un fichier CSV / XLSX</label><input type="file" id="import-results" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/><p>Colonnes : <code>commune; scrutin; inscrits; votants; exprimes; source</code></p><p>Optionnelles : <code>bureau; tour; annee; code_insee</code></p><button class="btn btn-light" data-action="download-example">Télécharger un modèle fictif</button></div><p class="warning-note">Ne pas importer de listes électorales nominatives, listes d’émargement, coordonnées personnelles, opinions politiques ni préférences de vote. Les colonnes non autorisées bloquent l’import.</p>`)}${panel("Sauvegarder et transférer", `<div class="button-row"><button class="btn btn-primary" data-action="backup">Exporter campagnes, actions et secteurs (JSON)</button><button class="btn btn-light" data-action="export-results">Exporter les résultats (CSV)</button><label class="btn btn-light file-label" for="restore-backup">Restaurer une sauvegarde JSON</label><input id="restore-backup" type="file" accept=".json,application/json" class="sr-only"/></div><p class="hint">La sauvegarde inclut les campagnes, résultats importés, actions, groupes, archives, brouillons, secteurs et filtres. Elle exclut les contacts et inscriptions fictifs ainsi que les périmètres de bureaux importés. Conservez-la de façon sécurisée ; aucun compte serveur ni synchronisation dans cette version.</p>`)}`;
 }
 function viewCommunication() {
   return `${panel("Communications générales", `<p class="description">Préparation des publications, lettres d’information et annonces publiques. Les envois à des contacts individuels nécessiteront un système d’abonnement volontaire et une infrastructure sécurisée, non activés dans ce prototype.</p><form id="draft-form" class="form-grid"><label>Support<select name="channel"><option>E-mail (abonnés volontaires)</option><option>SMS (abonnés volontaires)</option><option>Publication publique</option></select></label><label>Objet / thème<input name="subject" maxlength="120" required placeholder="Information sur la réunion publique"/></label><label class="full">Contenu<textarea name="content" rows="5" maxlength="4000" required placeholder="Rédiger un message général...">${esc(draftText)}</textarea></label><button class="btn btn-primary" type="submit">Enregistrer le brouillon</button></form><p class="hint">Aucun envoi réel, aucun fichier de contacts et aucune segmentation des destinataires.</p>`)}${panel(
@@ -988,6 +1004,7 @@ function missionModal() {
 }
 function render() {
   if (!territory) return;
+  savePreferences();
   root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.10</span><span>Prototype local · Pas de données personnelles · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
@@ -1090,7 +1107,7 @@ function updateFilter(k, v) {
 }
 const dlBackup = () =>
   download(
-    JSON.stringify({ ...app, lastSaved: new Date().toISOString() }, null, 2),
+    JSON.stringify({format:"democraction-demo-backup-v1",application:{...app,lastSaved:new Date().toISOString()},sectors:demoSectors,preferences:{filters:Object.fromEntries(PREF_KEYS.map(key=>[key,filters[key]])),mapSelection,mapMode}},null,2),
     `democraction-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`,
   );
 const dlResults = () =>
@@ -1127,6 +1144,10 @@ function resetData() {
   )
     return;
   clearLocal();
+  for (const key of ["democraction-demo-sectors", "democraction-demo-bureaux", "democraction-demo-contacts", "democraction-demo-funds", "democraction-demo-events", PREFS_KEY]) localStorage.removeItem(key);
+  demoSectors = []; demoContacts = []; demoFunds = []; demoEvents = []; bureauxLayer = null;
+  for (const key of PREF_KEYS) filters[key] = key === "mapLayer" ? "participation" : key === "prioritySocio" ? "tauxChomage" : ["priorityElectoralWeight", "prioritySocioWeight"].includes(key) ? "50" : "";
+  mapSelection = {kind:"commune",value:""}; mapSelectedCommunes = []; mapMode = "explore"; selectedStreets = []; streetSearchResults = [];
   app = save(emptyState());
   enqueueSync();
   toast("Données locales réinitialisées.");
@@ -1506,17 +1527,24 @@ root.addEventListener("change", async (e) => {
     try {
       if (file.size > 12e6) throw new Error("Fichier trop volumineux.");
       const source = JSON.parse(await file.text());
-      const next =
+      const envelope = source.format === "democraction-demo-backup-v1";
+      const next = envelope ? validateBackup(source.application) :
         source.version === 2 ? migrateLegacyV2(source) : validateBackup(source);
+      let restoredSectors = null;
+      if (envelope) {
+        if (!Array.isArray(source.sectors) || source.sectors.length > 500 || source.sectors.some(s=>!s||typeof s.id!=="string"||typeof s.name!=="string"||!validPolygon(s.geometry)) || new Set(source.sectors.map(s=>s.id)).size !== source.sectors.length) throw new Error("Secteurs invalides dans la sauvegarde.");
+        restoredSectors = source.sectors;
+      }
       if (
         !confirm(
-          "Remplacer toutes les données de ce navigateur par cette sauvegarde ?",
+          "Remplacer les campagnes, actions, résultats et secteurs de ce navigateur par cette sauvegarde ? Les contacts et inscriptions fictifs ne sont pas concernés.",
         )
       )
         return;
       app = save(next);
+      if (restoredSectors) { demoSectors = restoredSectors; localStorage.setItem("democraction-demo-sectors",JSON.stringify(demoSectors)); restorePreferences(source.preferences); savePreferences(); }
       enqueueSync();
-      toast("Sauvegarde restaurée.");
+      toast(envelope ? "Sauvegarde et secteurs restaurés." : "Ancienne sauvegarde restaurée ; elle ne contenait pas les secteurs.");
     } catch (err) {
       toast("Restauration impossible : " + err.message, "warning");
     }
@@ -1985,7 +2013,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261113map17")
+        .register("./sw.js?v=20261114map18")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;

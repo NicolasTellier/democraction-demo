@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
 
 test('polygones, échelle et sélection conservés après rechargement',async({page})=>{
  await page.goto('/');
@@ -14,6 +15,7 @@ test('polygones, échelle et sélection conservés après rechargement',async({p
  await page.reload();
  await page.locator('button[data-nav=carte]:visible').first().click();
  await expect.poll(()=>page.locator('#map .leaflet-interactive').count(),{timeout:20000}).toBeGreaterThanOrEqual(87);
+ await expect(page.locator('#map-layer')).toHaveValue('revenuMedian');
 });
 
 test('les formulaires de démonstration enregistrent réellement leurs données locales',async({page},testInfo)=>{
@@ -85,6 +87,16 @@ test('secteur dessiné, édition et action liée conservés au rechargement',asy
  const mission=await page.evaluate(id=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(m=>m.zoneId===id),sector.id);
  expect(mission.zoneKind).toBe('sector');
  expect(mission.zoneGeometry).toEqual(edited.geometry);
+ const [download]=await Promise.all([page.waitForEvent('download'),page.locator('button[data-action=backup]').first().click()]);
+ const backup=JSON.parse(await readFile(await download.path(),'utf8'));
+ expect(backup.sectors.find(s=>s.id===sector.id)?.geometry).toEqual(edited.geometry);
+ expect(backup.application.missions.find(m=>m.zoneId===sector.id)?.title).toBe('Action sur secteur test');
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator(`[data-sector-delete="${sector.id}"]`).click();
+ await expect(page.locator(`[data-sector-select="${sector.id}"]`)).toHaveCount(0);
+ await page.locator('button[data-nav=imports]:visible').first().click();
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator('#restore-backup').setInputFiles({name:'recette.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
  await page.reload();
  await page.locator('button[data-nav=carte]:visible').first().click();
  await expect(page.locator(`[data-sector-select="${sector.id}"]`)).toContainText('Secteur test modifié');

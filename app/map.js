@@ -14,14 +14,12 @@ function ensureLeaflet(){
  if(loadingLeaflet)return loadingLeaflet;
  loadingLeaflet=new Promise((resolve,reject)=>{
   const css=document.createElement('link');
-  css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-  css.integrity='sha256-p4NxAoJBhIIN+hmNHrzxL8Qd6uH9QbCNl8JLf7DqQ70=';css.crossOrigin='anonymous';
+  css.rel='stylesheet';css.href=new URL('../assets/vendor/leaflet.css',import.meta.url).href;
   document.head.appendChild(css);
   const fallback=document.createElement('style');
   fallback.textContent='.leaflet-container{overflow:hidden;position:relative}.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-map-pane svg,.leaflet-map-pane canvas{position:absolute;left:0;top:0}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-control{position:relative;z-index:800}.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-left{left:0}.leaflet-bottom{bottom:0}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-tile{max-width:none!important;max-height:none!important}';
   document.head.appendChild(fallback);
-  const js=document.createElement('script');js.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-  js.integrity='sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';js.crossOrigin='anonymous';
+  const js=document.createElement('script');js.src=new URL('../assets/vendor/leaflet.js',import.meta.url).href;
   js.onload=()=>window.L?resolve(window.L):reject(new Error('Librairie cartographique absente'));
   js.onerror=()=>reject(new Error('Librairie cartographique non téléchargée'));
   document.head.appendChild(js);
