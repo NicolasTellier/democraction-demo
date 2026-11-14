@@ -37,11 +37,12 @@ jobs:
         run: npm run test:e2e
       - name: Construire uniquement les fichiers publics
         run: |
-          mkdir -p site/app site/assets/vendor site/data
+          mkdir -p site/app site/assets/vendor/images site/data
           cp index.html manifest.webmanifest sw.js site/
           cp app/*.js site/app/
           cp assets/style.css assets/icon.svg site/assets/
           cp assets/vendor/leaflet.js assets/vendor/leaflet.css assets/vendor/LICENSE.leaflet site/assets/vendor/
+          cp assets/vendor/images/* site/assets/vendor/images/
           cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json site/data/
           test -f site/data/communes-33-11.geojson
       - name: Configurer GitHub Pages

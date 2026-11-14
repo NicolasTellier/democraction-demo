@@ -5,6 +5,7 @@ const GEO_KEY='democraction-33-geo-v2';
 const CONTOUR_KEY='democraction-33-contours-v5';
 const maps=new Map();
 const mapLayers=new Map();
+const generations=new Map();
 let currentGeo=[];
 let currentContours=[];
 let loadingLeaflet=null;
@@ -121,13 +122,16 @@ function addLegend(map,legend,options){
 }
 
 export async function drawMap(target,communes,notify,options={}){
+ const generation=(generations.get(target)||0)+1;generations.set(target,generation);
  const previous=maps.get(target);if(previous){previous.remove();maps.delete(target)}
  const box=document.getElementById(target);if(!box)return;
+ const active=()=>generations.get(target)===generation&&document.getElementById(target)===box;
  box.innerHTML='<div class="map-loading">Chargement des contours communaux officiels…</div>';
  try{
   await ensureLeaflet();
+  if(!active())return;
   const contours=await loadContours(communes);
-  if(!document.getElementById(target))return;
+  if(!active())return;
   box.innerHTML='';const map=window.L.map(box,{zoomControl:true,scrollWheelZoom:true}).setView([45.07,-0.48],9);maps.set(target,map);
   const ign='https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
   window.L.tileLayer(ign,{attribution:'© <a href="https://www.ign.fr/" target="_blank" rel="noopener noreferrer">IGN</a> — données géographiques françaises',maxZoom:18}).addTo(map);
@@ -159,7 +163,7 @@ export async function drawMap(target,communes,notify,options={}){
   }
   setTimeout(()=>map.invalidateSize(),150);
   notify?.(`Contours affichés : ${rendered} / ${communes.length} communes.`,rendered?'info':'warning');
- }catch(e){box.innerHTML='<div class="map-loading">Contours indisponibles : le fichier géographique local n’a pas pu être chargé. Réessayez en ligne.</div>';notify?.(String(e.message||e),'warning')}
+ }catch(e){if(active()){box.innerHTML='<div class="map-loading">Contours indisponibles : le fichier géographique local n’a pas pu être chargé. Réessayez en ligne.</div>';notify?.(String(e.message||e),'warning')}}
 }
 
 export function locate(){const map=[...maps.values()][0];if(!map)return false;if(!navigator.geolocation)return false;navigator.geolocation.getCurrentPosition(p=>{const {latitude,longitude}=p.coords;window.L.marker([latitude,longitude]).addTo(map).bindPopup('Position ponctuelle (non enregistrée)').openPopup();map.setView([latitude,longitude],13)},()=>{alert('Géolocalisation refusée ou indisponible. Aucune position n’est stockée.')},{enableHighAccuracy:false,timeout:10000});return true}

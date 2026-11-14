@@ -1,6 +1,11 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 
+test.beforeEach(async({page})=>{
+ page.on('pageerror',error=>console.error('Erreur navigateur:',error.message));
+ page.on('console',message=>{if(message.type()==='error')console.error('Console navigateur:',message.text())});
+});
+
 test('polygones, échelle et sélection conservés après rechargement',async({page})=>{
  await page.goto('/');
  await page.locator('button[data-nav=carte]:visible').first().click();
