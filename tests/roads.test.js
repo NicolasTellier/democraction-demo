@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {normalizeRoads,searchRoads,roadGeometry} from '../app/roads.js';
+import {normalizeRoads,searchRoads,roadGeometry,loadAddressesForRoad} from '../app/roads.js';
 import {validZone} from '../app/geo-utils.js';
 import {emptyState,validateBackup} from '../app/core.js';
 
@@ -28,4 +28,20 @@ test('plusieurs rues forment une action linéaire sauvegardable sans perte',()=>
  assert.deepEqual(restored.zoneGeometry,geometry);
  state.missions[0].roadIds=['bad',42];
  assert.throws(()=>validateBackup(state),/Voies de mission invalides/);
+});
+
+test('adresses BAN : recherche par nom quand le code de voie ne correspond pas',async()=>{
+ const original=globalThis.fetch,queries=[];
+ globalThis.fetch=async url=>{
+  const filter=new URL(url).searchParams.get('CQL_FILTER');queries.push(filter);
+  const features=filter.includes('nom_voie=')?[{type:'Feature',geometry:{type:'Point',coordinates:[-.4332,44.9985]},properties:{id:'test_adresse_1',code_insee:'33366',numero:'2',nom_commune:'Saint-André-de-Cubzac',code_postal:'33240'}}]:[];
+  return {ok:true,json:async()=>({type:'FeatureCollection',numberMatched:features.length,features})};
+ };
+ try{
+  const result=await loadAddressesForRoad({properties:{id:'33366_9999',code:'33366',name:'Rue fictive'}});
+  assert.equal(result.features.length,1);
+  assert.equal(result.features[0].roadName,'Rue fictive');
+  assert.match(queries[0],/id_fantoir=/);
+  assert.match(queries[1],/nom_voie=/);
+ }finally{globalThis.fetch=original}
 });

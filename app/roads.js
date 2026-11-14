@@ -89,7 +89,10 @@ export async function loadAddressesForRoad(road){
  if(localAddresses.has(key))return localAddresses.get(key);
  const safe=s=>String(s).replaceAll("'","''");
  const filter=/^33\d{3}_[\w-]+$/.test(id)?`code_insee='${code}' AND id_fantoir='${safe(id)}'`:`code_insee='${code}' AND nom_voie='${safe(name)}'`;
- const collection=await wfsCollection('BAN.DATA.GOUV:ban',filter,{limit:800,pageSize:400});
+ let collection=await wfsCollection('BAN.DATA.GOUV:ban',filter,{limit:800,pageSize:400});
+ // Certaines voies BD TOPO n'ont pas d'identifiant repris dans BAN.
+ if(!collection.features.length&&filter.includes('id_fantoir='))
+  collection=await wfsCollection('BAN.DATA.GOUV:ban',`code_insee='${code}' AND nom_voie='${safe(name)}'`,{limit:800,pageSize:400});
  const seen=new Set(),addresses=[];
  for(const feature of collection.features){
   const p=feature.properties||{},point=feature.geometry?.coordinates;

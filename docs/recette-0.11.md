@@ -29,9 +29,18 @@
 
 | Contrôle | Résultat |
 |---|---|
-| Syntaxe et tests Node | 5 tests réussis en local : géométries 87/303, recherche, sélection, sauvegarde et refus des géométries invalides. |
-| Recette navigateur | Suite de parcours sur quatre dimensions dans GitHub Actions, condition de publication. Le navigateur local isolé n'a pas pu démarrer Chromium ; la validation sur le site publié et le run CI seront inscrits ici après déploiement. |
+| Syntaxe et tests Node | `npm run check` et 6 tests réussis en local : géométries 87/303, recherche, sélection, sauvegarde, refus des géométries invalides et repli BAN par nom de voie. |
+| Recette navigateur | [GitHub Actions, run 43600285295](https://github.com/NicolasTellier/democraction-demo/actions/runs/43600285295) : 20 parcours Playwright réussis, 4 ignorés, en quatre dimensions. Les parcours couvrent notamment les rues, la multisélection, la création d'action, la persistance et la fiche d'adresse fictive. Le dernier repli BAN a son test Node et repasse la même chaîne avant publication. |
+| Site effectivement publié | [Démonstration 0.11](https://nicolastellier.github.io/democraction-demo/) ouverte et vérifiée le 14 novembre 2026 : 303 voies linéaires, Rue Elie Faure surlignée avec zoom sur son tracé, 34 adresses BAN chargées et fiche d'adresse publique ouverte ; Kanban affiché. |
 | Confidentialité du paquet | Paquet public filtré par workflow. Les données cartographiques n'associent aucune identité aux adresses. Le formulaire local n'est utilisable qu'avec des identités fictives. |
+
+### Captures de la version publiée
+
+- [Rue Elie Faure, tracé IGN sélectionné](captures/01-rue.webp)
+- [34 adresses BAN et fiche d'adresse sans personne](captures/02-adresse.webp)
+- [Actions en vue Kanban](captures/03-actions.webp)
+
+Les deux actions et les secteurs montrés dans ces captures ont été créés avec des intitulés fictifs dans le navigateur de recette ; ils ne sont pas des données partagées entre utilisateurs.
 
 ## Chemin vers une application privée
 
