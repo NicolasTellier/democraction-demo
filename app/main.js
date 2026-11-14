@@ -23,6 +23,7 @@ import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114roads12";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
+import {readBureauFile,validateBureauImport} from './bureau-import.js';
 import {
   checkSession,
   login,
@@ -283,8 +284,8 @@ async function loadBureauLayer() {
   if (bureauxLayer) return;
   try {
     const saved = JSON.parse(localStorage.getItem("democraction-demo-bureaux") || "null");
-    if (saved?.type === "FeatureCollection" && Array.isArray(saved.features)) { bureauxLayer = saved; if (tab === "carte") render(); return; }
-  } catch {}
+    if (saved?.type === "FeatureCollection" && Array.isArray(saved.features)) { bureauxLayer = validateBureauImport(saved,territory.communes); if (tab === "carte") render(); return; }
+  } catch(error) { console.warn('Contours locaux de bureaux invalides',error); }
   const pending = { type: "FeatureCollection", features: [], loading: true };
   bureauxLayer = pending;
   let needsRender = false;
@@ -501,8 +502,9 @@ function mapDetail() {
   if (mapSelection.kind === "bureau") {
     const station=pollingCatalog.find(row=>row.id===mapSelection.value);
     const feature=bureauFeature(bureauFeatures(),mapSelection.value);
-    if(station)return panel(`Bureau ${station.numero} · ${esc(station.commune)}`,`<div class="detail-list"><div><span>Identifiant</span><strong>${esc(station.id)}</strong></div><div><span>Valeur communiquée</span><strong>${fmtNumber(station.reportedValue)}</strong></div><div><span>Contour du bureau</span><strong>${feature?'Importé localement':'Géométrie absente'}</strong></div></div><p class="hint">Effectif communiqué, nature et millésime à vérifier. Source : cahier des charges V1.1 fourni par le propriétaire. Aucun résultat électoral ni indicateur communal n’est attribué à ce bureau.</p><p class="hint">${feature?'Le contour importé reste à valider ; sa provenance officielle n’est pas attestée.':'Seule la commune parente est surlignée. Le périmètre du bureau n’est pas connu.'}</p>`);
-    if(feature)return panel("Bureau de vote · " + esc(feature.properties?.nom||mapSelection.value), `<p>Identifiant : ${esc(mapSelection.value)}</p><p>Commune : ${esc(feature.properties?.commune||feature.properties?.codeInsee||"Non renseignée")}</p><p>Contour importé localement ; provenance et validation à confirmer.</p>`);
+    const provenance=feature?`<div class="detail-list"><div><span>Origine</span><strong>Fourni localement</strong></div><div><span>Validation</span><strong>À confirmer</strong></div><div><span>Source déclarée</span><strong>${esc(feature.properties?.source||'Non renseignée')}</strong></div><div><span>Importé le</span><strong>${esc(feature.properties?.importedAt?.slice(0,10)||'Date indisponible')}</strong></div></div>`:'';
+    if(station)return panel(`Bureau ${station.numero} · ${esc(station.commune)}`,`<div class="detail-list"><div><span>Identifiant</span><strong>${esc(station.id)}</strong></div><div><span>Valeur communiquée</span><strong>${fmtNumber(station.reportedValue)}</strong></div><div><span>Contour du bureau</span><strong>${feature?'Importé localement':'Géométrie absente'}</strong></div></div><p class="hint">Effectif communiqué, nature et millésime à vérifier. Source : cahier des charges V1.1 fourni par le propriétaire. Aucun résultat électoral ni indicateur communal n’est attribué à ce bureau.</p>${provenance}<p class="hint">${feature?'Le contour importé reste à valider ; sa provenance officielle n’est pas attestée.':'Seule la commune parente est surlignée. Le périmètre du bureau n’est pas connu.'}</p>`);
+    if(feature)return panel("Bureau de vote · " + esc(feature.properties?.nom||mapSelection.value), `<p>Identifiant : ${esc(mapSelection.value)}</p><p>Commune : ${esc(feature.properties?.commune||feature.properties?.codeInsee||"Non renseignée")}</p>${provenance}<p>Contour importé localement ; provenance et validation à confirmer.</p>`);
   }
   if (!c)
     return panel(
@@ -595,7 +597,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.12 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.13 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -763,7 +765,7 @@ function viewCarte() {
       '%</strong></label><p class="hint">Calcul par commune : chaque indicateur est ramené entre 0 et 1 sur les communes affichées ; une participation plus faible augmente le score. L’indicateur socio suit la direction indiquée dans le référentiel. Moyenne pondérée des seuls indicateurs disponibles, de 0 à 100. Pas de score si moins de 30 inscrits ou de 100 habitants pour la composante concernée. Le classement varie avec les filtres et ne prédit aucun comportement individuel.</p></div>';
   }
   const bureauWarning = mapSelection.kind === "bureau" ?
-    `<section><h3>Référentiel des bureaux</h3><label>Commune<select id="bureau-commune"><option value="">Toutes les communes</option>${territory.communes.map(c=>opt(c.nom,c.nom,bureauCommune===c.nom)).join('')}</select></label><p class="hint">${pollingCatalog.length} bureaux fournis · ${bureauFeatures().length} contour(s) importé(s) sur cet appareil.</p><div class="warning-note">Les effectifs communiqués n’ont pas de nature ni de millésime vérifiés. Sans contour, la carte surligne seulement la commune parente.</div><label>Importer des contours (GeoJSON)<input id="bureau-import" type="file" accept=".geojson,.json,application/geo+json"></label><p class="hint">Identifiant attendu pour relier un contour à un bureau fourni : code INSEE-numéro (ex. 33067-1). Une géométrie importée ne devient pas automatiquement officielle.</p></section>` : "";
+    `<section><h3>Référentiel des bureaux</h3><label>Commune<select id="bureau-commune"><option value="">Toutes les communes</option>${territory.communes.map(c=>opt(c.nom,c.nom,bureauCommune===c.nom)).join('')}</select></label><p class="hint">${pollingCatalog.length} bureaux fournis · ${bureauFeatures().length} contour(s) importé(s) sur cet appareil.</p><div class="warning-note">Les effectifs communiqués n’ont pas de nature ni de millésime vérifiés. Sans contour, la carte surligne seulement la commune parente.</div><label>Source déclarée du fichier<input id="bureau-source" maxlength="200" placeholder="Ex. export My Maps transmis par la commune"></label><label>Importer des contours (GeoJSON, KML, KMZ)<input id="bureau-import" type="file" accept=".geojson,.json,.kml,.kmz,application/geo+json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"></label><p class="hint">Pour KML/KMZ : choisissez d’abord la commune ; nommez chaque repère « Bureau 1 », « Bureau 2 »… Un GeoJSON peut fournir ses identifiants. Un import local n’atteste pas la provenance officielle. Un contour du même identifiant remplace le précédent sur cet appareil.</p></section>` : "";
   const maps =
     mapMode === "compare"
       ? '<div class="compare-maps"><div><div class="map-map-title">Carte A · ' +
@@ -1088,7 +1090,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.12</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.13</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1601,11 +1603,12 @@ root.addEventListener("change", async (e) => {
   if (el.id === "bureau-import") {
     const file=el.files?.[0];if(!file)return;
     try {
-      if(file.size>2000000)throw new Error("Fichier supérieur à 2 Mo.");
-      const data=JSON.parse(await file.text());
-      if(data?.type!=="FeatureCollection"||!Array.isArray(data.features)||!data.features.length||data.features.length>500)throw new Error("Collection GeoJSON invalide.");
-      const ids=new Set();for(const feature of data.features){const p=feature.properties||{},id=String(p.id||p.code||p.bureau||"");if(!id||ids.has(id)||feature.geometry===null||!validZone(feature.geometry))throw new Error("Identifiant ou géométrie de bureau invalide.");ids.add(id)}
-      localStorage.setItem("democraction-demo-bureaux",JSON.stringify(data));bureauxLayer=data;render();toast(`${ids.size} bureau(x) chargés sur cet appareil.`);
+      const imported=await readBureauFile(file,territory.communes,{commune:bureauCommune,source:document.getElementById('bureau-source')?.value.trim()||''});
+      const previous=bureauFeatures(),byId=new Map(previous.map(feature=>[feature.properties.id,feature]));
+      for(const feature of imported.features)byId.set(feature.properties.id,feature);
+      const next={type:'FeatureCollection',features:[...byId.values()]};
+      if(next.features.length>500)throw new Error('Plus de 500 contours sur cet appareil : import annulé.');
+      localStorage.setItem("democraction-demo-bureaux",JSON.stringify(next));bureauxLayer=next;render();toast(`${imported.features.length} contour(s) importé(s), ${next.features.length} conservé(s) sur cet appareil. Validation à confirmer.`);
     }catch(error){toast("Import des bureaux refusé : "+error.message,"warning")}
     return;
   }

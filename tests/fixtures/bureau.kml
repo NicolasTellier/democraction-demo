@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+<Placemark><name>Bureau 1</name><Polygon><outerBoundaryIs><LinearRing><coordinates>
+-0.49,45.02,0 -0.47,45.02,0 -0.47,45.04,0 -0.49,45.04,0 -0.49,45.02,0
+</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+</Document></kml>
