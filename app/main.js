@@ -757,7 +757,7 @@ function viewCarte() {
       attr(filters.prioritySocioWeight) +
       '"><strong>' +
       filters.prioritySocioWeight +
-      "%</strong></label><p class="hint">Calcul par commune : chaque indicateur est ramené entre 0 et 1 sur les communes affichées ; une participation plus faible augmente le score. L’indicateur socio suit la direction indiquée dans le référentiel. Moyenne pondérée des seuls indicateurs disponibles, de 0 à 100. Pas de score si moins de 30 inscrits ou de 100 habitants pour la composante concernée. Le classement varie avec les filtres et ne prédit aucun comportement individuel.</p></div>";
+      '%</strong></label><p class="hint">Calcul par commune : chaque indicateur est ramené entre 0 et 1 sur les communes affichées ; une participation plus faible augmente le score. L’indicateur socio suit la direction indiquée dans le référentiel. Moyenne pondérée des seuls indicateurs disponibles, de 0 à 100. Pas de score si moins de 30 inscrits ou de 100 habitants pour la composante concernée. Le classement varie avec les filtres et ne prédit aucun comportement individuel.</p></div>';
   }
   const bureauWarning =
     mapSelection.kind === "bureau" && !bureauFeatures().length
