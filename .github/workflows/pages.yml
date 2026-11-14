@@ -43,7 +43,7 @@ jobs:
           cp assets/style.css assets/icon.svg site/assets/
           cp assets/vendor/leaflet.js assets/vendor/leaflet.css assets/vendor/LICENSE.leaflet site/assets/vendor/
           cp assets/vendor/images/* site/assets/vendor/images/
-          cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json data/voies-33366.geojson site/data/
+          cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json data/voies-33366.geojson data/bureaux-referentiel-23.json site/data/
           test -f site/data/communes-33-11.geojson
       - name: Configurer GitHub Pages
         uses: actions/configure-pages@v5

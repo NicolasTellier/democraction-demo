@@ -1,0 +1,241 @@
+{
+  "meta": {
+    "source": "Cahier des charges DemocrAction V1.1 fourni par le propriétaire",
+    "received": "2026-11-14",
+    "status": "Effectifs communiqués, nature et millésime à vérifier",
+    "geometrySource": "Aucune géométrie fournie",
+    "license": "Valeurs fournies par le propriétaire ; signification à confirmer"
+  },
+  "stations": [
+    {
+      "id": "33067-1",
+      "codeInsee": "33067",
+      "commune": "Bourg",
+      "numero": 1,
+      "reportedValue": 875,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33067-2",
+      "codeInsee": "33067",
+      "commune": "Bourg",
+      "numero": 2,
+      "reportedValue": 893,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33143-1",
+      "codeInsee": "33143",
+      "commune": "Cubzac-les-Ponts",
+      "numero": 1,
+      "reportedValue": 1007,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33143-2",
+      "codeInsee": "33143",
+      "commune": "Cubzac-les-Ponts",
+      "numero": 2,
+      "reportedValue": 1047,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33341-1",
+      "codeInsee": "33341",
+      "commune": "Pugnac",
+      "numero": 1,
+      "reportedValue": 860,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33341-2",
+      "codeInsee": "33341",
+      "commune": "Pugnac",
+      "numero": 2,
+      "reportedValue": 827,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33138-1",
+      "codeInsee": "33138",
+      "commune": "Coutras",
+      "numero": 1,
+      "reportedValue": 970,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33138-2",
+      "codeInsee": "33138",
+      "commune": "Coutras",
+      "numero": 2,
+      "reportedValue": 930,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33138-3",
+      "codeInsee": "33138",
+      "commune": "Coutras",
+      "numero": 3,
+      "reportedValue": 977,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33138-4",
+      "codeInsee": "33138",
+      "commune": "Coutras",
+      "numero": 4,
+      "reportedValue": 1028,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33138-5",
+      "codeInsee": "33138",
+      "commune": "Coutras",
+      "numero": 5,
+      "reportedValue": 945,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33138-6",
+      "codeInsee": "33138",
+      "commune": "Coutras",
+      "numero": 6,
+      "reportedValue": 917,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33138-7",
+      "codeInsee": "33138",
+      "commune": "Coutras",
+      "numero": 7,
+      "reportedValue": 995,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33393-1",
+      "codeInsee": "33393",
+      "commune": "Saint-Denis-de-Pile",
+      "numero": 1,
+      "reportedValue": 926,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33393-2",
+      "codeInsee": "33393",
+      "commune": "Saint-Denis-de-Pile",
+      "numero": 2,
+      "reportedValue": 1154,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33393-3",
+      "codeInsee": "33393",
+      "commune": "Saint-Denis-de-Pile",
+      "numero": 3,
+      "reportedValue": 1096,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33393-4",
+      "codeInsee": "33393",
+      "commune": "Saint-Denis-de-Pile",
+      "numero": 4,
+      "reportedValue": 1196,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33321-1",
+      "codeInsee": "33321",
+      "commune": "Peujard",
+      "numero": 1,
+      "reportedValue": 789,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33321-2",
+      "codeInsee": "33321",
+      "commune": "Peujard",
+      "numero": 2,
+      "reportedValue": 845,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33473-1",
+      "codeInsee": "33473",
+      "commune": "Saint-Savin",
+      "numero": 1,
+      "reportedValue": 1289,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33473-2",
+      "codeInsee": "33473",
+      "commune": "Saint-Savin",
+      "numero": 2,
+      "reportedValue": 1208,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33114-1",
+      "codeInsee": "33114",
+      "commune": "Cavignac",
+      "numero": 1,
+      "reportedValue": 755,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    },
+    {
+      "id": "33114-2",
+      "codeInsee": "33114",
+      "commune": "Cavignac",
+      "numero": 2,
+      "reportedValue": 722,
+      "valueMeaning": "Effectif communiqué, nature et millésime à vérifier",
+      "geometry": null,
+      "geometryStatus": "Géométrie absente"
+    }
+  ]
+}

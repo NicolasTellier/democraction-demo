@@ -22,6 +22,7 @@ import { parseXlsx } from "./xlsx.js";
 import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114roads12";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
+import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
 import {
   checkSession,
   login,
@@ -130,6 +131,8 @@ let demoContacts = JSON.parse(
   actionView = 'list',
   missionPrefill = null,
   mapSelection = { kind: "commune", value: "" },
+  pollingCatalog = [],
+  bureauCommune = '',
   bureauxLayer = null,
   sectorBeingEdited = null;
 
@@ -248,13 +251,8 @@ const mapSelectionCommunes = () => {
     return commune?[commune.nom]:filters.commune?[filters.commune]:[];
   }
   if (kind === "bureau") {
-    const feature = (bureauxLayer?.features || []).find(
-      (f) =>
-        String(
-          f.properties?.id || f.properties?.code || f.properties?.bureau || "",
-        ) === String(value),
-    );
-    const code =
+    const feature = bureauFeature(bureauFeatures(), value);
+    const code = pollingCatalog.find(row => row.id === value)?.codeInsee ||
       feature?.properties?.codeInsee || feature?.properties?.communeCode;
     const commune = territory.communes.find(
       (c) => String(c.codeInsee) === String(code),
@@ -271,13 +269,10 @@ const mapSelectionLabel = () => {
     return `Secteur · ${s?.name || "secteur enregistré"}`;
   }
   if (kind === "bureau") {
-    const f = (bureauxLayer?.features || []).find(
-      (x) =>
-        String(
-          x.properties?.id || x.properties?.code || x.properties?.bureau || "",
-        ) === String(value),
-    );
-    return `Bureau de vote · ${f?.properties?.nom || f?.properties?.bureau || value}`;
+    const station = pollingCatalog.find(row => row.id === value);
+    const feature = bureauFeature(bureauFeatures(), value);
+    return station ? `Bureau ${station.numero} · ${station.commune}` :
+      `Bureau de vote · ${feature?.properties?.nom || feature?.properties?.bureau || value}`;
   }
   if (kind === 'road') return `Rue · ${roadData?.features.find(f=>f.properties.id===value)?.properties.name||value}`;
   return `${kind === "epci" ? "Intercommunalité" : kind === "canton" ? "Canton" : "Commune"} · ${value}`;
@@ -504,8 +499,10 @@ function mapDetail() {
     if(road)return panel('Rue · '+esc(road.properties.name),`<p>${esc(territory.communes.find(c=>c.codeInsee===road.properties.code)?.nom||'')} · ${esc(road.properties.id)}</p><p>Tracé linéaire officiel IGN BD TOPO, relevé ${esc(roadData.asOf?.slice(0,10)||'date indisponible')}.</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action sur cette rue</button>`);
   }
   if (mapSelection.kind === "bureau") {
-    const feature=bureauFeatures().find(f=>String(f.properties?.id||f.properties?.code||f.properties?.bureau||"")===String(mapSelection.value));
-    if(feature)return panel("Bureau de vote · " + esc(feature.properties?.nom||mapSelection.value), `<p>Identifiant : ${esc(mapSelection.value)}</p><p>Commune : ${esc(feature.properties?.commune||feature.properties?.codeInsee||"Non renseignée")}</p><p>Contour importé par l’administrateur.</p>`);
+    const station=pollingCatalog.find(row=>row.id===mapSelection.value);
+    const feature=bureauFeature(bureauFeatures(),mapSelection.value);
+    if(station)return panel(`Bureau ${station.numero} · ${esc(station.commune)}`,`<div class="detail-list"><div><span>Identifiant</span><strong>${esc(station.id)}</strong></div><div><span>Valeur communiquée</span><strong>${fmtNumber(station.reportedValue)}</strong></div><div><span>Contour du bureau</span><strong>${feature?'Importé localement':'Géométrie absente'}</strong></div></div><p class="hint">Effectif communiqué, nature et millésime à vérifier. Source : cahier des charges V1.1 fourni par le propriétaire. Aucun résultat électoral ni indicateur communal n’est attribué à ce bureau.</p><p class="hint">${feature?'Le contour importé reste à valider ; sa provenance officielle n’est pas attestée.':'Seule la commune parente est surlignée. Le périmètre du bureau n’est pas connu.'}</p>`);
+    if(feature)return panel("Bureau de vote · " + esc(feature.properties?.nom||mapSelection.value), `<p>Identifiant : ${esc(mapSelection.value)}</p><p>Commune : ${esc(feature.properties?.commune||feature.properties?.codeInsee||"Non renseignée")}</p><p>Contour importé localement ; provenance et validation à confirmer.</p>`);
   }
   if (!c)
     return panel(
@@ -598,7 +595,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.11 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.12 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -666,13 +663,19 @@ function viewCarte() {
               ])
             : mapSelection.kind === 'road'
               ? (roadData?.features||[]).map(x=>[x.properties.id,x.properties.name])
-            : bureauFeatures().map((f) => {
-                const p = f.properties || {};
-                return [
-                  String(p.id || p.code || p.bureau || ""),
-                  p.nom || p.bureau || p.id || "Bureau de vote",
-                ];
-              });
+            : [
+                ...pollingCatalog.filter(row=>!bureauCommune||row.commune===bureauCommune).map(row=>[
+                  row.id,`Bureau ${row.numero} · ${row.commune}${bureauFeature(bureauFeatures(),row.id)?' · contour importé':' · contour absent'}`
+                ]),
+                ...bureauFeatures().filter(feature=>{
+                  const id=String(feature.properties?.id||feature.properties?.code||feature.properties?.bureau||'');
+                  const commune=territory.communes.find(c=>c.codeInsee===String(feature.properties?.codeInsee||feature.properties?.communeCode||''))?.nom;
+                  return !pollingCatalog.some(row=>row.id===id)&&(!bureauCommune||commune===bureauCommune);
+                }).map(feature=>{
+                  const p=feature.properties||{};
+                  return [String(p.id||p.code||p.bureau||''),`${p.nom||p.bureau||p.id||'Bureau'} · contour importé`];
+                })
+              ];
   const opt = (v, l, sel) =>
     '<option value="' +
     attr(v) +
@@ -693,7 +696,7 @@ function viewCarte() {
         .join("")
     : '<option value="">' +
       (mapSelection.kind === "bureau"
-        ? "Contours de bureaux non chargés"
+        ? "Aucun bureau répertorié pour cette commune"
         : "Aucun élément enregistré") +
       "</option>";
   const modeButtons = [
@@ -759,10 +762,8 @@ function viewCarte() {
       filters.prioritySocioWeight +
       '%</strong></label><p class="hint">Calcul par commune : chaque indicateur est ramené entre 0 et 1 sur les communes affichées ; une participation plus faible augmente le score. L’indicateur socio suit la direction indiquée dans le référentiel. Moyenne pondérée des seuls indicateurs disponibles, de 0 à 100. Pas de score si moins de 30 inscrits ou de 100 habitants pour la composante concernée. Le classement varie avec les filtres et ne prédit aucun comportement individuel.</p></div>';
   }
-  const bureauWarning =
-    mapSelection.kind === "bureau" && !bureauFeatures().length
-      ? '<section><div class="warning-note">Aucun périmètre officiel de bureau n’est fourni. Importez un GeoJSON validé par la collectivité ; aucune frontière ne sera inventée.</div><label>Importer des bureaux (GeoJSON)<input id="bureau-import" type="file" accept=".geojson,.json,application/geo+json"></label></section>'
-      : "";
+  const bureauWarning = mapSelection.kind === "bureau" ?
+    `<section><h3>Référentiel des bureaux</h3><label>Commune<select id="bureau-commune"><option value="">Toutes les communes</option>${territory.communes.map(c=>opt(c.nom,c.nom,bureauCommune===c.nom)).join('')}</select></label><p class="hint">${pollingCatalog.length} bureaux fournis · ${bureauFeatures().length} contour(s) importé(s) sur cet appareil.</p><div class="warning-note">Les effectifs communiqués n’ont pas de nature ni de millésime vérifiés. Sans contour, la carte surligne seulement la commune parente.</div><label>Importer des contours (GeoJSON)<input id="bureau-import" type="file" accept=".geojson,.json,application/geo+json"></label><p class="hint">Identifiant attendu pour relier un contour à un bureau fourni : code INSEE-numéro (ex. 33067-1). Une géométrie importée ne devient pas automatiquement officielle.</p></section>` : "";
   const maps =
     mapMode === "compare"
       ? '<div class="compare-maps"><div><div class="map-map-title">Carte A · ' +
@@ -800,7 +801,7 @@ function viewCarte() {
     esc(mapSelectionLabel()) +
     " · " +
     selectedNames.length +
-    ' commune(s) concernée(s). La sélection apparaît en transparence au-dessus du fond cartographique.</p><button class="btn btn-light btn-sm map-rail-action" data-action="clear-map-selection">Réinitialiser la sélection</button></section>' +
+    ' commune(s) concernée(s). ' + (mapSelection.kind==='bureau'&&!bureauFeature(bureauFeatures(),mapSelection.value)?'Seule la commune parente est surlignée ; contour du bureau absent.':'La sélection apparaît en transparence au-dessus du fond cartographique.') + '</p><button class="btn btn-light btn-sm map-rail-action" data-action="clear-map-selection">Réinitialiser la sélection</button></section>' +
     bureauWarning +
     '<section><h3>Recherche de rues</h3><form id="street-search-form"><label>Commune<select name="commune"><option value="">Choisir…</option>' +
     streetOptions +
@@ -828,7 +829,9 @@ function viewCarte() {
     "</strong><span>" +
     selectedNames.length +
     " commune(s) surlignée(s)</span><small>" +
-    (filters.mapLayer === "priority"
+    (mapSelection.kind==='bureau'&&!bureauFeature(bureauFeatures(),mapSelection.value)
+      ? "Contour de bureau absent : surbrillance de la commune uniquement."
+      : filters.mapLayer === "priority"
       ? "Le score est calculé à partir de données agrégées et ne décrit aucune personne."
       : "Les contours sélectionnés sont affichés avec une transparence renforcée.") +
     "</small></div>" +
@@ -1085,7 +1088,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.11</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.12</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1295,7 +1298,8 @@ function dispatchAction(action) {
       break;
     case "new-mission-from-map":
       const selectedSector=mapSelection.kind==="sector"?demoSectors.find(s=>s.id===mapSelection.value):null;
-      const selectedBureau=mapSelection.kind==="bureau"?bureauFeatures().find(f=>String(f.properties?.id||f.properties?.code||f.properties?.bureau||"")===String(mapSelection.value)):null;
+      const selectedBureau=mapSelection.kind==="bureau"?bureauFeature(bureauFeatures(),mapSelection.value):null;
+      if(mapSelection.kind==='bureau'&&!selectedBureau){toast('Ce bureau ne possède pas de contour : choisissez sa commune ou importez un périmètre avant de créer une action sur ce bureau.','warning');break;}
       const selectedNames=mapSelectionCommunes();
       const primary=selectedSector?.commune||selectedNames[0]||filters.commune;
       if (!primary) {
@@ -1536,6 +1540,7 @@ root.addEventListener("change", async (e) => {
     return;
   }
   if (el.id === "map-scope") {
+    if(el.value==='bureau')bureauCommune=filters.commune||bureauCommune;
     if(!['road','commune'].includes(el.value)){selectedStreets=[];streetSearchResults=[];addressData=[];addressSelected=null;addressStatus='';roadQuery='';}
     mapSelection = { kind: el.value, value: "" };
     mapSelectedCommunes = [];
@@ -1555,6 +1560,13 @@ root.addEventListener("change", async (e) => {
     }
     else filters.commune = "";
     mapSelectedCommunes = mapSelectionCommunes();
+    render();
+    return;
+  }
+  if (el.id === 'bureau-commune') {
+    bureauCommune=el.value;
+    mapSelection={kind:'bureau',value:''};
+    mapSelectedCommunes=[];
     render();
     return;
   }
@@ -2104,6 +2116,11 @@ async function init() {
     territory = await response.json();
     if (territory.communes.length !== 87)
       throw new Error("Référentiel incomplet");
+    try {
+      const response=await fetch('./data/bureaux-referentiel-23.json');
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      pollingCatalog=validatePollingCatalog(await response.json(),territory.communes);
+    } catch(error){console.warn('Référentiel de bureaux indisponible :',error);notice='Référentiel de bureaux indisponible : '+error.message;noticeLevel='warning'}
     try {
       const streets=await fetch("./data/street-catalog-33366.json");
       if(streets.ok){const rows=await streets.json(),sa=territory.communes.find(c=>c.codeInsee==="33366");if(sa&&Array.isArray(rows))sa.rues=unique(rows.filter(r=>r.commune===sa.nom).map(r=>r.name));}

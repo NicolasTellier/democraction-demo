@@ -23,7 +23,7 @@ Ouvrir `http://localhost:8080/`. Si Chromium est installé dans le système et n
 - `data/voies-33366.geojson` : 303 voies nommées et géométries linéaires de Saint-André-de-Cubzac, relevées le 14 novembre 2026 auprès du [WFS IGN BD TOPO](https://data.geopf.fr/wfs/ows). Pour les autres communes, la carte interroge le WFS à la demande. Un échec réseau est affiché ; aucun tracé n'est inventé.
 - Les adresses de la [Base Adresse Nationale](https://adresse.data.gouv.fr/commune/33366) sont chargées à la demande pour les rues choisies. Seuls les numéros, voies, communes et points publics sont utilisés ; aucun habitant n'est associé.
 - `data/elections-2008-2026.json.gz` et `data/socio-demographie-v3.json` : données agrégées, provenance détaillée dans les métadonnées des fichiers. La priorité territoriale est un indice descriptif communal dont les poids et la méthode sont visibles dans l'interface. Il ne s'applique à aucune personne.
-- Les périmètres de bureaux de vote ne sont visibles qu'après import local d'un GeoJSON validé. Aucun contour de bureau n'est déduit des résultats.
+- `data/bureaux-referentiel-23.json` : 23 bureaux nommés dans huit communes, fournis par le propriétaire. Leurs chiffres sont des « effectifs communiqués, nature et millésime à vérifier » ; ils ne sont pas des résultats électoraux. Le menu Commune → Bureau ouvre une fiche. Sans géométrie de bureau, seule la commune est surlignée. Un GeoJSON importé localement avec l'identifiant `code INSEE-numéro` permet d'afficher un contour ; son origine et sa validation restent à confirmer. Aucun contour n'est déduit des chiffres.
 
 La sélection de plusieurs rues est conservée dans une action avec les identifiants de voies et une géométrie `MultiLineString`. Les actions, filtres et secteurs dessinés restent dans le stockage de ce navigateur. La sauvegarde JSON inclut les actions et les secteurs ; elle exclut les contacts fictifs et les contours de bureaux importés.
 
@@ -33,4 +33,4 @@ Une modification de `main` dans ce dépôt lance `.github/workflows/pages.yml`. 
 
 Ce dépôt ne publie ni le serveur, ni un fichier de contacts, ni une clé d'accès. Les notifications mobiles et e-mails réels, les comptes, les rôles, la synchronisation entre appareils, les relances personnelles et les imports privés nécessitent une API hébergée séparément sur HTTPS. Le serveur Node/SQLite du [dépôt source privé](https://github.com/NicolasTellier/democraction) est préparatoire et non déployé. Avant de le connecter, il faut définir l'hébergement, le domaine, les sauvegardes, les droits à quatre rôles et le traitement des données ; ne pas utiliser le stockage local public pour des contacts réels. Aucun service payant n'est activé par cette publication.
 
-Voir [recette 0.11](docs/recette-0.11.md) pour les parcours vérifiés, les limites et les étapes de déploiement privé.
+Voir [recette 0.12](docs/recette-0.12.md) pour les parcours vérifiés, les limites et les étapes de déploiement privé.
