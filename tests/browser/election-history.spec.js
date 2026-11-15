@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 test('la courbe historique est sourcée et ne mélange pas les tours', async ({ page }, testInfo) => {
   test.skip(['iphone', 'android'].includes(testInfo.project.name), 'Navigation des résultats réservée à la version desktop de la démonstration');
@@ -11,4 +12,36 @@ test('la courbe historique est sourcée et ne mélange pas les tours', async ({ 
   await expect(page.getByText(/Source : data.gouv.fr \/ ministère de l’Intérieur/)).toBeVisible();
   await expect(page.locator('.timeline-scroll + .tablewrap tbody tr').first()).toContainText('2008');
   await expect(page.locator('.timeline-scroll + .tablewrap tbody tr').last()).toContainText('2026');
+});
+
+test('comparaison communale sourcée sur ordinateur et smartphone, conservée après fermeture', async ({ page }, testInfo) => {
+  test.skip(!['desktop', 'iphone'].includes(testInfo.project.name));
+  await page.goto('/');
+  if (testInfo.project.name === 'iphone') await page.locator('.mobile-nav [data-nav="analyse"]').click();
+  else await page.getByRole('button', { name: 'Résultats électoraux' }).click();
+  await page.locator('#election-type').selectOption('muni');
+  await page.locator('#election-tour').selectOption('t1');
+  await page.locator('#analysis-ballot-a').selectOption('2020_muni_t1');
+  await page.locator('#analysis-ballot-b').selectOption('2026_muni_t1');
+  await page.locator('#analysis-commune-search').fill('Abzac');
+  await page.locator('input[name="analysis-commune"][value="33001"]').check();
+  await page.locator('#analysis-commune-search').fill('Saint-André-de-Cubzac');
+  await page.locator('input[name="analysis-commune"][value="33366"]').check();
+  const table = page.getByRole('table', { name: 'Effectifs et taux exacts par commune' });
+  await expect(table.locator('tbody tr')).toHaveCount(2);
+  await expect(table.getByRole('row', { name: /Abzac/ })).toContainText('1 515');
+  await expect(table.getByRole('row', { name: /Saint-André-de-Cubzac/ })).toContainText('8 710');
+  await expect(page.getByText(/Source : data.gouv.fr \/ ministère de l’Intérieur/).last()).toBeVisible();
+  const [exported] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exporter cette comparaison (CSV)' }).click()]);
+  const csv = await readFile(await exported.path(), 'utf8');
+  expect(exported.suggestedFilename()).toMatch(/^comparaison-communale-\d{4}-\d{2}-\d{2}\.csv$/);
+  expect(csv).toContain('code_insee;scrutin_a;inscrits_a');
+  expect(csv).toContain('33001;Municipales 2020 — tour 1;1515;713;');
+  expect(csv).toContain('data.gouv.fr / ministère de l’Intérieur');
+  await page.reload();
+  if (testInfo.project.name === 'iphone') await page.locator('.mobile-nav [data-nav="analyse"]').click();
+  else await page.getByRole('button', { name: 'Résultats électoraux' }).click();
+  await expect(page.locator('input[name="analysis-commune"]:checked')).toHaveCount(2);
+  await expect(page.locator('#analysis-ballot-a')).toHaveValue('2020_muni_t1');
+  await expect(page.locator('#analysis-ballot-b')).toHaveValue('2026_muni_t1');
 });

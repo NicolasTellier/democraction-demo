@@ -30,6 +30,7 @@ test('le menu, le graphique et le tableau affichent le libellé tout en filtrant
     esc: String, attr: String, fmtNumber: String, pct: () => '60 %', rate: () => 60,
     panel: (title, body) => `${title}${body}`, empty: () => '' });
   assert.match(html, /value="cant" selected>Cantonales<\/option>/);
-  assert.equal((html.match(/Cantonales 2008 — tour 1/g) || []).length, 2);
+  assert.match(html, /<option value="2008_cant_t1" selected>Cantonales 2008 — tour 1<\/option>/);
+  assert.match(html, /<td>Cantonales 2008 — tour 1<\/td>/);
   assert.doesNotMatch(html, />cant 2008 — tour 1</);
 });

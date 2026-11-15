@@ -35,6 +35,7 @@ import {
   updateRemoteStatus,
 } from "./sync.js";
 import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js";
+import { territoryComparison } from "./territory-comparison.js";
 import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
 const NAV = [
   ["dashboard", "Vue d’ensemble", "▦"],
@@ -97,6 +98,10 @@ let territory = null,
     mapBallot: "",
     compareLeft: "",
     compareRight: "",
+    analysisBallotA: "",
+    analysisBallotB: "",
+    analysisCommuneCodes: [],
+    analysisSearch: "",
     prioritySocio: "tauxChomage",
     priorityElectoralWeight: "50",
     prioritySocioWeight: "50",
@@ -146,18 +151,20 @@ let demoContacts = JSON.parse(
   sectorBeingEdited = null;
 
 const PREFS_KEY = "democraction-demo-preferences";
-const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "prioritySocio", "priorityElectoralWeight", "prioritySocioWeight"];
+const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "analysisBallotA", "analysisBallotB", "prioritySocio", "priorityElectoralWeight", "prioritySocioWeight"];
 function restorePreferences(preferences) {
   if (!preferences || typeof preferences !== "object") return;
   for (const key of PREF_KEYS)
     if (typeof preferences.filters?.[key] === "string" && preferences.filters[key].length < 160)
       filters[key] = preferences.filters[key];
+  if (Array.isArray(preferences.filters?.analysisCommuneCodes))
+    filters.analysisCommuneCodes = [...new Set(preferences.filters.analysisCommuneCodes.filter(code => typeof code === "string" && /^\d{5}$/.test(code)))].slice(0, 5);
   if (["commune", "epci", "canton", "bureau", "sector", "road"].includes(preferences.mapSelection?.kind) && typeof preferences.mapSelection.value === "string" && preferences.mapSelection.value.length < 160)
     mapSelection = {kind:preferences.mapSelection.kind,value:preferences.mapSelection.value};
   if (["explore", "compare", "draw", "organize"].includes(preferences.mapMode)) mapMode = preferences.mapMode;
 }
 function savePreferences() {
-  try { localStorage.setItem(PREFS_KEY, JSON.stringify({filters:Object.fromEntries(PREF_KEYS.map(key=>[key,filters[key]])),mapSelection,mapMode})); } catch {}
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({filters:{...Object.fromEntries(PREF_KEYS.map(key=>[key,filters[key]])),analysisCommuneCodes:filters.analysisCommuneCodes},mapSelection,mapMode})); } catch {}
 }
 try { restorePreferences(JSON.parse(localStorage.getItem(PREFS_KEY) || "null")); } catch {}
 
@@ -644,7 +651,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.18 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.19 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -1149,10 +1156,11 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.18</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.19</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
+    ["analyse", "▥", "Analyse"],
     ["actions", "☷", "Actions"],
     ["config", "⚙", "Réglages"],
   ]
@@ -1265,7 +1273,7 @@ function updateFilter(k, v) {
 }
 const dlBackup = () =>
   download(
-    JSON.stringify({format:"democraction-demo-backup-v1",application:{...app,lastSaved:new Date().toISOString()},sectors:demoSectors,preferences:{filters:Object.fromEntries(PREF_KEYS.map(key=>[key,filters[key]])),mapSelection,mapMode}},null,2),
+    JSON.stringify({format:"democraction-demo-backup-v1",application:{...app,lastSaved:new Date().toISOString()},sectors:demoSectors,preferences:{filters:{...Object.fromEntries(PREF_KEYS.map(key=>[key,filters[key]])),analysisCommuneCodes:filters.analysisCommuneCodes},mapSelection,mapMode}},null,2),
     `democraction-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`,
   );
 const dlResults = () =>
@@ -1294,6 +1302,27 @@ const dlTerritory = () =>
     `communes-33-11.csv`,
     "text/csv;charset=utf-8",
   );
+const dlAnalysisComparison = () => {
+  const first = root.querySelector('#analysis-ballot-a');
+  const second = root.querySelector('#analysis-ballot-b');
+  const codes = [...root.querySelectorAll('input[name="analysis-commune"]:checked')].map(input => input.value);
+  if (!first?.value || !codes.length) return;
+  const byCode = new Map(territory.communes.map(commune => [commune.codeInsee, commune.nom]));
+  const ballotA = first.selectedOptions[0]?.textContent || first.value;
+  const ballotB = second?.value ? second.selectedOptions[0]?.textContent || second.value : '';
+  const fields = ['commune', 'code_insee', 'scrutin_a', 'inscrits_a', 'votants_a', 'participation_a', 'abstention_a', 'scrutin_b', 'inscrits_b', 'votants_b', 'participation_b', 'abstention_b', 'ecart_b_moins_a', 'source', 'mise_a_jour'];
+  const percent = rate => rate === null ? '' : rate.toFixed(2).replace('.', ',');
+  const records = territoryComparison(elections?.elections, codes, first.value, second?.value || '').map(row => ({
+    commune: byCode.get(row.codeInsee) || row.codeInsee, code_insee: row.codeInsee,
+    scrutin_a: ballotA, inscrits_a: row.first?.inscrits ?? '', votants_a: row.first?.votants ?? '',
+    participation_a: percent(row.a), abstention_a: percent(row.a === null ? null : 100 - row.a),
+    scrutin_b: ballotB, inscrits_b: row.second?.inscrits ?? '', votants_b: row.second?.votants ?? '',
+    participation_b: percent(row.b), abstention_b: percent(row.b === null ? null : 100 - row.b),
+    ecart_b_moins_a: row.delta === null ? '' : percent(row.delta),
+    source: elections?.meta?.source || 'Ministère de l’Intérieur', mise_a_jour: elections?.meta?.miseAJour || '',
+  }));
+  download(serializeCsv(records, fields), `comparaison-communale-${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8');
+};
 function resetData() {
   if (
     !confirm(
@@ -1305,6 +1334,8 @@ function resetData() {
   for (const key of ["democraction-demo-sectors", "democraction-demo-bureaux", "democraction-demo-contacts", "democraction-demo-funds", "democraction-demo-events", PREFS_KEY]) localStorage.removeItem(key);
   demoSectors = []; demoContacts = []; demoFunds = []; demoEvents = []; bureauxLayer = null;
   for (const key of PREF_KEYS) filters[key] = key === "mapLayer" ? "participation" : key === "prioritySocio" ? "tauxChomage" : ["priorityElectoralWeight", "prioritySocioWeight"].includes(key) ? "50" : "";
+  filters.analysisCommuneCodes = [];
+  filters.analysisSearch = "";
   mapSelection = {kind:"commune",value:""}; mapSelectedCommunes = []; mapMode = "explore"; selectedStreets = []; streetSearchResults = [];
   app = save(emptyState());
   enqueueSync();
@@ -1320,6 +1351,9 @@ function dispatchAction(action) {
       break;
     case "export-territory":
       dlTerritory();
+      break;
+    case "export-territory-comparison":
+      dlAnalysisComparison();
       break;
     case "download-example":
       download(
@@ -1426,6 +1460,10 @@ function dispatchAction(action) {
         electionTour: "",
         compareLeft: "",
         compareRight: "",
+        analysisBallotA: "",
+        analysisBallotB: "",
+        analysisCommuneCodes: [],
+        analysisSearch: "",
         prioritySocio: "tauxChomage",
         priorityElectoralWeight: "50",
         prioritySocioWeight: "50",
@@ -1738,6 +1776,13 @@ root.addEventListener("change", async (e) => {
   }
 });
 root.addEventListener("change", (e) => {
+  if (e.target.matches('input[name="analysis-commune"]')) {
+    const selected = [...root.querySelectorAll('input[name="analysis-commune"]:checked')].map(input => input.value);
+    if (selected.length > 5) { e.target.checked = false; toast("Choisissez au maximum cinq communes.", "warning"); return; }
+    filters.analysisCommuneCodes = selected;
+    render();
+    return;
+  }
   const map = {
     "socio-indicator": "socioIndicator",
     "socio-min": "socioMin",
@@ -1745,6 +1790,8 @@ root.addEventListener("change", (e) => {
     "election-type": "electionType",
     "election-year": "electionYear",
     "election-tour": "electionTour",
+    "analysis-ballot-a": "analysisBallotA",
+    "analysis-ballot-b": "analysisBallotB",
     "map-ballot": "mapBallot",
     "map-layer": "mapLayer",
     "priority-socio": "prioritySocio",
@@ -1754,10 +1801,20 @@ root.addEventListener("change", (e) => {
   const key = map[e.target.id];
   if (key) {
     filters[key] = e.target.value;
+    if (key === "analysisBallotA") filters.analysisBallotB = "";
     render();
   }
 });
 root.addEventListener("input", (e) => {
+  if (e.target.id === "analysis-commune-search") {
+    filters.analysisSearch = e.target.value.slice(0, 80);
+    const needle = filters.analysisSearch.normalize('NFKD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr').trim();
+    for (const option of root.querySelectorAll('.territory-picker-option')) {
+      const text = option.textContent.normalize('NFKD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr');
+      option.hidden = Boolean(needle) && !text.includes(needle) && !option.querySelector('input').checked;
+    }
+    return;
+  }
   if (e.target.id === "filter-query") {
     filters.query = e.target.value;
     const p = e.target.selectionStart;
@@ -2219,7 +2276,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261115charts18")
+        .register("./sw.js?v=20261115comparison19")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;
