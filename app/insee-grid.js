@@ -50,16 +50,14 @@ export async function loadGrid(resolution, code, fetcher = fetch) {
   if (![200, 1000].includes(resolution) || !/^33\d{3}$/.test(String(code)))
     throw new Error('Commune ou résolution invalide');
   const key = String(code);
-  if (cache.has(key)) return cache.get(key);
-  const promise = (async () => {
+  if (!cache.has(key)) cache.set(key, (async () => {
     const url = new URL(`../data/insee-grid/${key}.json.gz`, import.meta.url);
     const response = await fetcher(url);
     if (!response.ok || !response.body || typeof DecompressionStream !== 'function')
       throw new Error('Carroyage indisponible sur cet appareil');
     return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
-  })().catch(error => { cache.delete(key); throw error; });
-  cache.set(key, promise);
-  try { return validateGrid(await promise, resolution, code); }
+  })().catch(error => { cache.delete(key); throw error; }));
+  try { return validateGrid(await cache.get(key), resolution, code); }
   catch (error) { cache.delete(key); throw error; }
 }
 
@@ -86,6 +84,9 @@ export async function attachGrid(map, leaflet, {resolution, code, active, onStat
       layer = leaflet.geoJSON({type: 'FeatureCollection', features: cells}, {
         style: cell => gridCellStyle(cell, resolution),
         onEachFeature: (cell, shape) => {
+          // Leaflet sets the SVG class when the layer is added. Its later
+          // setStyle() call does not apply className from the style callback.
+          shape.options.className = 'insee-grid-cell';
           const label = gridCellLabel(cell);
           shape.bindTooltip(label, {sticky: true});
           shape.bindPopup(`<strong>${label}</strong><br><a href="${SOURCE}" target="_blank" rel="noopener noreferrer">Méthode et source Insee</a>`);

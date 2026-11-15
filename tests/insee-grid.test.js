@@ -46,5 +46,9 @@ test('les valeurs imputées restent distinctes et ne montrent pas leur effectif 
   assert.match(gridCellStyle(imputed, 200).dashArray, /3 3/);
   assert.equal(gridCellStyle(measured, 200).dashArray, undefined);
   assert.ok(readFileSync(url).length < 20_000);
+  const cachedOtherResolution = await loadGrid(1000, code, async () => { throw new Error('the same commune should be cached'); });
+  assert.ok(Array.isArray(cachedOtherResolution));
+  assert.ok(cachedOtherResolution.length > 0);
+  assert.ok(cachedOtherResolution.every(cell => cell.properties.id.includes('RES1000m')));
   await assert.rejects(() => loadGrid(250, code), /résolution invalide/);
 });
