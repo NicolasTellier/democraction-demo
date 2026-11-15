@@ -8,6 +8,7 @@ test('abstention communale, scrutin identifié, total pondéré et persistance',
  await page.locator('#map-layer').selectOption('abstention');
  await expect(page.locator('#map-ballot')).toBeVisible();
  await page.locator('#map-ballot').selectOption('2026_muni_t1');
+ await expect(page.locator('#map-ballot option:checked')).toHaveText('Municipales 2026 — tour 1');
  await expect(page.locator('#map .map-legend')).toContainText('Abstention électorale');
  await expect(page.locator('#map .map-legend')).toContainText('Municipales 2026');
  await expect(page.locator('.map-rail')).toContainText('Abstention = (inscrits − votants) / inscrits');

@@ -35,6 +35,7 @@ import {
   updateRemoteStatus,
 } from "./sync.js";
 import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js";
+import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
 const NAV = [
   ["dashboard", "Vue d’ensemble", "▦"],
   ["profil", "Profils territoriaux", "◌"],
@@ -371,11 +372,11 @@ const mapCommunesFor = (
     let label;
     if (layer === "participation")
       label = row
-        ? `${row.libelle} · ${Number(row.participation).toFixed(1).replace(".", ",")} %`
+        ? `${electionBallotLabel(row)} · ${Number(row.participation).toFixed(1).replace(".", ",")} %`
         : "Aucune donnée électorale sélectionnée";
     else if(layer === "abstention")
       label = Number.isFinite(value)
-        ? `${row.libelle} · abstention ${value.toFixed(1).replace(".", ",")} % (${(row.inscrits-row.votants).toLocaleString("fr-FR")} / ${row.inscrits.toLocaleString("fr-FR")} inscrits)`
+        ? `${electionBallotLabel(row)} · abstention ${value.toFixed(1).replace(".", ",")} % (${(row.inscrits-row.votants).toLocaleString("fr-FR")} / ${row.inscrits.toLocaleString("fr-FR")} inscrits)`
         : "Abstention indisponible : effectifs manquants ou incohérents";
     else if (layer === "priority")
       label = Number.isFinite(value)
@@ -398,7 +399,7 @@ const electionBallots = () => {
   const ballots = new Map();
   for (const row of elections?.elections || []) {
     if (row.annee >= 2008 && row.id && !ballots.has(row.id))
-      ballots.set(row.id, { id: row.id, label: row.libelle, type: row.type, tour: row.tour, year: row.annee });
+      ballots.set(row.id, { id: row.id, label: electionBallotLabel(row), type: row.type, tour: row.tour, year: row.annee });
   }
   return [...ballots.values()].sort((a, b) => b.year - a.year || a.type.localeCompare(b.type) || a.tour.localeCompare(b.tour));
 };
@@ -932,14 +933,14 @@ function viewAnalyse() {
   const rows = filteredResults(),
     groups = summaryByScrutin(rows),
     max = Math.max(1, ...groups.map((g) => rate(g.votants, g.inscrits) || 0));
-  return `${panel("Participation électorale agrégée", `<p class="description">Statistiques descriptives issues de résultats publics importés et documentés. Aucun score individuel, prédiction de vote ou fichier d’électeurs.</p>${groups.length ? `<div class="chartlist">${groups.map((g) => `<div class="chart-item"><div><strong>${esc(g.scrutin)}</strong><small>${esc([g.annee, g.tour].filter(Boolean).join(" · "))} · ${g.count} ligne(s)</small></div><div class="chartbar"><i style="width:${((100 * (rate(g.votants, g.inscrits) || 0)) / max).toFixed(1)}%"></i></div><span class="chartnum">${pct(g.votants, g.inscrits)}</span></div>`).join("")}</div>` : empty("Aucun résultat importé", "Ouvrez « Imports et exports » pour intégrer les données électorales publiques au format CSV ou XLSX.")}`)}${panel(
+  return `${panel("Participation électorale agrégée", `<p class="description">Statistiques descriptives issues de résultats publics importés et documentés. Aucun score individuel, prédiction de vote ou fichier d’électeurs.</p>${groups.length ? `<div class="chartlist">${groups.map((g) => `<div class="chart-item"><div><strong>${esc(importedScrutinLabel(g.scrutin))}</strong><small>${esc([g.annee, g.tour].filter(Boolean).join(" · "))} · ${g.count} ligne(s)</small></div><div class="chartbar"><i style="width:${((100 * (rate(g.votants, g.inscrits) || 0)) / max).toFixed(1)}%"></i></div><span class="chartnum">${pct(g.votants, g.inscrits)}</span></div>`).join("")}</div>` : empty("Aucun résultat importé", "Ouvrez « Imports et exports » pour intégrer les données électorales publiques au format CSV ou XLSX.")}`)}${panel(
     "Données disponibles",
     rows.length
       ? `<div class="tablewrap"><table><thead><tr><th>Commune</th><th>Scrutin</th><th>Bureau</th><th>Inscrits</th><th>Votants</th><th>Participation</th><th>Source</th></tr></thead><tbody>${rows
           .slice(0, 250)
           .map(
             (r) =>
-              `<tr><td>${esc(r.commune)}</td><td>${esc(r.scrutin)}</td><td>${esc(r.bureau || "—")}</td><td class="num">${fmtNumber(r.inscrits)}</td><td class="num">${fmtNumber(r.votants)}</td><td class="num">${pct(r.votants, r.inscrits)}</td><td title="${attr(r.source)}">${esc(r.source.slice(0, 55))}</td></tr>`,
+              `<tr><td>${esc(r.commune)}</td><td>${esc(importedScrutinLabel(r.scrutin))}</td><td>${esc(r.bureau || "—")}</td><td class="num">${fmtNumber(r.inscrits)}</td><td class="num">${fmtNumber(r.votants)}</td><td class="num">${pct(r.votants, r.inscrits)}</td><td title="${attr(r.source)}">${esc(r.source.slice(0, 55))}</td></tr>`,
           )
           .join(
             "",
@@ -1148,7 +1149,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.16</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.17</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
