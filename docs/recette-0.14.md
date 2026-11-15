@@ -13,8 +13,9 @@ Le relevé provient de la couche IGN BD TOPO *voie nommée*. Il ne suffit pas à
 | Scénario | État | Preuve |
 |---|---|---|
 | Inventaire des 87 codes, cache frais ou ancien et objets écartés | Réussi en local | `npm run check && npm test`, test `tests/road-cache.test.js` ; 11 tests Node réussis. |
-| Une commune chargée, rechargement sans nouveau WFS, préchargement de cinq communes, conservation du zoom | En attente de CI | `tests/browser/road-cache.spec.js`, quatre tailles d'écran. Le navigateur local du conteneur refuse le lancement de Chromium (`socket() failed: Operation not permitted`). |
-| Démo GitHub Pages et miroir privé | En attente de publication | Commits et contrôle du site à consigner après les CI. |
+| Une commune chargée, rechargement sans nouveau WFS, préchargement de cinq communes, conservation du zoom | Réussi en CI | [CI publique 43698474025](https://github.com/NicolasTellier/democraction-demo/actions/runs/43698474025) : 48 parcours réussis, 4 ignorés, quatre formats. [Captures ordinateur et mobile](https://github.com/NicolasTellier/democraction-demo/actions/runs/43698474025/artifacts/14154888208), avec une rue fictive de recette. Le navigateur local du conteneur refuse le lancement de Chromium (`socket() failed: Operation not permitted`). |
+| Démo GitHub Pages | Réussi | Code `1ead2541e1fe5b12fe1c428baeecc907b99926ed` ; CI et déploiement verts. Sur le [site public](https://nicolastellier.github.io/democraction-demo/), la carte affiche V0.14, le compteur initial 1/87, les 303 voies de Saint-André et sa surbrillance communale. |
+| Miroir privé | En attente | Branche `codex/voies-v014` ; vérifier le paquet après intégration. |
 
 ## Restant du critère 25
 
