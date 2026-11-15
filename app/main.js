@@ -25,6 +25,7 @@ import { drawMap, locate, selectionGeometry } from "./map.js?v=20261115camera14b
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
+import {validateOfficialBureauResults,officialBureauResultHtml} from './official-bureaux.js';
 import {readBureauFile,validateBureauImport} from './bureau-import.js';
 import {
   checkSession,
@@ -90,6 +91,7 @@ let territory = null,
     query: "",
     socioIndicator: "",
     mapLayer: "participation",
+    gridResolution: "",
     socioMin: "",
     socioMax: "",
     electionType: "",
@@ -146,12 +148,13 @@ let demoContacts = JSON.parse(
   missionPrefill = null,
   mapSelection = { kind: "commune", value: "" },
   pollingCatalog = [],
+  officialBureauResults = null,
   bureauCommune = '',
   bureauxLayer = null,
   sectorBeingEdited = null;
 
 const PREFS_KEY = "democraction-demo-preferences";
-const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "analysisBallotA", "analysisBallotB", "prioritySocio", "priorityElectoralWeight", "prioritySocioWeight"];
+const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "gridResolution", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "analysisBallotA", "analysisBallotB", "prioritySocio", "priorityElectoralWeight", "prioritySocioWeight"];
 function restorePreferences(preferences) {
   if (!preferences || typeof preferences !== "object") return;
   for (const key of PREF_KEYS)
@@ -555,7 +558,7 @@ function mapDetail() {
     const station=pollingCatalog.find(row=>row.id===mapSelection.value);
     const feature=bureauFeature(bureauFeatures(),mapSelection.value);
     const provenance=feature?`<div class="detail-list"><div><span>Origine</span><strong>Fourni localement</strong></div><div><span>Validation</span><strong>À confirmer</strong></div><div><span>Source déclarée</span><strong>${esc(feature.properties?.source||'Non renseignée')}</strong></div><div><span>Importé le</span><strong>${esc(feature.properties?.importedAt?.slice(0,10)||'Date indisponible')}</strong></div></div>`:'';
-    if(station)return panel(`Bureau ${station.numero} · ${esc(station.commune)}`,`<div class="detail-list"><div><span>Identifiant</span><strong>${esc(station.id)}</strong></div><div><span>Valeur communiquée</span><strong>${fmtNumber(station.reportedValue)}</strong></div><div><span>Contour du bureau</span><strong>${feature?'Importé localement':'Géométrie absente'}</strong></div></div><p class="hint">Effectif communiqué, nature et millésime à vérifier. Source : cahier des charges V1.1 fourni par le propriétaire. Aucun résultat électoral ni indicateur communal n’est attribué à ce bureau.</p>${provenance}<p class="hint">${feature?'Le contour importé reste à valider ; sa provenance officielle n’est pas attestée.':'Seule la commune parente est surlignée. Le périmètre du bureau n’est pas connu.'}</p>`);
+    if(station)return panel(`Bureau ${station.numero} · ${esc(station.commune)}`,`<div class="detail-list"><div><span>Identifiant</span><strong>${esc(station.id)}</strong></div><div><span>Valeur communiquée séparément</span><strong>${fmtNumber(station.reportedValue)}</strong></div><div><span>Contour du bureau</span><strong>${feature?'Importé localement':'Géométrie absente'}</strong></div></div><p class="hint">Effectif communiqué, nature et millésime à vérifier. Source : cahier des charges V1.1 fourni par le propriétaire. Cette valeur est distincte des résultats officiels ci-dessous.</p>${officialBureauResultHtml(officialBureauResults,station.id)}${provenance}<p class="hint">${feature?'Le contour importé reste à valider ; sa provenance officielle n’est pas attestée.':'Seule la commune parente est surlignée. Le périmètre du bureau n’est pas connu.'}</p>`);
     if(feature)return panel("Bureau de vote · " + esc(feature.properties?.nom||mapSelection.value), `<p>Identifiant : ${esc(mapSelection.value)}</p><p>Commune : ${esc(feature.properties?.commune||feature.properties?.codeInsee||"Non renseignée")}</p>${provenance}<p>Contour importé localement ; provenance et validation à confirmer.</p>`);
   }
   if (!c)
@@ -651,7 +654,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.19 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.20 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -861,7 +864,7 @@ function viewCarte() {
         : "Indicateur socio-démographique communal issu du référentiel public.") +
     "</p>" +
     abstentionControls + priorityControls + compareControls +
-    '</section><section><h3>Zone à surligner</h3><select id="map-scope">' +
+    '</section><section><h3>Carroyage Insee · Filosofi 2021</h3><label>Résolution<select id="insee-grid-resolution" '+(mapMode==='compare'?'disabled':'')+'><option value="" '+(!filters.gridResolution?'selected':'')+'>Masqué</option><option value="1000" '+(filters.gridResolution==='1000'?'selected':'')+'>1 km</option><option value="200" '+(filters.gridResolution==='200'?'selected':'')+'>200 m</option></select></label><p id="insee-grid-status" class="hint" role="status">'+(mapMode==='compare'?'Couche masquée dans la comparaison de deux cartes.':filters.gridResolution?'Choisissez une commune ; zoomez pour afficher les carreaux.':'Choisissez une résolution puis une commune.')+'</p><p class="hint">Individus au sens fiscal ; le millésime 2021 diffère des chiffres communaux du recensement. Valeurs imputées en pointillés, sans effectif dans la fenêtre. Une case décrit un territoire, jamais une adresse ni une personne.</p><a href="https://www.insee.fr/fr/statistiques/8735243" target="_blank" rel="noopener noreferrer">Méthode Insee ↗</a></section><section><h3>Zone à surligner</h3><select id="map-scope">' +
     scopeKindOptions +
     '</select><select id="map-scope-value" class="map-scope-value"><option value="">Choisir…</option>' +
     scopeValueOptions +
@@ -1156,7 +1159,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.19</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.20</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1196,6 +1199,10 @@ function render() {
       legendUnit: layer[2],
       legendMethod: ["participation", "abstention", "priority"].includes(filters.mapLayer) ? "fixed-percent" : "quantile",
       sourceLabel: filters.mapLayer === "abstention" ? `Ministère de l’Intérieur · ${abstentionBallot?.label||"scrutin indisponible"}` : filters.mapLayer === "participation" ? `Ministère de l’Intérieur · ${filters.electionYear || "dernier scrutin disponible"}` : filters.mapLayer === "priority" ? "Indice exploratoire · données agrégées" : `Insee · ${socio?.meta?.millesime || "millésime inconnu"}`,
+      inseeGrid: tab === 'carte' && mapMode !== 'compare' && ['200','1000'].includes(filters.gridResolution) ? {
+        resolution: Number(filters.gridResolution),
+        code: activeCode || '',
+      } : null,
       focusSelection: tab === "carte" && Boolean(mapSelection.value),
       focusKey:JSON.stringify([mapSelection.kind,mapSelection.value,selectedStreets.map(x=>x.id)]),
       streets: selectedStreets,
@@ -1794,6 +1801,7 @@ root.addEventListener("change", (e) => {
     "analysis-ballot-b": "analysisBallotB",
     "map-ballot": "mapBallot",
     "map-layer": "mapLayer",
+    "insee-grid-resolution": "gridResolution",
     "priority-socio": "prioritySocio",
     "priority-electoral-weight": "priorityElectoralWeight",
     "priority-socio-weight": "prioritySocioWeight",
@@ -2249,6 +2257,13 @@ async function init() {
       if(!response.ok)throw new Error(`HTTP ${response.status}`);
       pollingCatalog=validatePollingCatalog(await response.json(),territory.communes);
     } catch(error){console.warn('Référentiel de bureaux indisponible :',error);notice='Référentiel de bureaux indisponible : '+error.message;noticeLevel='warning'}
+    if(pollingCatalog.length===23){
+      try{
+        const response=await fetch('./data/resultats-bureaux-officiels-2024.json');
+        if(!response.ok)throw new Error(`HTTP ${response.status}`);
+        officialBureauResults=validateOfficialBureauResults(await response.json(),pollingCatalog);
+      }catch(error){console.warn('Résultats officiels par bureau indisponibles :',error);officialBureauResults=null}
+    }
     try {
       const streets=await fetch("./data/street-catalog-33366.json");
       if(streets.ok){const rows=await streets.json(),sa=territory.communes.find(c=>c.codeInsee==="33366");if(sa&&Array.isArray(rows))sa.rues=unique(rows.filter(r=>r.commune===sa.nom).map(r=>r.name));}

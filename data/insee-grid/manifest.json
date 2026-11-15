@@ -1,0 +1,26 @@
+{
+  "source": "https://www.insee.fr/fr/statistiques/8735243",
+  "tileSource": "https://tiles.insee.fr/filosofi_2021_carreaux.pmtiles",
+  "license": "Licence Ouverte 2.0",
+  "millesime": 2021,
+  "territoryCommunes": 87,
+  "counts": {
+    "1000": {
+      "uniqueCells": 1179,
+      "communesWithData": 87,
+      "status": {
+        "I": 492,
+        "A": 686,
+        "": 1
+      }
+    },
+    "200": {
+      "uniqueCells": 9500,
+      "communesWithData": 87,
+      "status": {
+        "I": 8071,
+        "A": 1429
+      }
+    }
+  }
+}

@@ -44,15 +44,17 @@ jobs:
           if-no-files-found: ignore
       - name: Construire uniquement les fichiers publics
         run: |
-          mkdir -p site/app site/assets/vendor/images site/data
+          mkdir -p site/app site/assets/vendor/images site/data/insee-grid
           cp index.html manifest.webmanifest sw.js site/
           cp app/*.js site/app/
           cp assets/style.css assets/icon.svg site/assets/
           cp assets/vendor/leaflet.js assets/vendor/leaflet.css assets/vendor/LICENSE.leaflet site/assets/vendor/
           cp assets/vendor/images/* site/assets/vendor/images/
-          cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json data/bureaux-referentiel-23.json data/voies-manifest.json data/voies-ecarts.json data/voies-*.geojson.gz site/data/
+          cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json data/bureaux-referentiel-23.json data/resultats-bureaux-officiels-2024.json data/voies-manifest.json data/voies-ecarts.json data/voies-*.geojson.gz site/data/
+          cp data/insee-grid/manifest.json data/insee-grid/*.json.gz site/data/insee-grid/
           test -f site/data/communes-33-11.geojson
           test "$(find site/data -name 'voies-*.geojson.gz' | wc -l)" -eq 87
+          test "$(find site/data/insee-grid -name '*.json.gz' | wc -l)" -eq 87
       - name: Configurer GitHub Pages
         uses: actions/configure-pages@v5
       - name: Publier l’interface

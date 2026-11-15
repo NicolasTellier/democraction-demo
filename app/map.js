@@ -1,5 +1,6 @@
 import {norm,escapeHTML} from './core.js';
 import {validPolygon,classification,classIndex} from './geo-utils.js';
+import {attachGrid} from './insee-grid.js';
 
 const GEO_KEY='democraction-33-geo-v2';
 const CONTOUR_KEY='democraction-33-contours-v5';
@@ -193,6 +194,14 @@ export async function drawMap(target,communes,notify,options={}){
   const recordView=()=>{box.dataset.zoom=String(map.getZoom());box.dataset.center=`${map.getCenter().lat.toFixed(5)},${map.getCenter().lng.toFixed(5)}`};
   map.on('moveend',recordView);recordView();
   addLegend(map,legend,options);
+  if(options.inseeGrid){
+   const status=document.getElementById('insee-grid-status');
+   void attachGrid(map,window.L,{
+    ...options.inseeGrid,
+    active:()=>active()&&maps.get(target)===map,
+    onStatus:message=>{if(active()&&status?.isConnected)status.textContent=message},
+   }).catch(error=>{if(active()&&status?.isConnected)status.textContent=`Carroyage indisponible : ${error.message}`});
+  }
   if(options.allowDraw)addDrawingTools(box,map,target,options);
   if(target==='map-left'||target==='map-right'){
    const other=maps.get(target==='map-left'?'map-right':'map-left');
