@@ -644,7 +644,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.16 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.17 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
