@@ -24,11 +24,14 @@ test('voies d’une autre commune conservées après réouverture, zoom stable a
  await page.locator('#street-search-form button').click();
  await page.locator('.street-result').first().click();
  await expect.poll(()=>page.locator('#map .road-selected').count()).toBeGreaterThan(0);
+ const before=Number(await page.locator('#map').getAttribute('data-zoom'));
  await page.locator('#map .leaflet-control-zoom-in').click();
- await expect.poll(async()=>Number((await page.locator('#map .leaflet-tile').first().getAttribute('src'))?.match(/TILEMATRIX=(\d+)/)?.[1])).toBeGreaterThanOrEqual(16);
- const zoom=await page.locator('#map .leaflet-tile').first().getAttribute('src').then(src=>src?.match(/TILEMATRIX=(\d+)/)?.[1]);
+ await expect.poll(async()=>Number(await page.locator('#map').getAttribute('data-zoom'))).toBe(before+1);
+ const zoom=await page.locator('#map').getAttribute('data-zoom');
+ const center=await page.locator('#map').getAttribute('data-center');
  await page.locator('#map-layer').selectOption('population');
- await expect.poll(()=>page.locator('#map .leaflet-tile').first().getAttribute('src').then(src=>src?.match(/TILEMATRIX=(\d+)/)?.[1])).toBe(zoom);
+ await expect.poll(()=>page.locator('#map').getAttribute('data-zoom')).toBe(zoom);
+ await expect(page.locator('#map')).toHaveAttribute('data-center',center);
  await page.reload();
  await page.locator('button[data-nav=carte]:visible').first().click();
  await expect(page.locator('.road-inventory')).toContainText('2 / 87');

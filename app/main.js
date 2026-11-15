@@ -19,7 +19,7 @@ import {
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry } from "./map.js?v=20261115camera14";
+import { drawMap, locate, selectionGeometry } from "./map.js?v=20261115camera14b";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';

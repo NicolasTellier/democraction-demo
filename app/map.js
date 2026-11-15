@@ -190,6 +190,8 @@ export async function drawMap(target,communes,notify,options={}){
   else if(options.focusSelection&&selectedGroup.getLayers().length)map.fitBounds(selectedGroup.getBounds().pad(.2),{maxZoom:13,animate:false});
   else if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.08),{maxZoom:11,animate:false});
   map._democractionFocusKey=options.focusKey;
+  const recordView=()=>{box.dataset.zoom=String(map.getZoom());box.dataset.center=`${map.getCenter().lat.toFixed(5)},${map.getCenter().lng.toFixed(5)}`};
+  map.on('moveend',recordView);recordView();
   addLegend(map,legend,options);
   if(options.allowDraw)addDrawingTools(box,map,target,options);
   if(target==='map-left'||target==='map-right'){
