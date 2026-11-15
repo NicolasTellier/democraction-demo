@@ -57,11 +57,19 @@ export async function writeRoadCache(entry) {
 }
 export const listRoadCache = async () => (await transaction(INDEX,'readonly',store => store.getAll())) || [];
 
-export function roadCoverage(codes, entries, now = Date.now()) {
+export function roadCoverage(codes, entries, now = Date.now(), packaged = []) {
   const stored = new Map(entries.map(entry => [entry.code, entry]));
+  const bundled = new Map(packaged.map(entry => [entry.code, entry]));
   return codes.map(code => {
-    if (code === '33366' && !stored.has(code)) return {code, state:'paquet', count:303, matched:303};
+    const packageRow = bundled.get(code);
     const row = stored.get(code);
+    if (packageRow && (!row || Date.parse(packageRow.asOf) >= Date.parse(row.asOf))) {
+      const count=Number(packageRow.count), matched=Number(packageRow.matched);
+      return {code, state:'paquet', count, matched,
+        rejected:Number.isSafeInteger(packageRow.rejected)?packageRow.rejected:Number.isSafeInteger(matched)?Math.max(0,matched-count):null,
+        merged:Number.isSafeInteger(packageRow.merged)?packageRow.merged:0, asOf:packageRow.asOf};
+    }
+    if (code === '33366' && !row && !packageRow) return {code, state:'paquet', count:303, matched:303};
     if (!row) return {code, state:'non chargé', count:0};
     const count = Number.isSafeInteger(row.count) ? row.count : Array.isArray(row.features) ? row.features.length : 0;
     const matched = Number(row.matched);

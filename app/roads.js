@@ -5,6 +5,22 @@ const WFS='https://data.geopf.fr/wfs/ows';
 const localRoads=new Map();
 const localAddresses=new Map();
 const MAX_ROADS=4000;
+let manifestPromise;
+
+async function roadManifest(){
+ if(!manifestPromise)manifestPromise=(async()=>{
+  const response=await fetch(new URL('../data/voies-manifest.json',import.meta.url));
+  if(!response.ok)throw new Error('Inventaire des voies indisponible.');
+  const data=await response.json();
+  if(!Array.isArray(data.communes)||data.communes.some(row=>
+   !/^33\d{3}$/.test(row.code)||![`data/voies-${row.code}.geojson`,`data/voies-${row.code}.geojson.gz`].includes(row.file)||
+   !Number.isSafeInteger(row.count)||row.count<1||!Number.isSafeInteger(row.matched)||row.matched<row.count||
+   !Number.isFinite(Date.parse(row.asOf))))throw new Error('Inventaire des voies invalide.');
+  if(new Set(data.communes.map(row=>row.code)).size!==data.communes.length)throw new Error('Communes dupliquées dans l’inventaire.');
+  return data.communes;
+ })().catch(()=>[{code:'33366',file:'data/voies-33366.geojson',count:303,matched:303,asOf:'2026-11-14T12:54:20.986Z'}]);
+ return manifestPromise;
+}
 
 function line(geometry){
  const parts=geometry?.type==='LineString'?[geometry.coordinates]:geometry?.type==='MultiLineString'?geometry.coordinates:null;
@@ -54,20 +70,25 @@ async function wfsCollection(type,filter,{limit=MAX_ROADS,pageSize=500,signal}={
 export async function roadInventory(codes){
  let entries=[];
  try{entries=await listRoadCache()}catch{ /* Le WFS reste disponible sans stockage local. */ }
- return roadCoverage(codes,entries);
+ return roadCoverage(codes,entries,Date.now(),await roadManifest());
 }
 
 export async function loadRoads(code,{signal}={}){
  if(!/^33\d{3}$/.test(String(code)))throw new Error('Code de commune invalide.');
  if(localRoads.has(code))return localRoads.get(code);
- let collection,source,asOf;
- if(code==='33366'){
+ let collection,source,asOf,usedPackage=false;
+ const packageRow=(await roadManifest()).find(row=>row.code===code);
+ if(packageRow){
   try{
-   const response=await fetch(new URL('../data/voies-33366.geojson',import.meta.url));
+   const response=await fetch(new URL(`../${packageRow.file}`,import.meta.url),{signal});
    if(!response.ok)throw new Error(String(response.status));
-   collection=await response.json();
-   if(collection.features?.length!==collection.meta?.numberMatched)throw new Error('Catalogue local incomplet.');
-   source='IGN BD TOPO · voie nommée · copie locale';asOf=collection.meta?.retrievedAt;
+   collection=packageRow.file.endsWith('.gz')
+    ?JSON.parse(await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).text())
+    :await response.json();
+   if(collection.meta?.commune!==code||collection.features?.length!==packageRow.count||
+      normalizeRoads(collection,code).length!==packageRow.count)throw new Error('Catalogue local incomplet.');
+   source='IGN BD TOPO · voie nommée · paquet vérifié';asOf=packageRow.asOf;
+   usedPackage=true;
   }catch{ /* Le WFS officiel prend le relais si le paquet local n'est pas disponible. */ }
  }
  if(!collection){
@@ -76,7 +97,8 @@ export async function loadRoads(code,{signal}={}){
   if(cached?.features?.length && Date.now()-Date.parse(cached.asOf)<ROAD_CACHE_AGE_MS){
    const features=normalizeRoads({type:'FeatureCollection',features:cached.features},code);
    if(features.length===cached.features.length){
-    const result={code,features,source:cached.source+' · copie locale',asOf:cached.asOf,matched:cached.matched,cached:true};
+    const result={code,features,source:cached.source+' · copie locale',asOf:cached.asOf,matched:cached.matched,
+     rejected:cached.rejected??Math.max(0,cached.matched-features.length),merged:cached.merged??0,cached:true};
     localRoads.set(code,result);return result;
    }
   }
@@ -89,7 +111,8 @@ export async function loadRoads(code,{signal}={}){
    if(cached?.features?.length){
     const features=normalizeRoads({type:'FeatureCollection',features:cached.features},code);
     if(features.length===cached.features.length){
-     const result={code,features,source:cached.source+' · copie locale ancienne',asOf:cached.asOf,matched:cached.matched,cached:true,stale:true};
+     const result={code,features,source:cached.source+' · copie locale ancienne',asOf:cached.asOf,matched:cached.matched,
+      rejected:cached.rejected??Math.max(0,cached.matched-features.length),merged:cached.merged??0,cached:true,stale:true};
      localRoads.set(code,result);return result;
     }
    }
@@ -98,8 +121,11 @@ export async function loadRoads(code,{signal}={}){
  }
  const features=normalizeRoads(collection,code);
  if(!features.length)throw new Error('Aucune géométrie linéaire exploitable pour cette commune.');
- const result={code,features,source,asOf,matched:collection.numberMatched??collection.meta?.numberMatched??features.length};
- if(code!=='33366')try{result.stored=(await writeRoadCache(result))===code}catch{result.stored=false}
+ const matched=collection.numberMatched??collection.meta?.numberMatched??features.length;
+ const result={code,features,source,asOf,matched,
+  rejected:usedPackage?packageRow.rejected:Math.max(0,matched-features.length),
+  merged:usedPackage?packageRow.merged:0};
+ if(!usedPackage)try{result.stored=(await writeRoadCache(result))===code}catch{result.stored=false}
  localRoads.set(code,result);return result;
 }
 

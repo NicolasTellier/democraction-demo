@@ -125,6 +125,7 @@ let demoContacts = JSON.parse(
   roadStatus = '',
   roadQuery = '',
   roadCoverageRows = [],
+  roadAudit = null,
   roadPrefetchController = null,
   roadPrefetchStatus = '',
   addressData = [],
@@ -436,7 +437,7 @@ async function ensureRoads(code){
  const pending=(async()=>{try {
   const result=await loadRoads(code);
   if(roadLoadingCode!==code)return null;
-  roadData=result;roadStatus=`${result.features.length} voies linéaires · ${result.source} · relevé ${new Date(result.asOf).toLocaleDateString('fr-FR')}${result.stale?' · copie ancienne, actualisation impossible':''}${result.stored===false?' · stockage navigateur indisponible':''}${result.matched>result.features.length?` · ${result.matched-result.features.length} objet(s) IGN écarté(s)`:''}`;
+  roadData=result;roadStatus=`${result.features.length} voies linéaires · ${result.source} · relevé ${new Date(result.asOf).toLocaleDateString('fr-FR')}${result.stale?' · copie ancienne, actualisation impossible':''}${result.stored===false?' · stockage navigateur indisponible':''}${result.rejected?` · ${result.rejected} objet(s) IGN écarté(s)`:''}${result.merged?` · ${result.merged} segment(s) regroupé(s)`:''}`;
   roadCoverageRows=await roadInventory(territory.communes.map(c=>c.codeInsee));
   streetSearchResults=searchRoads(result,roadQuery).map(f=>({id:f.properties.id,name:f.properties.name,code,geometry:f.geometry}));
   return result;
@@ -629,7 +630,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.14 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.15 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -774,7 +775,10 @@ function viewCarte() {
   const streetsHtml = `<p class="hint" role="status">${esc(roadStatus||'Choisissez une commune pour charger ses tracés.')}</p><div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>${selectedStreets.some(r=>r.id===s.id)?'Sélectionnée':'Sélectionner le tracé'}</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="show-addresses" ${selectedStreets.length?'':'disabled'}>Afficher les adresses de ces rues</button><p class="hint" role="status">${esc(addressStatus)}</p>`;
   const indexedRoads=roadCoverageRows.filter(row=>['paquet','indexé','à actualiser'].includes(row.state));
   const roadGaps=roadCoverageRows.filter(row=>row.rejected>0);
-  const roadsInventoryHtml=`<section class="road-inventory"><h3>Couverture des voies</h3><p role="status"><strong>${indexedRoads.length} / ${territory.communes.length}</strong> communes consultables sur cet appareil · ${roadCoverageRows.filter(row=>row.state==='non chargé').length} non chargées.</p><p class="hint">${roadGaps.length?`${roadGaps.length} commune(s) avec objets IGN écartés : ${roadGaps.slice(0,4).map(row=>esc(territory.communes.find(c=>c.codeInsee===row.code)?.nom||row.code)).join(', ')}${roadGaps.length>4?'…':''}.`:'Aucun objet écarté dans les communes déjà relevées.'} Les voies nommées IGN ne prouvent pas à elles seules l’exhaustivité de l’adressage BAN et des lieux-dits.</p><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch" ${roadPrefetchController||indexedRoads.length===territory.communes.length?'disabled':''}>Précharger les 5 prochaines communes</button>${roadPrefetchController?'<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch-stop">Arrêter</button>':''}<p class="hint" role="status">${esc(roadPrefetchStatus)}</p><p class="hint">Chargement volontaire, par lots limités. Les tracés publics sont enregistrés dans ce navigateur, sans adresses ni personnes ; la carte n’affiche que la commune consultée.</p></section>`;
+  const notIndexed=roadCoverageRows.filter(row=>row.state==='non chargé').length;
+  const auditCommune=roadAudit?.communes.find(row=>row.code===roadData?.code);
+  const auditSummary=roadAudit?.totals?`<p class="hint">Audit BAN du ${esc(new Date(roadAudit.meta.generatedAt).toLocaleDateString('fr-FR'))} : ${roadAudit.totals.voiesBANsansTrace.toLocaleString('fr-FR')} noms de voie BAN sans tracé IGN rapproché et ${roadAudit.totals.lieuxDitsBANdistincts.toLocaleString('fr-FR')} lieux-dits distincts sur le territoire. Ces écarts demandent une vérification de source.</p>${auditCommune?`<p class="hint"><strong>${esc(auditCommune.commune)}</strong> : ${auditCommune.voiesBANsansTrace} nom(s) BAN sans ligne rapprochée sur ${auditCommune.voiesBAN} ; ${auditCommune.lieuxDitsBANdistincts} lieux-dits distincts.</p>`:''}`:'';
+  const roadsInventoryHtml=`<section class="road-inventory"><h3>Couverture des voies</h3><p role="status"><strong>${indexedRoads.length} / ${territory.communes.length}</strong> communes avec tracés IGN répertoriés · ${notIndexed} sans tracés en paquet ou cache.</p>${auditSummary}<p class="hint">${roadGaps.length?`${roadGaps.length} commune(s) avec objets IGN écartés : ${roadGaps.slice(0,4).map(row=>esc(territory.communes.find(c=>c.codeInsee===row.code)?.nom||row.code)).join(', ')}${roadGaps.length>4?'…':''}.`:'Aucun objet écarté dans les communes déjà relevées.'} Les tracés sont téléchargés commune par commune. Ils ne prouvent pas l’exhaustivité des chemins, des lieux-dits et de l’adressage BAN.</p>${notIndexed?`<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch" ${roadPrefetchController?'disabled':''}>Précharger les 5 prochaines communes</button>${roadPrefetchController?'<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch-stop">Arrêter</button>':''}<p class="hint" role="status">${esc(roadPrefetchStatus)}</p>`:''}<p class="hint">Les adresses publiques sont chargées à la demande pour les rues sélectionnées. Aucun habitant n’est associé.</p></section>`;
   const activeSector = demoSectors.find(s => s.id === sectorBeingEdited);
   const sectorForm = mapMode === "draw" ? `<section><h3>${activeSector ? "Modifier le secteur" : "Nouveau secteur"}</h3><label>Nom<input id="sector-name" maxlength="100" value="${attr(activeSector?.name||"")}" placeholder="Ex. Bourg centre"></label><label>Couleur<input id="sector-color" type="color" value="${attr(activeSector?.color||"#9c6b2a")}"></label><p class="hint">Dessinez sur la carte, puis cliquez sur Enregistrer le contour. Clic droit sur un sommet pour le retirer.</p></section>` : "";
   const leftRows = mapCommunesFor(filters.mapLayer, compareLeft),rightIndex = new Map(mapCommunesFor(filters.mapLayer, compareRight).map(c=>[c.codeInsee,c]));
@@ -873,7 +877,7 @@ function viewCarte() {
       : "Les contours sélectionnés sont affichés avec une transparence renforcée.") +
     "</small></div>" +
     mapDetail() +
-    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux et indicateurs publics agrégés. Tracés des voies : IGN BD TOPO « voie nommée » (303 lignes locales à Saint-André, WFS à la demande ailleurs). Adresses : BAN WFS, à la demande par rue. Date du relevé affichée au chargement. Aucune géométrie de bureau n’est inventée.</p><a href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/diffusion/wfs/" target="_blank" rel="noopener noreferrer">Documentation WFS IGN ↗</a><a href="https://adresse.data.gouv.fr/commune/33366" target="_blank" rel="noopener noreferrer">Source BAN Saint-André ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
+    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux et indicateurs publics agrégés. Tracés nommés IGN BD TOPO par commune, en paquet daté ; WFS à la demande si un fichier manque. Adresses : BAN WFS, à la demande par rue. Les tracés ne garantissent pas tous les chemins et lieux-dits. Aucune géométrie de bureau n’est inventée.</p><a href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/diffusion/wfs/" target="_blank" rel="noopener noreferrer">Documentation WFS IGN ↗</a><a href="https://adresse.data.gouv.fr/commune/33366" target="_blank" rel="noopener noreferrer">Source BAN Saint-André ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
     (mapSelection.value
       ? esc(mapSelectionLabel()) + " · " + selectedNames.length + " commune(s) · " + selectedStreets.length + " rue(s)"
       : "Sélectionnez une commune ou une zone enregistrée.") +
@@ -1125,7 +1129,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.14</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.15</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -2167,6 +2171,7 @@ async function init() {
       if(streets.ok){const rows=await streets.json(),sa=territory.communes.find(c=>c.codeInsee==="33366");if(sa&&Array.isArray(rows))sa.rues=unique(rows.filter(r=>r.commune===sa.nom).map(r=>r.name));}
     } catch(error){console.warn("Catalogue de rues indisponible",error)}
     roadCoverageRows=await roadInventory(territory.communes.map(c=>c.codeInsee));
+    try{const audit=await fetch('./data/voies-ecarts.json');if(audit.ok)roadAudit=await audit.json()}catch(error){console.warn('Audit BAN indisponible',error)}
     render();
     checkSession()
       .then((s) => {
@@ -2187,7 +2192,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261115voies14")
+        .register("./sw.js?v=20261115voies15")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;

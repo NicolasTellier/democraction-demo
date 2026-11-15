@@ -39,7 +39,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: captures-recette-0-14
+          name: captures-recette-0-15
           path: test-results/captures/*.png
           if-no-files-found: ignore
       - name: Construire uniquement les fichiers publics
@@ -50,8 +50,9 @@ jobs:
           cp assets/style.css assets/icon.svg site/assets/
           cp assets/vendor/leaflet.js assets/vendor/leaflet.css assets/vendor/LICENSE.leaflet site/assets/vendor/
           cp assets/vendor/images/* site/assets/vendor/images/
-          cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json data/voies-33366.geojson data/bureaux-referentiel-23.json site/data/
+          cp data/communes-33-11.geojson data/elections-2008-2026.json.gz data/socio-demographie-v3.json data/territoire-33-11-2026.json data/street-catalog-33366.json data/bureaux-referentiel-23.json data/voies-manifest.json data/voies-ecarts.json data/voies-*.geojson.gz site/data/
           test -f site/data/communes-33-11.geojson
+          test "$(find site/data -name 'voies-*.geojson.gz' | wc -l)" -eq 87
       - name: Configurer GitHub Pages
         uses: actions/configure-pages@v5
       - name: Publier l’interface
