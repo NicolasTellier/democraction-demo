@@ -42,18 +42,19 @@ export function normalizeRoads(data,code){
  return features.sort((a,b)=>a.properties.name.localeCompare(b.properties.name,'fr'));
 }
 
-function urlFor(type,filter,startIndex,count){
+function urlFor(type,filter,startIndex,count,sort){
  const url=new URL(WFS);
  for(const [k,v] of Object.entries({SERVICE:'WFS',VERSION:'2.0.0',REQUEST:'GetFeature',TYPENAMES:type,OUTPUTFORMAT:'application/json',SRSNAME:'EPSG:4326',CQL_FILTER:filter,STARTINDEX:startIndex,COUNT:count}))url.searchParams.set(k,String(v));
+ if(sort)url.searchParams.set('SORTBY','id');
  return url;
 }
 
-async function wfsCollection(type,filter,{limit=MAX_ROADS,pageSize=500,signal}={}){
+async function wfsCollection(type,filter,{limit=MAX_ROADS,pageSize=500,signal,sort=false}={}){
  const features=[];let total=Infinity;
  while(features.length<total){
   if(features.length>=limit)throw new Error(`Plus de ${limit} objets : affinez la commune ou la voie.`);
   const timeout=AbortSignal.timeout(25000);
-  const response=await fetch(urlFor(type,filter,features.length,Math.min(pageSize,limit-features.length)),{mode:'cors',signal:signal?AbortSignal.any([signal,timeout]):timeout});
+  const response=await fetch(urlFor(type,filter,features.length,Math.min(pageSize,limit-features.length),sort),{mode:'cors',signal:signal?AbortSignal.any([signal,timeout]):timeout});
   if(!response.ok)throw new Error(`Service IGN indisponible (${response.status}).`);
   const page=await response.json();
   if(page?.type!=='FeatureCollection'||!Array.isArray(page.features))throw new Error('Réponse IGN invalide.');
@@ -138,6 +139,30 @@ export function roadGeometry(roads){
  return coordinates.length?{type:'MultiLineString',coordinates}:null;
 }
 
+function normalizeBanAddresses(features,code,road={}){
+ const seen=new Set(),addresses=[];
+ for(const feature of features){
+  const p=feature?.properties||{},point=feature?.geometry?.coordinates;
+  const addressId=String(p.id||feature?.id||'');
+  if(String(p.code_insee)!==code||!addressId||seen.has(addressId)||feature.geometry?.type!=='Point'||!Array.isArray(point)||point.length<2||!point.slice(0,2).every(Number.isFinite)||Math.abs(point[0])>180||Math.abs(point[1])>90)continue;
+  seen.add(addressId);
+  addresses.push({id:addressId,roadId:String(p.id_fantoir||road.id||''),roadName:String(p.nom_voie||road.name||''),code,number:String(p.numero||''),suffix:String(p.rep||''),postcode:String(p.code_postal||''),commune:String(p.nom_commune||''),coordinates:point.slice(0,2),certified:String(p.certification_commune)==='1'});
+ }
+ return addresses;
+}
+
+// Une seule fenêtre de carte à la fois : aucune extraction communale complète.
+export async function loadAddressesInBounds(code,bounds,{signal}={}){
+ if(!/^33\d{3}$/.test(String(code)))throw new Error('Code de commune invalide.');
+ const {west,south,east,north}=bounds||{};
+ if(![west,south,east,north].every(Number.isFinite)||west>=east||south>=north||west < -180||east > 180||south < -90||north > 90)throw new Error('Emprise cartographique invalide.');
+ if(east-west>.04||north-south>.04)throw new Error('Zoomez davantage pour limiter le nombre d’adresses.');
+ const filter=`code_insee='${code}' AND BBOX(geom,${west},${south},${east},${north},'EPSG:4326')`;
+ const collection=await wfsCollection('BAN.DATA.GOUV:ban',filter,{limit:500,pageSize:250,signal,sort:true});
+ const features=normalizeBanAddresses(collection.features,code).filter(a=>a.coordinates[0]>=west&&a.coordinates[0]<=east&&a.coordinates[1]>=south&&a.coordinates[1]<=north);
+ return {features,source:'Base Adresse Nationale · WFS IGN',asOf:new Date().toISOString(),matched:collection.numberMatched};
+}
+
 export async function loadAddressesForRoad(road){
  const {id,name,code}=road.properties||{};
  if(!/^33\d{3}$/.test(code)||!name)throw new Error('Voie sans commune valide.');
@@ -149,14 +174,7 @@ export async function loadAddressesForRoad(road){
  // Certaines voies BD TOPO n'ont pas d'identifiant repris dans BAN.
  if(!collection.features.length&&filter.includes('id_fantoir='))
   collection=await wfsCollection('BAN.DATA.GOUV:ban',`code_insee='${code}' AND nom_voie='${safe(name)}'`,{limit:800,pageSize:400});
- const seen=new Set(),addresses=[];
- for(const feature of collection.features){
-  const p=feature.properties||{},point=feature.geometry?.coordinates;
-  const addressId=String(p.id||feature.id||'');
-  if(String(p.code_insee)!==code||!addressId||seen.has(addressId)||feature.geometry?.type!=='Point'||!Array.isArray(point)||point.length<2||!point.slice(0,2).every(Number.isFinite))continue;
-  seen.add(addressId);
-  addresses.push({id:addressId,roadId:id,roadName:name,code,number:String(p.numero||''),suffix:String(p.rep||''),postcode:String(p.code_postal||''),commune:String(p.nom_commune||''),coordinates:point.slice(0,2),certified:String(p.certification_commune)==='1'});
- }
+ const addresses=normalizeBanAddresses(collection.features,code,{id,name});
  const result={features:addresses,source:'Base Adresse Nationale · WFS IGN',asOf:new Date().toISOString(),matched:collection.numberMatched};
  localAddresses.set(key,result);return result;
 }

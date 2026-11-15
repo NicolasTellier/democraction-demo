@@ -7,6 +7,7 @@ const CONTOUR_KEY='democraction-33-contours-v5';
 const maps=new Map();
 const savedViews=new Map();
 const mapLayers=new Map();
+const addressGroups=new Map();
 const generations=new Map();
 let currentGeo=[];
 let currentContours=[];
@@ -130,13 +131,35 @@ function addLegend(map,legend,options){
   el.innerHTML=`<strong>${escapeHTML(options.legendTitle||'Indicateur')}</strong><small>${escapeHTML(options.sourceLabel||'Données agrégées')} · ${legend.method==='quantile'?'classes par quantiles':'intervalles réguliers'}</small><div>${classes}<span><i style="background:#c8d0d7"></i>Indisponible</span></div>`;return el};control.addTo(map);
 }
 
+function renderAddressMarkers(map,addresses,onSelect){
+ let group=addressGroups.get(map);
+ if(!group){group=window.L.featureGroup().addTo(map);addressGroups.set(map,group)}
+ group.clearLayers();
+ for(const address of addresses){
+  const [lon,lat]=address.coordinates||[];if(!Number.isFinite(lon)||!Number.isFinite(lat))continue;
+  const label=[address.number,address.suffix,address.roadName].filter(Boolean).join(' ');
+  const open=e=>{if(e)window.L.DomEvent.stopPropagation(e);onSelect?.(address)};
+  // La zone tactile dépasse le point dessiné, sans agrandir visuellement le symbole.
+  window.L.circleMarker([lat,lon],{className:'ban-address-hit',radius:15,weight:0,opacity:0,fillOpacity:0})
+   .addTo(group).on('click',open);
+  const marker=window.L.circleMarker([lat,lon],{className:'ban-address',radius:7,weight:2,color:'#16163f',fillColor:'#ffb71b',fillOpacity:.92})
+   .addTo(group).bindTooltip(escapeHTML(label)).on('click',open);
+  const node=marker.getElement();if(node){node.setAttribute('tabindex','0');node.setAttribute('role','button');node.setAttribute('aria-label',`Ouvrir l’adresse ${label}`);node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}})}
+ }
+}
+
+export function updateMapAddresses(target,addresses,onSelect){
+ const map=maps.get(target);if(!map)return false;
+ renderAddressMarkers(map,addresses,onSelect);return true;
+}
+
 export async function drawMap(target,communes,notify,options={}){
  const generation=(generations.get(target)||0)+1;generations.set(target,generation);
  const previous=maps.get(target);
  if(previous){
   const center=previous.getCenter();
   savedViews.set(target,{lat:center.lat,lng:center.lng,zoom:previous.getZoom(),focusKey:previous._democractionFocusKey});
-  previous.remove();maps.delete(target);
+  addressGroups.delete(previous);previous.remove();maps.delete(target);
  }
  const box=document.getElementById(target);if(!box)return;
  const active=()=>generations.get(target)===generation&&document.getElementById(target)===box;
@@ -176,12 +199,7 @@ export async function drawMap(target,communes,notify,options={}){
    }}).addTo(map);
    if(selected)roadGroup.addLayer(layer);
   }
-  for(const address of options.addresses||[]){
-   const [lon,lat]=address.coordinates||[];if(!Number.isFinite(lon)||!Number.isFinite(lat))continue;
-   window.L.circleMarker([lat,lon],{className:'ban-address',radius:4,weight:1,color:'#16163f',fillColor:'#ffb71b',fillOpacity:.8})
-    .addTo(map).bindTooltip(escapeHTML([address.number,address.suffix,address.roadName].filter(Boolean).join(' ')))
-    .on('click',e=>{window.L.DomEvent.stopPropagation(e);options.onAddressSelect?.(address)});
-  }
+  renderAddressMarkers(map,options.addresses||[],options.onAddressSelect);
   // Un seul cadrage : plusieurs fitBounds successifs pouvaient se terminer
   // dans le désordre et rétablir le zoom communal après le zoom sur la rue.
   const saved=savedViews.get(target);
@@ -192,7 +210,8 @@ export async function drawMap(target,communes,notify,options={}){
   else if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.08),{maxZoom:11,animate:false});
   map._democractionFocusKey=options.focusKey;
   const recordView=()=>{box.dataset.zoom=String(map.getZoom());box.dataset.center=`${map.getCenter().lat.toFixed(5)},${map.getCenter().lng.toFixed(5)}`};
-  map.on('moveend',recordView);recordView();
+  const sendViewport=()=>{if(!active())return;const b=map.getBounds();options.onViewport?.({zoom:map.getZoom(),bounds:{west:b.getWest(),south:b.getSouth(),east:b.getEast(),north:b.getNorth()}})};
+  map.on('moveend',recordView);map.on('moveend',sendViewport);recordView();
   addLegend(map,legend,options);
   if(options.inseeGrid){
    const status=document.getElementById('insee-grid-status');
@@ -208,7 +227,7 @@ export async function drawMap(target,communes,notify,options={}){
    if(other){let moving=false;for(const [a,b] of [[map,other],[other,map]])a.on('moveend',()=>{if(moving)return;moving=true;b.setView(a.getCenter(),a.getZoom(),{animate:false});moving=false});}
   }
   // A later render can replace the map before this delayed resize runs.
-  setTimeout(()=>{if(active()&&maps.get(target)===map)map.invalidateSize()},150);
+  setTimeout(()=>{if(active()&&maps.get(target)===map){map.invalidateSize();sendViewport()}},150);
   notify?.(`Contours affichés : ${rendered} / ${communes.length} communes.`,rendered?'info':'warning');
  }catch(e){if(active()){box.innerHTML='<div class="map-loading">Contours indisponibles : le fichier géographique local n’a pas pu être chargé. Réessayez en ligne.</div>';notify?.(String(e.message||e),'warning')}}
 }

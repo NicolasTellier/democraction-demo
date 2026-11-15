@@ -21,9 +21,9 @@ import {
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry } from "./map.js?v=20261115camera14b";
+import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261115ban21b";
 import { validPolygon,validZone } from "./geo-utils.js";
-import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
+import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
 import {validateOfficialBureauResults,officialBureauResultHtml} from './official-bureaux.js';
 import {readBureauFile,validateBureauImport} from './bureau-import.js';
@@ -140,8 +140,12 @@ let demoContacts = JSON.parse(
   roadPrefetchController = null,
   roadPrefetchStatus = '',
   addressData = [],
+  addressDataCode = '',
   addressSelected = null,
   addressStatus = '',
+  addressViewportEnabled = true,
+  addressViewportKey = '',
+  addressViewportRequest = null,
   mapSelectedCommunes = [],
   mapMode = "explore",
   actionView = 'list',
@@ -439,7 +443,7 @@ async function searchStreets(query, commune) {
     toast("Code commune indisponible pour cette recherche.", "warning");
     return;
   }
-  roadQuery=query;addressData=[];addressSelected=null;
+ roadQuery=query;addressData=[];addressDataCode='';addressViewportKey='';addressSelected=null;
   roadFailedCode='';
   try {
     const roads=await ensureRoads(code);
@@ -497,13 +501,56 @@ async function prefetchRoadBatch(){
 }
 async function showAddresses(){
  if(!selectedStreets.length){toast('Sélectionnez une ou plusieurs rues avant de charger leurs adresses.','warning');return}
+ addressViewportEnabled=false;addressViewportRequest?.abort();addressViewportKey='';
+ const selectedIds=selectedStreets.map(r=>r.id).join(',');
  addressStatus='Chargement des adresses publiques BAN…';render();
  try{
   const results=await Promise.all(selectedStreets.map(road=>loadAddressesForRoad({properties:road})));
+  if(addressViewportEnabled||selectedStreets.map(r=>r.id).join(',')!==selectedIds||tab!=='carte')return;
   addressData=results.flatMap(r=>r.features);
+  addressDataCode=selectedStreets[0]?.code||'';
   addressStatus=`${addressData.length} adresses publiques BAN · relevé ${new Date().toLocaleDateString('fr-FR')} · aucun habitant associé`;
   render();
- }catch(error){addressData=[];addressStatus=`Adresses indisponibles : ${error.message}`;render()}
+ }catch(error){if(!addressViewportEnabled&&selectedStreets.map(r=>r.id).join(',')===selectedIds&&tab==='carte'){addressData=[];addressStatus=`Adresses indisponibles : ${error.message}`;render()}}
+}
+async function updateAddressesInViewport(code,view){
+ if(!addressViewportEnabled||!/^33\d{3}$/.test(code)||tab!=='carte')return;
+ const {zoom,bounds}=view;
+ const key=JSON.stringify([code,zoom,...Object.values(bounds).map(n=>Math.round(n*10000)/10000)]);
+ if(key===addressViewportKey)return;
+ addressViewportKey=key;
+ addressViewportRequest?.abort();addressViewportRequest=null;
+ if(zoom<16){
+  const hadPoints=Boolean(addressData.length||addressSelected);
+  addressData=[];addressDataCode='';addressSelected=null;addressStatus='Zoomez jusqu’au niveau 16 pour afficher les points d’adresse BAN autour de vous.';
+  updateMapAddresses('map',[],null);
+  if(hadPoints)render();else{const status=document.getElementById('address-viewport-status');if(status)status.textContent=addressStatus}return;
+ }
+ if(bounds.east-bounds.west>.04||bounds.north-bounds.south>.04){
+  const hadPoints=Boolean(addressData.length||addressSelected);
+  addressData=[];addressDataCode='';addressSelected=null;addressStatus='Emprise encore trop large : zoomez davantage pour charger les adresses.';
+  updateMapAddresses('map',[],null);
+  if(hadPoints)render();else{const status=document.getElementById('address-viewport-status');if(status)status.textContent=addressStatus}return;
+ }
+ const controller=new AbortController();addressViewportRequest=controller;
+ addressStatus='Chargement des adresses visibles sur la carte…';
+ const status=document.getElementById('address-viewport-status');if(status)status.textContent=addressStatus;
+ try{
+  const result=await loadAddressesInBounds(code,bounds,{signal:controller.signal});
+  if(controller!==addressViewportRequest||!addressViewportEnabled||tab!=='carte'||territory.communes.find(c=>c.nom===mapSelectionCommunes()[0])?.codeInsee!==code)return;
+  addressData=result.features;
+  addressDataCode=code;
+  addressSelected=null;
+  addressStatus=`${addressData.length} point(s) BAN dans la zone visible · aucun habitant associé. Déplacez la carte pour charger la zone suivante.`;
+  updateMapAddresses('map',addressData,address=>{addressSelected=address;render()});
+  const status=document.getElementById('address-viewport-status');if(status)status.textContent=addressStatus;
+ }catch(error){
+  if(controller!==addressViewportRequest||controller.signal.aborted||territory.communes.find(c=>c.nom===mapSelectionCommunes()[0])?.codeInsee!==code)return;
+  const hadSelection=Boolean(addressSelected);
+  addressData=[];addressDataCode='';addressSelected=null;addressStatus=`Points d’adresse indisponibles : ${error.message}. Déplacez la carte ou réactivez la couche pour réessayer.`;
+  updateMapAddresses('map',[],null);
+  if(hadSelection)render();else{const status=document.getElementById('address-viewport-status');if(status)status.textContent=addressStatus}
+ }finally{if(controller===addressViewportRequest)addressViewportRequest=null}
 }
 function saveSector(geometry, editId = null) {
   const name = document.getElementById("sector-name")?.value.trim();
@@ -802,13 +849,14 @@ function viewCarte() {
     .join("");
   const comparable = leftBallot?.type === rightBallot?.type && leftBallot?.tour === rightBallot?.tour;
   const compareControls = mapMode === "compare" ? `<section><h3>Comparer deux scrutins</h3><label>Carte A<select id="compare-left">${ballots.map(b => opt(b.id,b.label,b.id===compareLeft)).join("")}</select></label><label>Carte B<select id="compare-right">${ballots.map(b => opt(b.id,b.label,b.id===compareRight)).join("")}</select></label><p class="hint">Participation en % des inscrits ; écart en points. ${comparable ? "Même type de scrutin et même tour." : "Attention : types de scrutin ou tours différents, interprétation prudente."} Les communes sans résultat à un tour restent indisponibles.</p></section>` : "";
-  const streetsHtml = `<p class="hint" role="status">${esc(roadStatus||'Choisissez une commune pour charger ses tracés.')}</p><div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>${selectedStreets.some(r=>r.id===s.id)?'Sélectionnée':'Sélectionner le tracé'}</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="show-addresses" ${selectedStreets.length?'':'disabled'}>Afficher les adresses de ces rues</button><p class="hint" role="status">${esc(addressStatus)}</p>`;
+  const streetsHtml = `<p class="hint" role="status">${esc(roadStatus||'Choisissez une commune pour charger ses tracés.')}</p><div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>${selectedStreets.some(r=>r.id===s.id)?'Sélectionnée':'Sélectionner le tracé'}</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="show-addresses" ${selectedStreets.length?'':'disabled'}>Afficher les adresses de ces rues</button>`;
+  const addressesHtml=`<section><h3>Points d’adresse BAN</h3><p class="hint">Choisissez une commune puis zoomez au niveau 16 : les points de la zone visible se chargent progressivement. Déplacez la carte pour voir les suivants ; touchez un point pour ouvrir sa fiche publique.</p><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="toggle-address-viewport">${addressViewportEnabled?'Masquer les points BAN':'Afficher les points BAN autour de la carte'}</button><p id="address-viewport-status" class="hint" role="status">${esc(addressStatus||'Aucune personne associée à ces adresses publiques.')}</p></section>`;
   const indexedRoads=roadCoverageRows.filter(row=>['paquet','indexé','à actualiser'].includes(row.state));
   const roadGaps=roadCoverageRows.filter(row=>row.rejected>0);
   const notIndexed=roadCoverageRows.filter(row=>row.state==='non chargé').length;
   const auditCommune=roadAudit?.communes.find(row=>row.code===roadData?.code);
   const auditSummary=roadAudit?.totals?`<p class="hint">Audit BAN du ${esc(new Date(roadAudit.meta.generatedAt).toLocaleDateString('fr-FR'))} : ${roadAudit.totals.voiesBANsansTrace.toLocaleString('fr-FR')} noms de voie BAN sans tracé IGN rapproché et ${roadAudit.totals.lieuxDitsBANdistincts.toLocaleString('fr-FR')} lieux-dits distincts sur le territoire. Ces écarts demandent une vérification de source.</p>${auditCommune?`<p class="hint"><strong>${esc(auditCommune.commune)}</strong> : ${auditCommune.voiesBANsansTrace} nom(s) BAN sans ligne rapprochée sur ${auditCommune.voiesBAN} ; ${auditCommune.lieuxDitsBANdistincts} lieux-dits distincts.</p>`:''}`:'';
-  const roadsInventoryHtml=`<section class="road-inventory"><h3>Couverture des voies</h3><p role="status"><strong>${indexedRoads.length} / ${territory.communes.length}</strong> communes avec tracés IGN répertoriés · ${notIndexed} sans tracés en paquet ou cache.</p>${auditSummary}<p class="hint">${roadGaps.length?`${roadGaps.length} commune(s) avec objets IGN écartés : ${roadGaps.slice(0,4).map(row=>esc(territory.communes.find(c=>c.codeInsee===row.code)?.nom||row.code)).join(', ')}${roadGaps.length>4?'…':''}.`:'Aucun objet écarté dans les communes déjà relevées.'} Les tracés sont téléchargés commune par commune. Ils ne prouvent pas l’exhaustivité des chemins, des lieux-dits et de l’adressage BAN.</p>${notIndexed?`<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch" ${roadPrefetchController?'disabled':''}>Précharger les 5 prochaines communes</button>${roadPrefetchController?'<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch-stop">Arrêter</button>':''}<p class="hint" role="status">${esc(roadPrefetchStatus)}</p>`:''}<p class="hint">Les adresses publiques sont chargées à la demande pour les rues sélectionnées. Aucun habitant n’est associé.</p></section>`;
+  const roadsInventoryHtml=`<section class="road-inventory"><h3>Couverture des voies</h3><p role="status"><strong>${indexedRoads.length} / ${territory.communes.length}</strong> communes avec tracés IGN répertoriés · ${notIndexed} sans tracés en paquet ou cache.</p>${auditSummary}<p class="hint">${roadGaps.length?`${roadGaps.length} commune(s) avec objets IGN écartés : ${roadGaps.slice(0,4).map(row=>esc(territory.communes.find(c=>c.codeInsee===row.code)?.nom||row.code)).join(', ')}${roadGaps.length>4?'…':''}.`:'Aucun objet écarté dans les communes déjà relevées.'} Les tracés sont téléchargés commune par commune. Ils ne prouvent pas l’exhaustivité des chemins, des lieux-dits et de l’adressage BAN.</p>${notIndexed?`<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch" ${roadPrefetchController?'disabled':''}>Précharger les 5 prochaines communes</button>${roadPrefetchController?'<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch-stop">Arrêter</button>':''}<p class="hint" role="status">${esc(roadPrefetchStatus)}</p>`:''}<p class="hint">Les voies sont tracées en paquet ; les adresses sont chargées par la zone visible ou par rue. Aucun habitant n’est associé.</p></section>`;
   const activeSector = demoSectors.find(s => s.id === sectorBeingEdited);
   const sectorForm = mapMode === "draw" ? `<section><h3>${activeSector ? "Modifier le secteur" : "Nouveau secteur"}</h3><label>Nom<input id="sector-name" maxlength="100" value="${attr(activeSector?.name||"")}" placeholder="Ex. Bourg centre"></label><label>Couleur<input id="sector-color" type="color" value="${attr(activeSector?.color||"#9c6b2a")}"></label><p class="hint">Dessinez sur la carte, puis cliquez sur Enregistrer le contour. Clic droit sur un sommet pour le retirer.</p></section>` : "";
   const leftRows = mapCommunesFor(filters.mapLayer, compareLeft),rightIndex = new Map(mapCommunesFor(filters.mapLayer, compareRight).map(c=>[c.codeInsee,c]));
@@ -876,7 +924,7 @@ function viewCarte() {
     bureauWarning +
     '<section><h3>Recherche de rues</h3><form id="street-search-form"><label>Commune<select name="commune"><option value="">Choisir…</option>' +
     streetOptions +
-    '</select></label><label>Rue<input name="query" value="'+attr(roadQuery)+'" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher les tracés IGN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont surlignées et reprises dans l’action créée depuis la carte. Les adresses BAN ne contiennent aucun habitant.</p></section>' + roadsInventoryHtml + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
+    '</select></label><label>Rue<input name="query" value="'+attr(roadQuery)+'" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher les tracés IGN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont surlignées et reprises dans l’action créée depuis la carte. Les adresses BAN ne contiennent aucun habitant.</p></section>' + addressesHtml + roadsInventoryHtml + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
     (demoSectors.length
       ? '<div class="sector-list">' + selectedSector + "</div>"
       : empty(
@@ -907,7 +955,7 @@ function viewCarte() {
       : "Les contours sélectionnés sont affichés avec une transparence renforcée.") +
     "</small></div>" +
     mapDetail() +
-    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux et indicateurs publics agrégés. Tracés nommés IGN BD TOPO par commune, en paquet daté ; WFS à la demande si un fichier manque. Adresses : BAN WFS, à la demande par rue. Les tracés ne garantissent pas tous les chemins et lieux-dits. Aucune géométrie de bureau n’est inventée.</p><a href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/diffusion/wfs/" target="_blank" rel="noopener noreferrer">Documentation WFS IGN ↗</a><a href="https://adresse.data.gouv.fr/commune/33366" target="_blank" rel="noopener noreferrer">Source BAN Saint-André ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
+    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux et indicateurs publics agrégés. Tracés nommés IGN BD TOPO par commune, en paquet daté ; WFS à la demande si un fichier manque. Adresses : BAN WFS, chargées par petite emprise au zoom ou par rue. Les tracés ne garantissent pas tous les chemins et lieux-dits. Aucune géométrie de bureau n’est inventée.</p><a href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/diffusion/wfs/" target="_blank" rel="noopener noreferrer">Documentation WFS IGN ↗</a><a href="https://adresse.data.gouv.fr/commune/33366" target="_blank" rel="noopener noreferrer">Source BAN Saint-André ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
     (mapSelection.value
       ? esc(mapSelectionLabel()) + " · " + selectedNames.length + " commune(s) · " + selectedStreets.length + " rue(s)"
       : "Sélectionnez une commune ou une zone enregistrée.") +
@@ -1207,7 +1255,8 @@ function render() {
       focusKey:JSON.stringify([mapSelection.kind,mapSelection.value,selectedStreets.map(x=>x.id)]),
       streets: selectedStreets,
       roadFeatures:tab==='carte'&&activeCode===roadData?.code?roadData.features:[],
-      addresses:tab==='carte'&&activeCode===roadData?.code?addressData:[],
+      addresses:tab==='carte'&&activeCode===addressDataCode?addressData:[],
+      onViewport:tab==='carte'&&mapMode!=='compare'&&activeCode?view=>void updateAddressesInViewport(activeCode,view):null,
       onSelect: (commune, event) => {
         if(roadData?.code!==commune.codeInsee){selectedStreets=[];streetSearchResults=[];roadQuery='';addressData=[];addressSelected=null;addressStatus=''}
         if (event?.originalEvent?.shiftKey || event?.originalEvent?.ctrlKey) {
@@ -1493,6 +1542,11 @@ function dispatchAction(action) {
       break;
     case "show-addresses":
       void showAddresses();
+      break;
+    case "toggle-address-viewport":
+      addressViewportEnabled=!addressViewportEnabled;addressViewportRequest?.abort();addressViewportRequest=null;addressViewportKey='';
+      addressData=[];addressDataCode='';addressSelected=null;addressStatus=addressViewportEnabled?'Zoomez jusqu’au niveau 16 pour afficher les points BAN autour de vous.':'Points BAN masqués. Vous pouvez toujours charger les adresses des rues sélectionnées.';
+      render();
       break;
     case "reset":
       resetData();

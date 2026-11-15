@@ -51,3 +51,34 @@ test('adresse publique BAN ouverte sans fiche nominative',async({page})=>{
  await expect(page.locator('.map-detail .panel')).toContainText('1 Rue Elie Faure');
  await expect(page.locator('.map-detail .panel')).toContainText('Aucun nom, contact, vote ou opinion');
 });
+
+test('points BAN chargés au zoom dans la zone visible sans sélectionner de rue',async({page})=>{
+ let viewportRequests=0;
+ await page.route('https://data.geopf.fr/wfs/ows**',async route=>{
+  const url=new URL(route.request().url()),filter=url.searchParams.get('CQL_FILTER')||'';
+  if(url.searchParams.get('TYPENAMES')!=='BAN.DATA.GOUV:ban'||!filter.includes('BBOX(geom,'))return route.continue();
+  viewportRequests++;
+  const b=filter.match(/BBOX\(geom,([^,]+),([^,]+),([^,]+),([^,]+),/);
+  if(!b)throw new Error('Emprise BAN absente');
+  const lon=(Number(b[1])+Number(b[3]))/2,lat=(Number(b[2])+Number(b[4]))/2;
+  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({type:'FeatureCollection',numberMatched:1,features:[{type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties:{id:'ban-test-visible',code_insee:'33366',nom_voie:'Rue du test',numero:8,code_postal:'33240',nom_commune:'Saint-André-de-Cubzac'}}]})});
+ });
+ await page.goto('/');
+ await page.locator('button[data-nav=carte]:visible').first().click();
+ await page.locator('#map-scope-value').selectOption('Saint-André-de-Cubzac');
+ await expect(page.locator('.map-rail')).toContainText('303 voies linéaires',{timeout:20000});
+ await expect(page.locator('.street-chip')).toHaveCount(0);
+ for(let i=0;i<12;i++){
+  const current=Number(await page.locator('#map').getAttribute('data-zoom'));
+  if(current>=16)break;
+  await page.locator('#map .leaflet-control-zoom-in').click();
+  await expect.poll(async()=>Number(await page.locator('#map').getAttribute('data-zoom'))).toBeGreaterThan(current);
+ }
+ await expect.poll(async()=>Number(await page.locator('#map').getAttribute('data-zoom')),{timeout:10000}).toBeGreaterThanOrEqual(16);
+ await expect.poll(()=>viewportRequests,{timeout:20000}).toBeGreaterThan(0);
+ await expect(page.locator('#map .ban-address')).toHaveCount(1,{timeout:20000});
+ if(['iphone','android'].includes(test.info().project.name))await page.locator('#map .ban-address').tap();
+ else await page.locator('#map .ban-address').click();
+ await expect(page.locator('.map-detail .panel')).toContainText('8 Rue du test');
+ await expect(page.locator('.map-detail .panel')).toContainText('Aucun nom, contact, vote ou opinion');
+});

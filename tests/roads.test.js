@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {normalizeRoads,searchRoads,roadGeometry,loadAddressesForRoad} from '../app/roads.js';
+import {normalizeRoads,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from '../app/roads.js';
 import {validZone} from '../app/geo-utils.js';
 import {emptyState,validateBackup} from '../app/core.js';
 
@@ -43,5 +43,29 @@ test('adresses BAN : recherche par nom quand le code de voie ne correspond pas',
   assert.equal(result.features[0].roadName,'Rue fictive');
   assert.match(queries[0],/id_fantoir=/);
   assert.match(queries[1],/nom_voie=/);
+ }finally{globalThis.fetch=original}
+});
+
+test('points BAN : petite emprise et commune filtrées, pagination bornée et points étrangers écartés',async()=>{
+ const original=globalThis.fetch,queries=[];
+ globalThis.fetch=async url=>{
+  const params=new URL(url).searchParams;queries.push(params);
+  const start=Number(params.get('STARTINDEX'));
+  const feature=(id,code,coordinates)=>({type:'Feature',geometry:{type:'Point',coordinates},properties:{id,code_insee:code,nom_voie:'Rue test',numero:2,code_postal:'33240',nom_commune:'Saint-André-de-Cubzac'}});
+  const features=start? [feature('ban-251','33366',[-.419,44.976])]:Array.from({length:250},(_,i)=>feature(`ban-${i}`,'33366',[-.419,44.976]));
+  if(start)features.push(feature('hors-commune','33001',[-.419,44.976]),feature('hors-emprise','33366',[-.5,44.976]));
+  return {ok:true,json:async()=>({type:'FeatureCollection',numberMatched:253,features})};
+ };
+ try{
+  const bounds={west:-.42,south:44.975,east:-.418,north:44.977};
+  const result=await loadAddressesInBounds('33366',bounds);
+  assert.equal(result.features.length,251);
+  assert.equal(result.features[0].roadName,'Rue test');
+  assert.equal(queries.length,2);
+  assert.match(queries[0].get('CQL_FILTER'),/code_insee='33366' AND BBOX\(geom,-0\.42,44\.975,-0\.418,44\.977,'EPSG:4326'\)/);
+  assert.equal(queries[0].get('BBOX'),null);
+  assert.equal(queries[0].get('SORTBY'),'id');
+  assert.equal(queries[1].get('STARTINDEX'),'250');
+  await assert.rejects(loadAddressesInBounds('33366',{...bounds,east:-.3}),/Zoomez davantage/);
  }finally{globalThis.fetch=original}
 });
