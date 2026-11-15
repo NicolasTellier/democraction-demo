@@ -2177,6 +2177,10 @@ async function enqueueSync() {
   serverBusy = false;
 }
 async function init() {
+  // Load the public datasets alongside the territorial reference, but do not
+  // expose forms until both are settled. A late render used to replace fields
+  // while someone was filling them or importing a bureau contour.
+  const publicDataPromise = loadPublicData();
   try {
     const response = await fetch("./data/territoire-33-11-2026.json");
     if (!response.ok) throw new Error(response.status);
@@ -2194,6 +2198,7 @@ async function init() {
     } catch(error){console.warn("Catalogue de rues indisponible",error)}
     roadCoverageRows=await roadInventory(territory.communes.map(c=>c.codeInsee));
     try{const audit=await fetch('./data/voies-ecarts.json');if(audit.ok)roadAudit=await audit.json()}catch(error){console.warn('Audit BAN indisponible',error)}
+    await publicDataPromise;
     render();
     checkSession()
       .then((s) => {
@@ -2214,7 +2219,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261115abstention16")
+        .register("./sw.js?v=20261115elections17b")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;
@@ -2239,10 +2244,8 @@ async function loadPublicData() {
     if (!socioResponse.ok) throw new Error("Données publiques indisponibles");
     socio = await socioResponse.json();
     elections = electionData;
-    render();
   } catch (error) {
     console.warn("Données publiques:", error);
   }
 }
 init();
-loadPublicData();

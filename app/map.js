@@ -198,7 +198,8 @@ export async function drawMap(target,communes,notify,options={}){
    const other=maps.get(target==='map-left'?'map-right':'map-left');
    if(other){let moving=false;for(const [a,b] of [[map,other],[other,map]])a.on('moveend',()=>{if(moving)return;moving=true;b.setView(a.getCenter(),a.getZoom(),{animate:false});moving=false});}
   }
-  setTimeout(()=>map.invalidateSize(),150);
+  // A later render can replace the map before this delayed resize runs.
+  setTimeout(()=>{if(active()&&maps.get(target)===map)map.invalidateSize()},150);
   notify?.(`Contours affichés : ${rendered} / ${communes.length} communes.`,rendered?'info':'warning');
  }catch(e){if(active()){box.innerHTML='<div class="map-loading">Contours indisponibles : le fichier géographique local n’a pas pu être chargé. Réessayez en ligne.</div>';notify?.(String(e.message||e),'warning')}}
 }
