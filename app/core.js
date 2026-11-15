@@ -12,6 +12,19 @@ export const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<'
 export const safeCsvValue=s=>{const v=String(s??'');return /^[=+@\-\t\r]/.test(v)?"'"+v:v;};
 export const fmtNumber=n=>new Intl.NumberFormat('fr-FR').format(n);
 export const rate=(n,d)=>d>0?100*n/d:null;
+export function abstentionRate(row){
+ if(row?.inscrits===null||row?.inscrits===undefined||row?.inscrits===''||row?.votants===null||row?.votants===undefined||row?.votants==='')return null;
+ const registered=Number(row?.inscrits),voted=Number(row?.votants);
+ if(!Number.isSafeInteger(registered)||registered<=0||!Number.isSafeInteger(voted)||voted<0||voted>registered)return null;
+ return 100*(registered-voted)/registered;
+}
+export function weightedAbstention(rows){
+ const valid=rows.filter(row=>abstentionRate(row)!==null);
+ if(!valid.length)return null;
+ const inscrits=valid.reduce((sum,row)=>sum+Number(row.inscrits),0);
+ const votants=valid.reduce((sum,row)=>sum+Number(row.votants),0);
+ return {communes:valid.length,inscrits,abstentions:inscrits-votants,percent:100*(inscrits-votants)/inscrits};
+}
 export function parseCsv(raw){
   const str=String(raw).replace(/^\uFEFF/,'');
   const firstLine=(str.match(/^[^\r\n]*/)||[''])[0];

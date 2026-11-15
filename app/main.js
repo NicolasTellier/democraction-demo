@@ -4,6 +4,8 @@ import {
   norm,
   escapeHTML as esc,
   rate,
+  abstentionRate,
+  weightedAbstention,
   fmtNumber,
   id,
   STATUSES,
@@ -91,6 +93,7 @@ let territory = null,
     electionType: "",
     electionYear: "",
     electionTour: "",
+    mapBallot: "",
     compareLeft: "",
     compareRight: "",
     prioritySocio: "tauxChomage",
@@ -142,7 +145,7 @@ let demoContacts = JSON.parse(
   sectorBeingEdited = null;
 
 const PREFS_KEY = "democraction-demo-preferences";
-const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "electionType", "electionYear", "electionTour", "compareLeft", "compareRight", "prioritySocio", "priorityElectoralWeight", "prioritySocioWeight"];
+const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "prioritySocio", "priorityElectoralWeight", "prioritySocioWeight"];
 function restorePreferences(preferences) {
   if (!preferences || typeof preferences !== "object") return;
   for (const key of PREF_KEYS)
@@ -187,6 +190,7 @@ const matching = () =>
   territory ? filteredTerritory(territory.communes, filters) : [];
 const MAP_LAYERS = [
   ["participation", "Participation électorale", "%"],
+  ["abstention", "Abstention électorale", "%"],
   ["population", "Population", "habitants"],
   ["tauxChomage", "Chômage", "%"],
   ["revenuMedian", "Revenu médian", "€"],
@@ -310,7 +314,7 @@ const mapCommunesFor = (
     (!filters.canton || c.canton === filters.canton) &&
     (!filters.epci || c.epci === filters.epci) &&
     (!filters.query || norm(c.nom).includes(norm(filters.query)))),
-    latest = latestElectionRows(electionYear),
+    latest = latestElectionRows(layer==="abstention"?(activeAbstentionBallot()?.id||""):electionYear),
     socioRows = new Map(
       (socio?.indicators || []).map((row) => [row.codeInsee, row]),
     ),
@@ -359,6 +363,8 @@ const mapCommunesFor = (
       value =
         layer === "participation"
           ? (row?.participation ?? null)
+          : layer === "abstention"
+            ? abstentionRate(row)
           : layer === "priority"
             ? priority?.score
             : (sr?.[layer] ?? null);
@@ -367,6 +373,10 @@ const mapCommunesFor = (
       label = row
         ? `${row.libelle} · ${Number(row.participation).toFixed(1).replace(".", ",")} %`
         : "Aucune donnée électorale sélectionnée";
+    else if(layer === "abstention")
+      label = Number.isFinite(value)
+        ? `${row.libelle} · abstention ${value.toFixed(1).replace(".", ",")} % (${(row.inscrits-row.votants).toLocaleString("fr-FR")} / ${row.inscrits.toLocaleString("fr-FR")} inscrits)`
+        : "Abstention indisponible : effectifs manquants ou incohérents";
     else if (layer === "priority")
       label = Number.isFinite(value)
         ? `Priorité exploratoire · ${Number(value).toFixed(0)}/100 · participation ${row ? Number(row.participation).toFixed(1).replace(".", ",") : "—"} % · ${filters.prioritySocio} ${Number.isFinite(priority?.s) ? Number(priority.s).toLocaleString("fr-FR") : "—"}`
@@ -392,6 +402,7 @@ const electionBallots = () => {
   }
   return [...ballots.values()].sort((a, b) => b.year - a.year || a.type.localeCompare(b.type) || a.tour.localeCompare(b.tour));
 };
+const activeAbstentionBallot=()=>{const ballots=electionBallots();return ballots.find(b=>b.id===filters.mapBallot)||ballots[0]};
 const comparedBallots = () => {
   const ballots = electionBallots();
   const left = ballots.find(x => x.id === filters.compareLeft) || ballots[0];
@@ -552,11 +563,13 @@ function mapDetail() {
     .filter((x) => x.codeInsee === c.codeInsee && x.annee >= 2008)
     .sort((a, b) => b.annee - a.annee);
   const last = rows[0];
+  const selectedBallot=filters.mapLayer==='abstention'?activeAbstentionBallot():null;
+  const abstention=selectedBallot?abstentionRate(latestElectionRows(selectedBallot.id).get(c.codeInsee)):null;
   const missions = currentMissions().filter((m) => m.commune === c.nom);
   const sectors = demoSectors.filter((s) => !s.commune || s.commune === c.nom);
   return panel(
     c.nom,
-    `<div class="territory-card"><div><span class="kicker">Code INSEE</span><strong>${esc(c.codeInsee || "—")}</strong></div><div><span class="kicker">Canton</span><strong>${esc(c.canton)}</strong></div><div><span class="kicker">Intercommunalité</span><strong>${esc(c.epci)}</strong></div><div><span class="kicker">Population</span><strong>${sr?.population ? fmtNumber(sr.population) : "—"}</strong></div></div><div class="detail-list"><div><span>Dernière participation disponible</span><strong>${last ? `${Number(last.participation).toFixed(1).replace(".", ",")} %` : "—"}</strong></div><div><span>Actions enregistrées</span><strong>${missions.length}</strong></div><div><span>Secteurs sauvegardés</span><strong>${sectors.length}</strong></div></div><div class="button-row"><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button><button class="btn btn-light" data-nav="analyse">Voir l’historique</button></div><p class="hint">Les résultats et indicateurs sont agrégés à l’échelle de la commune. Ils ne décrivent aucune personne.</p>`,
+    `<div class="territory-card"><div><span class="kicker">Code INSEE</span><strong>${esc(c.codeInsee || "—")}</strong></div><div><span class="kicker">Canton</span><strong>${esc(c.canton)}</strong></div><div><span class="kicker">Intercommunalité</span><strong>${esc(c.epci)}</strong></div><div><span class="kicker">Population</span><strong>${sr?.population ? fmtNumber(sr.population) : "—"}</strong></div></div><div class="detail-list"><div><span>Dernière participation disponible</span><strong>${last ? `${Number(last.participation).toFixed(1).replace(".", ",")} %` : "—"}</strong></div>${selectedBallot?`<div><span>Abstention · ${esc(selectedBallot.label)}</span><strong>${abstention===null?'—':`${abstention.toFixed(1).replace('.',',')} %`}</strong></div>`:''}<div><span>Actions enregistrées</span><strong>${missions.length}</strong></div><div><span>Secteurs sauvegardés</span><strong>${sectors.length}</strong></div></div><div class="button-row"><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button><button class="btn btn-light" data-nav="analyse">Voir l’historique</button></div><p class="hint">Les résultats et indicateurs sont agrégés à l’échelle de la commune. Ils ne décrivent aucune personne.</p>`,
   );
 }
 function pointInSector(coordinates,geometry){
@@ -630,7 +643,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.15 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.16 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -722,6 +735,12 @@ function viewCarte() {
   const layerOptions = MAP_LAYERS.map((row) =>
     opt(row[0], row[1], filters.mapLayer === row[0]),
   ).join("");
+  const abstentionBallot=activeAbstentionBallot();
+  const visibleCodes=filters.mapLayer==="abstention"?new Set(mapCommunesFor("abstention").map(c=>c.codeInsee)):new Set();
+  const abstentionTotal=filters.mapLayer==="abstention"&&abstentionBallot
+    ?weightedAbstention([...latestElectionRows(abstentionBallot.id)].filter(([code])=>visibleCodes.has(code)).map(([,row])=>row))
+    :null;
+  const abstentionControls=filters.mapLayer==="abstention"?`<label>Scrutin<select id="map-ballot">${ballots.map(b=>opt(b.id,b.label,b.id===abstentionBallot?.id)).join("")}</select></label><p class="hint">${abstentionTotal?`Sur ${abstentionTotal.communes} commune(s) du périmètre, ${abstentionTotal.abstentions.toLocaleString("fr-FR")} abstentions / ${abstentionTotal.inscrits.toLocaleString("fr-FR")} inscrits, soit <strong>${abstentionTotal.percent.toFixed(1).replace(".",",")} %</strong>. Total calculé sur les effectifs, sans moyenne des pourcentages communaux.`:'Effectifs insuffisants pour ce scrutin.'}</p>`:"";
   const scopeKindOptions = scopeKinds
     .map((row) => opt(row[0], row[1], mapSelection.kind === row[0]))
     .join("");
@@ -786,7 +805,7 @@ function viewCarte() {
   let priorityControls = "";
   if (filters.mapLayer === "priority") {
     const socioOptions = MAP_LAYERS.filter(
-      (x) => !["participation", "priority"].includes(x[0]),
+      (x) => !["participation", "abstention", "priority"].includes(x[0]),
     )
       .map((row) => opt(row[0], row[1], filters.prioritySocio === row[0]))
       .join("");
@@ -829,11 +848,11 @@ function viewCarte() {
     '</select><p class="hint">' +
     (filters.mapLayer === "priority"
       ? "Score exploratoire : participation faible + indicateur socio sélectionné. Il aide à prioriser, sans prédire un comportement individuel."
-      : filters.mapLayer === "participation"
-        ? "Résultats publics agrégés depuis 2008."
+      : ["participation","abstention"].includes(filters.mapLayer)
+        ? "Résultats publics agrégés depuis 2008. Abstention = (inscrits − votants) / inscrits."
         : "Indicateur socio-démographique communal issu du référentiel public.") +
     "</p>" +
-    priorityControls + compareControls +
+    abstentionControls + priorityControls + compareControls +
     '</section><section><h3>Zone à surligner</h3><select id="map-scope">' +
     scopeKindOptions +
     '</select><select id="map-scope-value" class="map-scope-value"><option value="">Choisir…</option>' +
@@ -1129,7 +1148,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.15</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.16</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1145,6 +1164,7 @@ function render() {
     const ticket = ++mapDrawId;
     const layer = MAP_LAYERS.find(x => x[0] === filters.mapLayer) || MAP_LAYERS[0];
     const [leftBallot, rightBallot] = comparedBallots();
+    const abstentionBallot=activeAbstentionBallot();
     const compareA = leftBallot ? mapCommunesFor("participation", leftBallot.id) : [];
     const compareB = rightBallot ? mapCommunesFor("participation", rightBallot.id) : [];
     const namesForRoads=mapSelectionCommunes();
@@ -1165,8 +1185,8 @@ function render() {
       allowDraw: tab === "carte" && mapMode === "draw",
       legendTitle: layer[1],
       legendUnit: layer[2],
-      legendMethod: ["participation", "priority"].includes(filters.mapLayer) ? "fixed-percent" : "quantile",
-      sourceLabel: filters.mapLayer === "participation" ? `Ministère de l’Intérieur · ${filters.electionYear || "dernier scrutin disponible"}` : filters.mapLayer === "priority" ? "Indice exploratoire · données agrégées" : `Insee · ${socio?.meta?.millesime || "millésime inconnu"}`,
+      legendMethod: ["participation", "abstention", "priority"].includes(filters.mapLayer) ? "fixed-percent" : "quantile",
+      sourceLabel: filters.mapLayer === "abstention" ? `Ministère de l’Intérieur · ${abstentionBallot?.label||"scrutin indisponible"}` : filters.mapLayer === "participation" ? `Ministère de l’Intérieur · ${filters.electionYear || "dernier scrutin disponible"}` : filters.mapLayer === "priority" ? "Indice exploratoire · données agrégées" : `Insee · ${socio?.meta?.millesime || "millésime inconnu"}`,
       focusSelection: tab === "carte" && Boolean(mapSelection.value),
       focusKey:JSON.stringify([mapSelection.kind,mapSelection.value,selectedStreets.map(x=>x.id)]),
       streets: selectedStreets,
@@ -1724,6 +1744,7 @@ root.addEventListener("change", (e) => {
     "election-type": "electionType",
     "election-year": "electionYear",
     "election-tour": "electionTour",
+    "map-ballot": "mapBallot",
     "map-layer": "mapLayer",
     "priority-socio": "prioritySocio",
     "priority-electoral-weight": "priorityElectoralWeight",
@@ -2192,7 +2213,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261115voies15")
+        .register("./sw.js?v=20261115abstention16")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;
