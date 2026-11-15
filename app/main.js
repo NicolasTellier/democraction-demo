@@ -19,9 +19,9 @@ import {
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry } from "./map.js?v=20261114roads12";
+import { drawMap, locate, selectionGeometry } from "./map.js?v=20261115camera14";
 import { validPolygon,validZone } from "./geo-utils.js";
-import {loadRoads,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
+import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
 import {readBureauFile,validateBureauImport} from './bureau-import.js';
 import {
@@ -124,6 +124,9 @@ let demoContacts = JSON.parse(
   roadFailedCode = '',
   roadStatus = '',
   roadQuery = '',
+  roadCoverageRows = [],
+  roadPrefetchController = null,
+  roadPrefetchStatus = '',
   addressData = [],
   addressSelected = null,
   addressStatus = '',
@@ -433,12 +436,41 @@ async function ensureRoads(code){
  const pending=(async()=>{try {
   const result=await loadRoads(code);
   if(roadLoadingCode!==code)return null;
-  roadData=result;roadStatus=`${result.features.length} voies linéaires · ${result.source} · relevé ${new Date(result.asOf).toLocaleDateString('fr-FR')}`;
+  roadData=result;roadStatus=`${result.features.length} voies linéaires · ${result.source} · relevé ${new Date(result.asOf).toLocaleDateString('fr-FR')}${result.stale?' · copie ancienne, actualisation impossible':''}${result.stored===false?' · stockage navigateur indisponible':''}${result.matched>result.features.length?` · ${result.matched-result.features.length} objet(s) IGN écarté(s)`:''}`;
+  roadCoverageRows=await roadInventory(territory.communes.map(c=>c.codeInsee));
   streetSearchResults=searchRoads(result,roadQuery).map(f=>({id:f.properties.id,name:f.properties.name,code,geometry:f.geometry}));
   return result;
  }catch(error){if(roadLoadingCode===code){roadFailedCode=code;roadStatus=`Tracés indisponibles : ${error.message}`;}throw error}
  finally {if(roadLoadingCode===code){roadLoadingCode='';roadPromise=null;if(tab==='carte')render()}}})();
  roadPromise=pending;return pending;
+}
+async function prefetchRoadBatch(){
+ if(roadPrefetchController)return;
+ const remaining=roadCoverageRows.filter(row=>row.state==='non chargé').slice(0,5);
+ if(!remaining.length){roadPrefetchStatus='Toutes les communes disponibles sur cet appareil ont été interrogées ; vérifiez les lacunes de source.';render();return}
+ roadPrefetchController=new AbortController();
+ const signal=roadPrefetchController.signal;
+ let done=0;
+ try{
+  for(const row of remaining){
+   if(signal.aborted)break;
+   const commune=territory.communes.find(c=>c.codeInsee===row.code);
+   roadPrefetchStatus=`Chargement ${done+1}/${remaining.length} : ${commune?.nom||row.code}…`;
+   render();
+   let result;
+   try{result=await loadRoads(row.code,{signal})}
+   catch(error){if(!signal.aborted)roadPrefetchStatus=`Arrêt sur ${commune?.nom||row.code} : ${error.message}. Les communes précédentes restent enregistrées.`;break}
+   if(result.stored===false){roadPrefetchStatus='Stockage local indisponible ou plein. Les données ne sont pas conservées après fermeture ; lot interrompu.';break}
+   done++;
+   roadCoverageRows=await roadInventory(territory.communes.map(c=>c.codeInsee));
+   roadPrefetchStatus=`${done}/${remaining.length} commune(s) traitée(s) dans ce lot. Relancez pour les suivantes.`;
+   render();
+   if(done<remaining.length)await new Promise(resolve=>setTimeout(resolve,600));
+  }
+ }finally{
+  if(signal.aborted)roadPrefetchStatus=`Préchargement arrêté. ${done} commune(s) conservée(s) dans ce lot.`;
+  roadPrefetchController=null;render();
+ }
 }
 async function showAddresses(){
  if(!selectedStreets.length){toast('Sélectionnez une ou plusieurs rues avant de charger leurs adresses.','warning');return}
@@ -597,7 +629,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.13 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.14 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -740,6 +772,9 @@ function viewCarte() {
   const comparable = leftBallot?.type === rightBallot?.type && leftBallot?.tour === rightBallot?.tour;
   const compareControls = mapMode === "compare" ? `<section><h3>Comparer deux scrutins</h3><label>Carte A<select id="compare-left">${ballots.map(b => opt(b.id,b.label,b.id===compareLeft)).join("")}</select></label><label>Carte B<select id="compare-right">${ballots.map(b => opt(b.id,b.label,b.id===compareRight)).join("")}</select></label><p class="hint">Participation en % des inscrits ; écart en points. ${comparable ? "Même type de scrutin et même tour." : "Attention : types de scrutin ou tours différents, interprétation prudente."} Les communes sans résultat à un tour restent indisponibles.</p></section>` : "";
   const streetsHtml = `<p class="hint" role="status">${esc(roadStatus||'Choisissez une commune pour charger ses tracés.')}</p><div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>${selectedStreets.some(r=>r.id===s.id)?'Sélectionnée':'Sélectionner le tracé'}</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="show-addresses" ${selectedStreets.length?'':'disabled'}>Afficher les adresses de ces rues</button><p class="hint" role="status">${esc(addressStatus)}</p>`;
+  const indexedRoads=roadCoverageRows.filter(row=>['paquet','indexé','à actualiser'].includes(row.state));
+  const roadGaps=roadCoverageRows.filter(row=>row.rejected>0);
+  const roadsInventoryHtml=`<section class="road-inventory"><h3>Couverture des voies</h3><p role="status"><strong>${indexedRoads.length} / ${territory.communes.length}</strong> communes consultables sur cet appareil · ${roadCoverageRows.filter(row=>row.state==='non chargé').length} non chargées.</p><p class="hint">${roadGaps.length?`${roadGaps.length} commune(s) avec objets IGN écartés : ${roadGaps.slice(0,4).map(row=>esc(territory.communes.find(c=>c.codeInsee===row.code)?.nom||row.code)).join(', ')}${roadGaps.length>4?'…':''}.`:'Aucun objet écarté dans les communes déjà relevées.'} Les voies nommées IGN ne prouvent pas à elles seules l’exhaustivité de l’adressage BAN et des lieux-dits.</p><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch" ${roadPrefetchController||indexedRoads.length===territory.communes.length?'disabled':''}>Précharger les 5 prochaines communes</button>${roadPrefetchController?'<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch-stop">Arrêter</button>':''}<p class="hint" role="status">${esc(roadPrefetchStatus)}</p><p class="hint">Chargement volontaire, par lots limités. Les tracés publics sont enregistrés dans ce navigateur, sans adresses ni personnes ; la carte n’affiche que la commune consultée.</p></section>`;
   const activeSector = demoSectors.find(s => s.id === sectorBeingEdited);
   const sectorForm = mapMode === "draw" ? `<section><h3>${activeSector ? "Modifier le secteur" : "Nouveau secteur"}</h3><label>Nom<input id="sector-name" maxlength="100" value="${attr(activeSector?.name||"")}" placeholder="Ex. Bourg centre"></label><label>Couleur<input id="sector-color" type="color" value="${attr(activeSector?.color||"#9c6b2a")}"></label><p class="hint">Dessinez sur la carte, puis cliquez sur Enregistrer le contour. Clic droit sur un sommet pour le retirer.</p></section>` : "";
   const leftRows = mapCommunesFor(filters.mapLayer, compareLeft),rightIndex = new Map(mapCommunesFor(filters.mapLayer, compareRight).map(c=>[c.codeInsee,c]));
@@ -807,7 +842,7 @@ function viewCarte() {
     bureauWarning +
     '<section><h3>Recherche de rues</h3><form id="street-search-form"><label>Commune<select name="commune"><option value="">Choisir…</option>' +
     streetOptions +
-    '</select></label><label>Rue<input name="query" value="'+attr(roadQuery)+'" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher les tracés IGN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont surlignées et reprises dans l’action créée depuis la carte. Les adresses BAN ne contiennent aucun habitant.</p></section>' + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
+    '</select></label><label>Rue<input name="query" value="'+attr(roadQuery)+'" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher les tracés IGN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont surlignées et reprises dans l’action créée depuis la carte. Les adresses BAN ne contiennent aucun habitant.</p></section>' + roadsInventoryHtml + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
     (demoSectors.length
       ? '<div class="sector-list">' + selectedSector + "</div>"
       : empty(
@@ -1090,7 +1125,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.13</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.14</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1129,6 +1164,7 @@ function render() {
       legendMethod: ["participation", "priority"].includes(filters.mapLayer) ? "fixed-percent" : "quantile",
       sourceLabel: filters.mapLayer === "participation" ? `Ministère de l’Intérieur · ${filters.electionYear || "dernier scrutin disponible"}` : filters.mapLayer === "priority" ? "Indice exploratoire · données agrégées" : `Insee · ${socio?.meta?.millesime || "millésime inconnu"}`,
       focusSelection: tab === "carte" && Boolean(mapSelection.value),
+      focusKey:JSON.stringify([mapSelection.kind,mapSelection.value,selectedStreets.map(x=>x.id)]),
       streets: selectedStreets,
       roadFeatures:tab==='carte'&&activeCode===roadData?.code?roadData.features:[],
       addresses:tab==='carte'&&activeCode===roadData?.code?addressData:[],
@@ -1451,6 +1487,8 @@ root.addEventListener("click", async (e) => {
     const s=demoSectors.find(x=>x.id===t.dataset.sectorDelete);if(!s||!confirm(`Supprimer « ${s.name} » de ce navigateur ?`))return;
     demoSectors=demoSectors.filter(x=>x.id!==s.id);localStorage.setItem("democraction-demo-sectors",JSON.stringify(demoSectors));sectorBeingEdited=null;if(mapSelection.value===s.id)mapSelection={kind:"commune",value:""};render();return;
   }
+  if(t.dataset.action==='road-prefetch'){void prefetchRoadBatch();return}
+  if(t.dataset.action==='road-prefetch-stop'){roadPrefetchController?.abort();return}
   if (t.hasAttribute('data-street-index')) {
     const street = streetSearchResults[Number(t.dataset.streetIndex)];
     if (street && !selectedStreets.some((x) => x.id === street.id))
@@ -2128,6 +2166,7 @@ async function init() {
       const streets=await fetch("./data/street-catalog-33366.json");
       if(streets.ok){const rows=await streets.json(),sa=territory.communes.find(c=>c.codeInsee==="33366");if(sa&&Array.isArray(rows))sa.rues=unique(rows.filter(r=>r.commune===sa.nom).map(r=>r.name));}
     } catch(error){console.warn("Catalogue de rues indisponible",error)}
+    roadCoverageRows=await roadInventory(territory.communes.map(c=>c.codeInsee));
     render();
     checkSession()
       .then((s) => {
@@ -2148,7 +2187,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261114map21")
+        .register("./sw.js?v=20261115voies14")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;

@@ -1,4 +1,5 @@
 import {norm} from './core.js';
+import {readRoadCache,writeRoadCache,listRoadCache,roadCoverage,ROAD_CACHE_AGE_MS} from './road-cache.js';
 
 const WFS='https://data.geopf.fr/wfs/ows';
 const localRoads=new Map();
@@ -14,11 +15,11 @@ export function normalizeRoads(data,code){
  if(data?.type!=='FeatureCollection'||!Array.isArray(data.features))throw new Error('Réponse de voies invalide.');
  const seen=new Set(),features=[];
  for(const feature of data.features){
-  const p=feature.properties||{};
+  const p=feature?.properties||{};
   const city=String(p.code||p.insee_commune||'');
-  const id=String(p.id||p.identifiant_voie_ban||p.cleabs||feature.id||'');
+  const id=String(p.id||p.identifiant_voie_ban||p.cleabs||feature?.id||'');
   const name=String(p.name||p.nom_voie_ban||p.nom_collaboratif||'').trim();
-  if(city!==code||!id||!name||!line(feature.geometry)||seen.has(id))continue;
+  if(city!==code||!id||!name||!line(feature?.geometry)||seen.has(id))continue;
   seen.add(id);
   features.push({type:'Feature',id,geometry:feature.geometry,properties:{id,name,code:city,updated:p.updated||p.date_modification||null}});
  }
@@ -31,11 +32,12 @@ function urlFor(type,filter,startIndex,count){
  return url;
 }
 
-async function wfsCollection(type,filter,{limit=MAX_ROADS,pageSize=500}={}){
+async function wfsCollection(type,filter,{limit=MAX_ROADS,pageSize=500,signal}={}){
  const features=[];let total=Infinity;
  while(features.length<total){
   if(features.length>=limit)throw new Error(`Plus de ${limit} objets : affinez la commune ou la voie.`);
-  const response=await fetch(urlFor(type,filter,features.length,Math.min(pageSize,limit-features.length)),{mode:'cors',signal:AbortSignal.timeout(25000)});
+  const timeout=AbortSignal.timeout(25000);
+  const response=await fetch(urlFor(type,filter,features.length,Math.min(pageSize,limit-features.length)),{mode:'cors',signal:signal?AbortSignal.any([signal,timeout]):timeout});
   if(!response.ok)throw new Error(`Service IGN indisponible (${response.status}).`);
   const page=await response.json();
   if(page?.type!=='FeatureCollection'||!Array.isArray(page.features))throw new Error('Réponse IGN invalide.');
@@ -49,7 +51,13 @@ async function wfsCollection(type,filter,{limit=MAX_ROADS,pageSize=500}={}){
  return {type:'FeatureCollection',features,numberMatched:total};
 }
 
-export async function loadRoads(code){
+export async function roadInventory(codes){
+ let entries=[];
+ try{entries=await listRoadCache()}catch{ /* Le WFS reste disponible sans stockage local. */ }
+ return roadCoverage(codes,entries);
+}
+
+export async function loadRoads(code,{signal}={}){
  if(!/^33\d{3}$/.test(String(code)))throw new Error('Code de commune invalide.');
  if(localRoads.has(code))return localRoads.get(code);
  let collection,source,asOf;
@@ -63,13 +71,35 @@ export async function loadRoads(code){
   }catch{ /* Le WFS officiel prend le relais si le paquet local n'est pas disponible. */ }
  }
  if(!collection){
+  let cached=null;
+  try{cached=await readRoadCache(code)}catch{ /* Cache bloqué : continuer en ligne. */ }
+  if(cached?.features?.length && Date.now()-Date.parse(cached.asOf)<ROAD_CACHE_AGE_MS){
+   const features=normalizeRoads({type:'FeatureCollection',features:cached.features},code);
+   if(features.length===cached.features.length){
+    const result={code,features,source:cached.source+' · copie locale',asOf:cached.asOf,matched:cached.matched,cached:true};
+    localRoads.set(code,result);return result;
+   }
+  }
   const filter=`insee_commune='${code}'`;
-  collection=await wfsCollection('BDTOPO_V3:voie_nommee',filter);
-  source='IGN BD TOPO · voie nommée · WFS';asOf=new Date().toISOString();
+  try{
+   collection=await wfsCollection('BDTOPO_V3:voie_nommee',filter,{signal});
+   source='IGN BD TOPO · voie nommée · WFS';asOf=new Date().toISOString();
+  }catch(error){
+   if(signal?.aborted)throw error;
+   if(cached?.features?.length){
+    const features=normalizeRoads({type:'FeatureCollection',features:cached.features},code);
+    if(features.length===cached.features.length){
+     const result={code,features,source:cached.source+' · copie locale ancienne',asOf:cached.asOf,matched:cached.matched,cached:true,stale:true};
+     localRoads.set(code,result);return result;
+    }
+   }
+   throw error;
+  }
  }
  const features=normalizeRoads(collection,code);
  if(!features.length)throw new Error('Aucune géométrie linéaire exploitable pour cette commune.');
  const result={code,features,source,asOf,matched:collection.numberMatched??collection.meta?.numberMatched??features.length};
+ if(code!=='33366')try{result.stored=(await writeRoadCache(result))===code}catch{result.stored=false}
  localRoads.set(code,result);return result;
 }
 

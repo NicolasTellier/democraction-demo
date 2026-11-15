@@ -4,6 +4,7 @@ import {validPolygon,classification,classIndex} from './geo-utils.js';
 const GEO_KEY='democraction-33-geo-v2';
 const CONTOUR_KEY='democraction-33-contours-v5';
 const maps=new Map();
+const savedViews=new Map();
 const mapLayers=new Map();
 const generations=new Map();
 let currentGeo=[];
@@ -130,7 +131,12 @@ function addLegend(map,legend,options){
 
 export async function drawMap(target,communes,notify,options={}){
  const generation=(generations.get(target)||0)+1;generations.set(target,generation);
- const previous=maps.get(target);if(previous){previous.remove();maps.delete(target)}
+ const previous=maps.get(target);
+ if(previous){
+  const center=previous.getCenter();
+  savedViews.set(target,{lat:center.lat,lng:center.lng,zoom:previous.getZoom(),focusKey:previous._democractionFocusKey});
+  previous.remove();maps.delete(target);
+ }
  const box=document.getElementById(target);if(!box)return;
  const active=()=>generations.get(target)===generation&&document.getElementById(target)===box;
  box.innerHTML='<div class="map-loading">Chargement des contours communaux officiels…</div>';
@@ -177,9 +183,13 @@ export async function drawMap(target,communes,notify,options={}){
   }
   // Un seul cadrage : plusieurs fitBounds successifs pouvaient se terminer
   // dans le désordre et rétablir le zoom communal après le zoom sur la rue.
-  if(options.focusSelection&&roadGroup.getLayers().length)map.fitBounds(roadGroup.getBounds().pad(.35),{maxZoom:16,animate:false});
+  const saved=savedViews.get(target);
+  if(saved?.focusKey === options.focusKey && Number.isFinite(saved.zoom))
+   map.setView([saved.lat,saved.lng],saved.zoom,{animate:false});
+  else if(options.focusSelection&&roadGroup.getLayers().length)map.fitBounds(roadGroup.getBounds().pad(.35),{maxZoom:16,animate:false});
   else if(options.focusSelection&&selectedGroup.getLayers().length)map.fitBounds(selectedGroup.getBounds().pad(.2),{maxZoom:13,animate:false});
   else if(group.getLayers().length)map.fitBounds(group.getBounds().pad(.08),{maxZoom:11,animate:false});
+  map._democractionFocusKey=options.focusKey;
   addLegend(map,legend,options);
   if(options.allowDraw)addDrawingTools(box,map,target,options);
   if(target==='map-left'||target==='map-right'){
