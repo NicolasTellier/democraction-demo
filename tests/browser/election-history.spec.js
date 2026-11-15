@@ -9,7 +9,7 @@ test('la courbe historique est sourcée et ne mélange pas les tours', async ({ 
   await page.locator('#election-tour').selectOption('t1');
   await expect(page.locator('.election-timeline')).toBeVisible();
   await expect(page.locator('.election-timeline')).toHaveAttribute('aria-label', /Municipales · 1er tour/);
-  await expect(page.getByText(/Source : data.gouv.fr \/ ministère de l’Intérieur/)).toBeVisible();
+  await expect(page.getByText(/Source : data.gouv.fr \/ ministère de l’Intérieur/).first()).toBeVisible();
   await expect(page.locator('.timeline-scroll + .tablewrap tbody tr').first()).toContainText('2008');
   await expect(page.locator('.timeline-scroll + .tablewrap tbody tr').last()).toContainText('2026');
 });
