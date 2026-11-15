@@ -1,8 +1,9 @@
 import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 test.use({serviceWorkers:'block'});
 
-test('voies d’une autre commune conservées après réouverture, zoom stable après ouverture de fiche',async({page})=>{
+test('voies d’une autre commune conservées après réouverture, zoom stable après ouverture de fiche',async({page},testInfo)=>{
  let calls=0;
  await page.route('https://data.geopf.fr/wfs/ows**',async route=>{
   const url=new URL(route.request().url());
@@ -24,6 +25,8 @@ test('voies d’une autre commune conservées après réouverture, zoom stable a
  await page.locator('#street-search-form button').click();
  await page.locator('.street-result').first().click();
  await expect.poll(()=>page.locator('#map .road-selected').count()).toBeGreaterThan(0);
+ mkdirSync('test-results/captures',{recursive:true});
+ await page.screenshot({path:`test-results/captures/voies-0-14-${testInfo.project.name}.png`});
  const before=Number(await page.locator('#map').getAttribute('data-zoom'));
  await page.locator('#map .leaflet-control-zoom-in').click();
  await expect.poll(async()=>Number(await page.locator('#map').getAttribute('data-zoom'))).toBe(before+1);
