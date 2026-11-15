@@ -547,7 +547,9 @@ async function updateAddressesInViewport(code,view){
  }catch(error){
   if(controller!==addressViewportRequest||controller.signal.aborted||territory.communes.find(c=>c.nom===mapSelectionCommunes()[0])?.codeInsee!==code)return;
   const hadSelection=Boolean(addressSelected);
-  addressData=[];addressDataCode='';addressSelected=null;addressStatus=`Points d’adresse indisponibles : ${error.message}. Déplacez la carte ou réactivez la couche pour réessayer.`;
+  addressData=[];addressDataCode='';addressSelected=null;
+  const tooMany=/au-delà de la limite 500/.test(error.message);
+  addressStatus=tooMany?'Trop d’adresses dans cette zone (plus de 500). Zoomez davantage pour afficher les points BAN.':`Points d’adresse indisponibles : ${error.message.replace(/\.$/,'')}. Déplacez la carte ou réactivez la couche pour réessayer.`;
   updateMapAddresses('map',[],null);
   if(hadSelection)render();else{const status=document.getElementById('address-viewport-status');if(status)status.textContent=addressStatus}
  }finally{if(controller===addressViewportRequest)addressViewportRequest=null}
@@ -701,7 +703,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.20 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.21 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -850,7 +852,7 @@ function viewCarte() {
   const comparable = leftBallot?.type === rightBallot?.type && leftBallot?.tour === rightBallot?.tour;
   const compareControls = mapMode === "compare" ? `<section><h3>Comparer deux scrutins</h3><label>Carte A<select id="compare-left">${ballots.map(b => opt(b.id,b.label,b.id===compareLeft)).join("")}</select></label><label>Carte B<select id="compare-right">${ballots.map(b => opt(b.id,b.label,b.id===compareRight)).join("")}</select></label><p class="hint">Participation en % des inscrits ; écart en points. ${comparable ? "Même type de scrutin et même tour." : "Attention : types de scrutin ou tours différents, interprétation prudente."} Les communes sans résultat à un tour restent indisponibles.</p></section>` : "";
   const streetsHtml = `<p class="hint" role="status">${esc(roadStatus||'Choisissez une commune pour charger ses tracés.')}</p><div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>${selectedStreets.some(r=>r.id===s.id)?'Sélectionnée':'Sélectionner le tracé'}</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="show-addresses" ${selectedStreets.length?'':'disabled'}>Afficher les adresses de ces rues</button>`;
-  const addressesHtml=`<section><h3>Points d’adresse BAN</h3><p class="hint">Choisissez une commune puis zoomez au niveau 16 : les points de la zone visible se chargent progressivement. Déplacez la carte pour voir les suivants ; touchez un point pour ouvrir sa fiche publique.</p><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="toggle-address-viewport">${addressViewportEnabled?'Masquer les points BAN':'Afficher les points BAN autour de la carte'}</button><p id="address-viewport-status" class="hint" role="status">${esc(addressStatus||'Aucune personne associée à ces adresses publiques.')}</p></section>`;
+  const addressesHtml=`<section><h3>Points d’adresse BAN</h3><p class="hint">Choisissez une commune puis zoomez au niveau 16 ou davantage dans les zones denses. Les points de la zone visible se chargent progressivement. Déplacez la carte pour voir les suivants ; touchez un point pour ouvrir sa fiche publique.</p><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="toggle-address-viewport">${addressViewportEnabled?'Masquer les points BAN':'Afficher les points BAN autour de la carte'}</button><p id="address-viewport-status" class="hint" role="status">${esc(addressStatus||'Aucune personne associée à ces adresses publiques.')}</p></section>`;
   const indexedRoads=roadCoverageRows.filter(row=>['paquet','indexé','à actualiser'].includes(row.state));
   const roadGaps=roadCoverageRows.filter(row=>row.rejected>0);
   const notIndexed=roadCoverageRows.filter(row=>row.state==='non chargé').length;
@@ -1207,7 +1209,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.20</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.21</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
