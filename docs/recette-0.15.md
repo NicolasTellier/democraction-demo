@@ -15,8 +15,9 @@ Lot 1 du cahier V1.1, critère 25 en cours. Ce relevé couvre la couche IGN BD T
 |---|---|---|
 | Intégrité des 87 fichiers et absence de doublon | Réussi en local | `npm run check` : 87 codes et 6 658 voies ; 12 tests Node réussis. |
 | Source BAN et écarts de rapprochement | Réussi en local | [Audit BAN/IGN](audit-voies-0.15.md) : 6 440 noms BAN, 1 115 sans tracé rapproché ; seules des données agrégées sont publiées. |
-| Ouverture d’une autre commune, recherche, zoom et repli WFS | À contrôler en CI | `tests/browser/road-cache.spec.js` sur quatre formats ; le navigateur de cet environnement ne disposait pas de Chromium. |
-| Publication GitHub Pages et miroir privé | À contrôler après intégration | CI publique et CI privée à renseigner. |
+| Ouverture d’une autre commune, recherche, zoom et repli WFS | Réussi en CI | [CI publique 43709509061](https://github.com/NicolasTellier/democraction-demo/actions/runs/43709509061) : 48 parcours Playwright réussis, 4 ignorés, quatre formats. Le navigateur local ne disposait pas de Chromium. |
+| Publication GitHub Pages | Réussi | Code `89c4e8ab4c063b0cbf1b9413660d0f3667bfe9fc` ; la carte d’Abzac a été ouverte sur le site : commune surlignée, 99 lignes, audit BAN et inventaire 87/87. |
+| Miroir privé | En attente | CI privée V0.15 à renseigner après intégration. |
 
 ## Suite du critère 25
 
