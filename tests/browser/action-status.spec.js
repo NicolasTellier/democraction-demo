@@ -3,6 +3,7 @@ import {test,expect} from '@playwright/test';
 test.use({serviceWorkers:'block'});
 
 test('le statut d’une action change sur la liste et la carte puis persiste',async({page})=>{
+ const openActions=()=>page.locator('.sidebar [data-nav=actions]:visible, .mobile-nav [data-nav=actions]:visible').first().click();
  await page.goto('/');
  await page.locator('button[data-nav=carte]:visible').first().click();
  await page.locator('#map-scope-value').selectOption({label:'Saint-André-de-Cubzac'});
@@ -14,7 +15,7 @@ test('le statut d’une action change sur la liste et la carte puis persiste',as
  expect(mission?.zoneGeometry?.type).toMatch(/Polygon/);
 
  const action=()=>page.locator('.mission-line').filter({hasText:'Action logistique de recette'});
- await page.locator('button[data-nav=actions]:visible').first().click();
+ await openActions();
  await expect(action().locator('.status-todo')).toHaveText('À faire');
  await action().locator('[data-edit-mission]').click();
  await page.locator('#mission-form [name=status]').selectOption('En cours');
@@ -24,7 +25,7 @@ test('le statut d’une action change sur la liste et la carte puis persiste',as
  await expect.poll(()=>page.locator('#map .leaflet-interactive[stroke="#ee4b23"][stroke-dasharray="4 4"]').count(),{timeout:20000}).toBeGreaterThan(0);
 
  await page.reload();
- await page.locator('button[data-nav=actions]:visible').first().click();
+ await openActions();
  await expect(action().locator('.status-progress')).toHaveText('En cours');
  await action().locator('[data-edit-mission]').click();
  await page.locator('#mission-form [name=status]').selectOption('Terminée');
