@@ -20,6 +20,7 @@ import {
   migrateLegacyV2,
 } from "./core.js";
 import { load, save, download, clearLocal } from "./store.js";
+import {summarizeMissionCoverage} from "./logistics-coverage.js";
 import { parseXlsx } from "./xlsx.js";
 import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261115ban21b";
 import { validPolygon,validZone } from "./geo-utils.js";
@@ -644,7 +645,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.22 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.23 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -885,9 +886,19 @@ function missionRows(data) {
         "Ajoutez une action ou modifiez les filtres géographiques.",
       );
 }
+function logisticsCoverageView(){
+ const communes=filteredTerritory(territory?.communes||[],{commune:filters.commune,canton:filters.canton,epci:filters.epci});
+ const query=norm(filters.query),missions=app.missions.filter(m=>!query||norm([m.title,m.commune,m.secteur,...(Array.isArray(m.zoneCommunes)?m.zoneCommunes:[])].filter(Boolean).join(' ')).includes(query));
+ const coverage=summarizeMissionCoverage({communes,missions,campaignId:app.current});
+ const {rows,totals,ignored}=coverage;
+ const counts=[['total','Total'],['todo','À faire'],['inProgress','En cours'],['completed','Terminées'],['assigned','Restantes affectées'],['unassigned','Restantes sans affectation']];
+ const body=rows.map(row=>`<tr data-coverage-commune="${attr(row.codeInsee)}"><th scope="row">${esc(row.commune)}${row.total?'':'<small>Aucune action enregistrée</small>'}</th>${counts.map(([key])=>`<td data-coverage-count="${key}">${fmtNumber(row[key])}</td>`).join('')}</tr>`).join('');
+ const excluded=Object.values(ignored).reduce((sum,value)=>sum+value,0);
+ return `<section id="logistics-coverage" aria-labelledby="coverage-title"><h3 id="coverage-title">Suivi des missions par commune</h3><p id="coverage-summary">${fmtNumber(totals.total)} mission${totals.total===1?'':'s'} distincte${totals.total===1?'':'s'} dans le périmètre · ${fmtNumber(totals.todo)} à faire · ${fmtNumber(totals.inProgress)} en cours · ${fmtNumber(totals.completed)} terminée${totals.completed===1?'':'s'}.</p><p class="hint">Campagne courante et filtres géographiques appliqués. La recherche porte sur les missions. Une action multicommunale apparaît dans chaque commune concernée et une seule fois au total.</p><p class="hint">Les effectifs décrivent les actions enregistrées ; la couverture physique se renseigne par compte rendu. Les affectations indiquent un groupe ou un volontaire renseigné pour les actions restantes.</p><p class="coverage-availability">Disponibilités des équipes : non renseignées.</p>${rows.length?`<div class="coverage-table-wrap" role="region" aria-label="Tableau du suivi logistique par commune" tabindex="0"><table id="logistics-coverage-table"><caption>Actions de la campagne courante associées aux communes du filtre</caption><thead><tr><th scope="col">Commune</th>${counts.map(([,label])=>`<th scope="col">${label}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`:empty('Aucune commune dans le périmètre','Modifiez les filtres géographiques pour consulter les missions enregistrées.')}${excluded?`<p class="hint" data-coverage-ignored>${fmtNumber(excluded)} enregistrement(s) écarté(s) du comptage : ${fmtNumber(ignored.cancelled)} annulé(s), ${fmtNumber(ignored.unknownStatus)} à statut non pris en charge, ${fmtNumber(ignored.unlocated)} hors des communes du filtre, ${fmtNumber(ignored.duplicateId+ignored.missingId)} à identifiant répété ou absent.</p>`:''}</section>`;
+}
 function viewActions() {
   let ms = filteredMissions();
-  const views=[['list','Liste'],['calendar','Agenda'],['kanban','Kanban'],['history','Historique'],['sector','Bilan par secteur']];
+  const views=[['list','Liste'],['calendar','Agenda'],['kanban','Kanban'],['history','Historique'],['sector','Bilan par secteur'],['coverage','Suivi par commune']];
   const tabs=`<div class="action-view-tabs">${views.map(([key,label])=>`<button type="button" class="btn ${actionView===key?'btn-primary':'btn-light'} btn-sm" data-action-view="${key}">${label}</button>`).join('')}</div>`;
   let display=missionRows(ms);
   if(actionView==='calendar'){
@@ -900,6 +911,7 @@ function viewActions() {
     const groups=new Map();for(const m of ms){const key=m.secteur||m.rues?.join(', ')||m.commune;groups.set(key,[...(groups.get(key)||[]),m])}
     display=[...groups].map(([name,actions])=>`<section class="action-sector"><h3>${esc(name)} · ${actions.length} action(s)</h3><p class="hint">${actions.filter(m=>m.status==='Terminée').length} terminée(s), ${actions.filter(m=>m.status==='En cours').length} en cours</p>${missionRows(actions)}</section>`).join('')||empty('Aucune action','Créez une action depuis la carte.');
   }
+  if(actionView==='coverage')display=logisticsCoverageView();
   return `${panel("Planifier les actions", `<p class="description">Organisez les actions de terrain, les marchés, les réunions et la couverture des secteurs. Les données nominatives ne sont pas collectées dans cette démo publique.</p>${fullEditor() ? '<button class="btn btn-primary" data-action="new-mission">+ Ajouter une action</button>' : fieldEditor() ? '<p class="hint">Modifiez uniquement le statut des actions ci-dessous. Pour voir les changements des autres appareils, actualisez les actions.</p><button class="btn btn-light" data-action="refresh-server">Actualiser les actions</button>' : '<p class="hint">Mode lecture seule.</p>'}`, `<span class="tag">${currentMissions().length} actions</span>`)}${panel("Actions · "+views.find(v=>v[0]===actionView)[1],tabs+display)}`;
 }
 function viewAnalyse() {
@@ -1122,7 +1134,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.22</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.23</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],

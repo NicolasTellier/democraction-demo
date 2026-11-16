@@ -178,3 +178,5 @@ td strong{color:var(--cobalt)}
 .official-bureau-candidates li strong{white-space:nowrap;color:#1e5547}
 .official-bureau-candidates li small{color:#647d70}
 .official-bureau-result a{overflow-wrap:anywhere}
+
+.coverage-table-wrap{max-width:100%;overflow:auto;max-height:32rem;border:1px solid var(--line);border-radius:9px}.coverage-table-wrap:focus-visible{outline:3px solid #8ac0b3;outline-offset:2px}#logistics-coverage-table{width:100%;min-width:760px;border-collapse:collapse;font-size:12px}#logistics-coverage-table caption{text-align:left;padding:12px;font-weight:600;color:var(--muted)}#logistics-coverage-table th,#logistics-coverage-table td{padding:10px 12px;border-top:1px solid var(--line);text-align:right;vertical-align:top}#logistics-coverage-table thead th{background:var(--surface2);position:sticky;top:0;font-weight:700}#logistics-coverage-table th:first-child{text-align:left;min-width:170px}#logistics-coverage-table th small{display:block;font-weight:400;color:var(--muted);margin-top:4px}.coverage-availability{padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:13px}
