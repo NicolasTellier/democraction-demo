@@ -45,7 +45,7 @@ const NAV = [
   ["territoires", "Territoires", "◎"],
   ["carte", "Carte", "⌖"],
   ["actions", "Actions de terrain", "☷"],
-  ["contacts", "Contacts consentants", "♙"],
+  ["contacts", "Contacts fictifs", "♙"],
   ["analyse", "Résultats électoraux", "▥"],
   ["imports", "Imports et exports", "⇅"],
   ["communication", "Communication", "✉"],
@@ -112,16 +112,47 @@ let territory = null,
   modal = "",
   draftText = "",
   editingMission = null;
+const CONTACTS_KEY = "democraction-demo-contacts";
+const EVENTS_KEY = "democraction-demo-events";
+const CONTACT_CONTEXTS = ["Non précisé", "Porte-à-porte", "Marché", "Réunion publique", "Dans la rue", "Contact associatif"];
+const CONTACT_TAGS = ["Contact rencontré", "À rappeler", "Invitation", "Bénévole potentiel", "Newsletter consentie", "Soutien associatif"];
+function loadSyntheticContacts() {
+  const original = localStorage.getItem(CONTACTS_KEY) || "[]";
+  let saved;
+  try { saved = JSON.parse(original); } catch { saved = []; }
+  const contacts = (Array.isArray(saved) ? saved : [])
+    .filter((x) => x?.synthetic === true).slice(0, 100)
+    .map((x, index) => ({
+      id: String(x.id || index + 1), synthetic: true, number: index + 1,
+      context: CONTACT_CONTEXTS.includes(x.context) ? x.context : "Non précisé",
+      tags: Array.isArray(x.tags) ? x.tags.filter((tag) => CONTACT_TAGS.includes(tag)) : [],
+      updatedAt: typeof x.updatedAt === "string" ? x.updatedAt : new Date().toISOString(),
+    }));
+  const safe = JSON.stringify(contacts);
+  if (original !== safe) localStorage.setItem(CONTACTS_KEY, safe);
+  return contacts;
+}
+function loadDemoEvents() {
+  const original = localStorage.getItem(EVENTS_KEY) || "[]";
+  let saved;
+  try { saved = JSON.parse(original); } catch { saved = []; }
+  const events = Array.isArray(saved) ? saved : [];
+  for (const event of events) {
+    if (!Array.isArray(event.registrations)) event.registrations = [];
+    event.registrations = event.registrations.map((entry) => ({
+      created: typeof entry?.created === "string" ? entry.created : new Date().toISOString(),
+    }));
+  }
+  const safe = JSON.stringify(events);
+  if (original !== safe) localStorage.setItem(EVENTS_KEY, safe);
+  return events;
+}
 const root = document.getElementById("root");
-let demoContacts = JSON.parse(
-    localStorage.getItem("democraction-demo-contacts") || "[]",
-  ),
+let demoContacts = loadSyntheticContacts(),
   demoFunds = JSON.parse(
     localStorage.getItem("democraction-demo-funds") || "[]",
   ),
-  demoEvents = JSON.parse(
-    localStorage.getItem("democraction-demo-events") || "[]",
-  ),
+  demoEvents = loadDemoEvents(),
   demoSectors = JSON.parse(
     localStorage.getItem("democraction-demo-sectors") || "[]",
   ),
@@ -1023,7 +1054,7 @@ function viewEvents() {
   return (
     panel(
       "Événements publics",
-      `<p class="description">Créer des événements ouverts à l’inscription, consulter leur capacité et simuler une confirmation. Aucun e-mail réel n’est envoyé depuis cette démonstration.</p><form id="event-form" class="form-grid"><label>Nom de l’événement<input name="title" maxlength="140" required placeholder="Réunion publique"></label><label>Commune<input name="commune" maxlength="120" required placeholder="Saint-André-de-Cubzac"></label><label>Date<input name="date" type="datetime-local" required></label><label>Nombre de places<input name="capacity" type="number" min="1" max="10000" value="50" required></label><label class="full">Description<textarea name="description" maxlength="600" rows="3" required></textarea></label><button class="btn btn-primary" type="submit">Publier en simulation</button></form>`,
+      `<p class="description">Créer des événements fictifs, consulter leur capacité et simuler une inscription anonyme. Aucun e-mail n’est collecté ni envoyé.</p><form id="event-form" class="form-grid"><label>Nom de l’événement<input name="title" maxlength="140" required placeholder="Réunion publique"></label><label>Commune<input name="commune" maxlength="120" required placeholder="Saint-André-de-Cubzac"></label><label>Date<input name="date" type="datetime-local" required></label><label>Nombre de places<input name="capacity" type="number" min="1" max="10000" value="50" required></label><label class="full">Description<textarea name="description" maxlength="600" rows="3" required></textarea></label><button class="btn btn-primary" type="submit">Publier en simulation</button></form>`,
     ) +
     panel(
       "Calendrier public",
@@ -1033,7 +1064,7 @@ function viewEvents() {
             .sort((a, b) => a.date.localeCompare(b.date))
             .map(
               (x) =>
-                `<div class="note-line"><div><strong>${esc(x.title)}</strong><small>${esc(x.commune)} · ${new Date(x.date).toLocaleString("fr-FR")} · ${x.registrations.length}/${x.capacity} place(s)</small><p>${esc(x.description)}</p></div><form class="event-register-form" data-event-id="${attr(x.id)}"><input name="name" maxlength="100" required placeholder="Nom fictif"><input name="email" type="email" maxlength="160" required placeholder="email@example.org"><button class="btn btn-light btn-sm" type="submit" ${x.registrations.length>=x.capacity?"disabled":""}>Simuler l’inscription</button></form></div>`,
+                `<div class="note-line"><div><strong>${esc(x.title)}</strong><small>${esc(x.commune)} · ${new Date(x.date).toLocaleString("fr-FR")} · ${x.registrations.length}/${x.capacity} place(s)</small><p>${esc(x.description)}</p></div><form class="event-register-form" data-event-id="${attr(x.id)}"><button class="btn btn-light btn-sm" type="submit" ${x.registrations.length>=x.capacity?"disabled":""}>Simuler l’inscription</button></form></div>`,
             )
             .join("")}</div>`
         : empty(
@@ -1048,30 +1079,14 @@ function viewEvents() {
   );
 }
 function viewContacts() {
-  const tags = [
-    "Contact rencontré",
-    "À rappeler",
-    "Invitation",
-    "Bénévole potentiel",
-    "Newsletter consentie",
-    "Soutien associatif",
-  ];
   return panel(
-    "Carnet de terrain — contacts consentants",
-    `<div class="notice warning-note"><strong>Usage responsable</strong><p>Cette base ne doit contenir que des personnes ayant accepté d’être recontactées. N’y inscrivez aucune intention de vote, opinion politique, résultat de vote ou déduction personnelle.</p></div><div class="twocol"><div><h3>Ajouter un contact</h3><form id="contact-form" class="form-grid"><label>Prénom<input name="firstName" maxlength="80" required></label><label>Nom<input name="lastName" maxlength="80" required></label><label class="full">Adresse ou point de contact<input name="address" maxlength="180" placeholder="Adresse communiquée volontairement"></label><label>Téléphone<input name="phone" type="tel" maxlength="30"></label><label>E-mail<input name="email" type="email" maxlength="160"></label><label>Commune<select name="commune"><option value="">Choisir…</option>${territory.communes.map((c) => `<option>${esc(c.nom)}</option>`).join("")}</select></label><label>Rencontré par<input name="volunteer" maxlength="100" placeholder="Nom du volontaire"></label><label class="full">Cadre de la rencontre<select name="context"><option>Non précisé</option><option>Porte-à-porte</option><option>Marché</option><option>Réunion publique</option><option>Dans la rue</option><option>Contact associatif</option></select></label><label class="full">Tags<select name="tags" multiple size="5">${tags.map((t) => `<option>${esc(t)}</option>`).join("")}</select></label><label class="full"><input type="checkbox" name="consent" required> La personne a demandé ou accepté d’être recontactée.</label><label class="full">Note de suivi<textarea name="note" maxlength="500" placeholder="Besoin exprimé, prochaine relance, action à proposer…"></textarea></label><div class="button-row"><button class="btn btn-primary" type="submit">Enregistrer le contact</button></div></form></div><div><h3>Contacts enregistrés (${demoContacts.length})</h3>${
+    "Carnet de terrain — simulation",
+    `<div class="notice warning-note"><strong>Démonstration sans données personnelles</strong><p>Ce carnet crée uniquement des contacts fictifs numérotés. Ne saisissez ni identité, ni adresse, ni téléphone, ni courriel réels dans la démo publique.</p></div><div class="twocol"><div><h3>Ajouter un contact fictif</h3><form id="contact-form" class="form-grid"><label class="full">Cadre de la rencontre<select name="context">${CONTACT_CONTEXTS.map((value) => `<option>${esc(value)}</option>`).join("")}</select></label><label class="full">Tags<select name="tags" multiple size="5">${CONTACT_TAGS.map((value) => `<option>${esc(value)}</option>`).join("")}</select></label><button class="btn btn-primary" type="submit">Ajouter un contact fictif</button></form></div><div><h3>Contacts fictifs (${demoContacts.length})</h3>${
       demoContacts.length
-        ? `<div class="contact-list">${demoContacts
-            .slice()
-            .reverse()
-            .map(
-              (x) =>
-                `<article class="contact-card"><div class="contact-card-head"><strong>${esc(x.firstName)} ${esc(x.lastName)}</strong><button class="icon-btn" data-contact-delete="${attr(x.id)}" aria-label="Supprimer ${attr(x.firstName)} ${attr(x.lastName)}">×</button></div><p>${esc(x.commune || "Commune non renseignée")} · ${esc(x.context || "Cadre non précisé")}</p><p>${x.phone ? `Téléphone : ${esc(x.phone)}` : "Téléphone non renseigné"} · ${x.email ? `E-mail : ${esc(x.email)}` : "E-mail non renseigné"}</p><div class="tag-row">${(x.tags || []).map((t) => `<span class="tag soft">${esc(t)}</span>`).join("")}</div><small>Dernière mise à jour : ${new Date(x.updatedAt).toLocaleDateString("fr-FR")}</small>${x.note ? `<p class="hint">${esc(x.note)}</p>` : ""}</article>`,
-            )
-            .join("")}</div>`
-        : empty(
-            "Aucun contact consentant",
-            "Les contacts ajoutés ici pourront être reliés à des actions de terrain.",
-          )
+        ? `<div class="contact-list">${demoContacts.slice().reverse().map((x) =>
+            `<article class="contact-card"><div class="contact-card-head"><strong>Contact fictif ${x.number}</strong><button class="icon-btn" data-contact-delete="${attr(x.id)}" aria-label="Supprimer le contact fictif ${x.number}">×</button></div><p>${esc(x.context)}</p><div class="tag-row">${x.tags.map((tag) => `<span class="tag soft">${esc(tag)}</span>`).join("")}</div></article>`
+          ).join("")}</div>`
+        : empty("Aucun contact fictif", "Ajoutez un exemple pour tester ce parcours sans données personnelles.")
     }</div></div>`,
   );
 }
@@ -1838,37 +1853,16 @@ root.addEventListener("submit", (e) => {
   }
   if (form.id === "contact-form") {
     const item = {
-      id: id(),
-      firstName: get("firstName"),
-      lastName: get("lastName"),
-      address: get("address"),
-      phone: get("phone"),
-      email: get("email"),
-      commune: get("commune"),
-      volunteer: get("volunteer"),
-      context: get("context"),
-      tags: fd
-        .getAll("tags")
-        .map((v) => String(v).trim())
-        .filter(Boolean),
-      consent: fd.get("consent") === "on",
-      note: get("note"),
+      id: id(), synthetic: true,
+      number: demoContacts.length ? Math.max(...demoContacts.map((x) => x.number)) + 1 : 1,
+      context: CONTACT_CONTEXTS.includes(get("context")) ? get("context") : "Non précisé",
+      tags: fd.getAll("tags").map(String).filter((tag) => CONTACT_TAGS.includes(tag)),
       updatedAt: new Date().toISOString(),
     };
-    if (!item.firstName || !item.lastName || !item.consent) {
-      toast(
-        "Prénom, nom et consentement explicite sont obligatoires.",
-        "warning",
-      );
-      return;
-    }
     demoContacts.push(item);
-    localStorage.setItem(
-      "democraction-demo-contacts",
-      JSON.stringify(demoContacts),
-    );
+    localStorage.setItem(CONTACTS_KEY, JSON.stringify(demoContacts));
     render();
-    toast("Contact consentant enregistré localement.");
+    toast("Contact fictif ajouté localement.");
     return;
   }
   if (form.id === "fundraising-form") {
@@ -1929,17 +1923,13 @@ root.addEventListener("submit", (e) => {
       );
       return;
     }
-    event.registrations.push({
-      name: get("name"),
-      email: get("email"),
-      created: new Date().toISOString(),
-    });
+    event.registrations.push({ created: new Date().toISOString() });
     localStorage.setItem(
       "democraction-demo-events",
       JSON.stringify(demoEvents),
     );
     render();
-    toast("Inscription fictive enregistrée. Aucun e-mail envoyé.");
+    toast("Inscription anonyme fictive enregistrée.");
     return;
   }
 

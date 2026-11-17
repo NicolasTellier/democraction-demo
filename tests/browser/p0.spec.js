@@ -32,15 +32,13 @@ test('polygones, échelle et sélection conservés après rechargement',async({p
  await expect(page.locator('#map-layer')).toHaveValue('revenuMedian');
 });
 
-test('les formulaires de démonstration enregistrent réellement leurs données locales',async({page},testInfo)=>{
+test('les formulaires de démonstration ne gardent que des exemples anonymes',async({page},testInfo)=>{
  test.skip(['iphone','android'].includes(testInfo.project.name),'Navigation contacts réservée à la version desktop du prototype');
  await page.goto('/');
- await page.getByRole('button',{name:'Contacts consentants'}).click();
- await page.locator('#contact-form [name=firstName]').fill('Démo');
- await page.locator('#contact-form [name=lastName]').fill('Fictif');
- await page.locator('#contact-form [name=consent]').check();
+ await page.getByRole('button',{name:'Contacts fictifs'}).click();
+ await page.locator('#contact-form [name=context]').selectOption('Marché');
  await page.locator('#contact-form button[type=submit]').click();
- await expect(page.getByText('Démo Fictif')).toBeVisible();
+ await expect(page.getByText('Contact fictif 1')).toBeVisible();
  await page.getByRole('button',{name:'Événements publics'}).click();
  await page.locator('#event-form [name=title]').fill('Atelier fictif');
  await page.locator('#event-form [name=commune]').fill('Bourg');
@@ -48,8 +46,6 @@ test('les formulaires de démonstration enregistrent réellement leurs données 
  await page.locator('#event-form [name=capacity]').fill('2');
  await page.locator('#event-form [name=description]').fill('Simulation');
  await page.locator('#event-form button[type=submit]').click();
- await page.locator('.event-register-form [name=name]').fill('Personne fictive');
- await page.locator('.event-register-form [name=email]').fill('test@example.org');
  await page.locator('.event-register-form button[type=submit]').click();
  await expect(page.getByText('1/2 place(s)')).toBeVisible();
  await page.reload();

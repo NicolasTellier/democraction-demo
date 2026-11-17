@@ -20,10 +20,8 @@ test('un chargement électoral retardé ne remplace pas un formulaire en cours d
   } finally {
     releaseData();
   }
-  await page.getByRole('button', { name: 'Contacts consentants' }).click();
-  await page.locator('#contact-form [name=firstName]').fill('Démo');
-  await page.locator('#contact-form [name=lastName]').fill('Fictif');
-  await page.locator('#contact-form [name=consent]').check();
+  await page.getByRole('button', { name: 'Contacts fictifs' }).click();
+  await page.locator('#contact-form [name=context]').selectOption('Marché');
   await page.locator('#contact-form button[type=submit]').click();
-  await expect(page.getByText('Démo Fictif')).toBeVisible();
+  await expect(page.getByText('Contact fictif 1')).toBeVisible();
 });
