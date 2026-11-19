@@ -27,9 +27,17 @@ test('histogramme : classes, exclusions, année et périmètre sur ordinateur/mo
  await expect(figure.locator('[data-min="50"]')).toHaveAttribute('data-count','0');
  await expect(figure).toContainText('Source fictive histogramme');
  await expect(figure).toContainText('2026-11-19');
+ await page.emulateMedia({reducedMotion:'reduce'});
  await figure.evaluate(element=>element.scrollIntoView({block:'center',behavior:'instant'}));
+ await expect.poll(()=>figure.evaluate(element=>{
+  const rect=element.getBoundingClientRect(),nav=document.querySelector('.mobile-nav');
+  const bottom=nav&&getComputedStyle(nav).display!=='none'?nav.getBoundingClientRect().top:innerHeight;
+  return rect.top>=0&&rect.bottom<=bottom;
+ })).toBe(true);
+ await expect(figure.locator('[data-min="90"]')).toBeInViewport();
  await mkdir('test-results/captures',{recursive:true});
  await figure.screenshot({path:'test-results/captures/distribution-'+testInfo.project.name+'.png'});
+ await page.emulateMedia({reducedMotion:'no-preference'});
  await page.locator('#election-year').selectOption('2020');
  await page.getByText('Voir l’histogramme des communes',{exact:true}).click();
  await expect(figure).toContainText('1 commune(s) admissible(s)');
