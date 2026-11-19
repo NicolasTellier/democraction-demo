@@ -23,7 +23,7 @@ import {
 import { load, save, download, clearLocal } from "./store.js";
 import {summarizeMissionCoverage} from "./logistics-coverage.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261119data33";
+import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261119data33b";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';

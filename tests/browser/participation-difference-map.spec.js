@@ -45,6 +45,11 @@ test('carte d’écart : signes, zéro, absence, sélection et filtres sur ordin
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.locator('#map').evaluate(element=>element.scrollIntoView({block:'center',behavior:'instant'}));
  await mkdir('test-results/captures',{recursive:true});
+ const attribution=page.locator('#map .leaflet-control-attribution');
+ await expect(attribution).toContainText('IGN');
+ const attributionBox=await attribution.boundingBox(),legendBox=await legend.boundingBox();
+ expect(attributionBox).not.toBeNull();expect(legendBox).not.toBeNull();
+ expect(attributionBox.y+attributionBox.height).toBeLessThanOrEqual(legendBox.y);
  await page.screenshot({path:'test-results/captures/difference-map-'+testInfo.project.name+'.png'});
  await page.reload();
  await page.locator('button[data-nav=carte]:visible').first().click();
