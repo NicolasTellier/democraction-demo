@@ -40,6 +40,13 @@ test('critère 50 consolidé : graphiques sourcés, tours, absences et représen
  await expect(history).toContainText('mise à jour 2026-07-07');
  await expect(history).toContainText('sans résultat mesuré pour les années intermédiaires');
  await capture('historique',history.locator('.election-timeline'));
+ if(info.project.name==='iphone'){
+  await history.locator('.timeline-scroll').evaluate(e=>{e.scrollLeft=e.scrollWidth;});
+  await expect(history.locator('.timeline-point-participation').last()).toBeInViewport();
+  await history.locator('.timeline-scroll + .tablewrap').evaluate(e=>{e.scrollLeft=e.scrollWidth;});
+  await expect(table.getByRole('columnheader',{name:'Abstention',exact:true})).toBeInViewport();
+  await capture('historique-droite',history.locator('.timeline-scroll'));
+ }
  await page.getByText('Voir l’histogramme des communes',{exact:true}).click();
  const histogram=page.locator('.participation-distribution');
  await expect(histogram.locator('.distribution-bin')).toHaveCount(10);
@@ -56,6 +63,11 @@ test('critère 50 consolidé : graphiques sourcés, tours, absences et représen
  await expect(comparison).toContainText('Écart B − A');
  await expect(page.locator('.territory-bars')).toHaveCount(2);
  await capture('comparaison',comparison);
+ if(info.project.name==='iphone'){
+  await comparison.evaluate(t=>{t.parentElement.scrollLeft=t.parentElement.scrollWidth;});
+  await expect(comparison.getByRole('columnheader',{name:'Écart B − A',exact:true})).toBeInViewport();
+  await capture('comparaison-droite',comparison.locator('..'));
+ }
  await page.locator('#filter-commune').selectOption('Abzac');
  await page.locator('#election-type').selectOption('pres');
  await page.locator('#election-tour').selectOption('t2');
