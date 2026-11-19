@@ -93,3 +93,24 @@ test('export des bureaux : valeurs exactes, provenance, absence vide et bornes',
  assert.throws(()=>officialBureauComparisonRecords(data,'33067-1','33067-1'),/distincts/);
  assert.deepEqual(data,before);
 });
+
+test('répartition graphique : dénominateur exprimés, géométrie exacte, zéro et noms échappés',()=>{
+ const fixture=structuredClone(data),row=fixture.scrutins[0].bureaux[0];
+ row.candidats=[{name:'Liste <A>',nuance:'TEST',votes:row.exprimes},{name:'Liste B',nuance:'TEST',votes:0}];
+ validateOfficialBureauResults(fixture,catalog);
+ const html=officialBureauResultHtml(fixture,row.bureauId);
+ assert.match(html,/width:100%/);assert.match(html,/width:0%/);
+ assert.match(html,/Liste &lt;A&gt;/);assert.match(html,/0 voix · 0,0 %/);
+ assert.match(html,/Blancs et nuls exclus du dénominateur/);
+ assert.equal((html.match(/class="bureau-vote-track"/g)||[]).length,2);
+ assert.doesNotMatch(officialBureauResultHtml(fixture,'33114-2'),/bureau-vote-track/);
+});
+test('zéro exprimé : aucun pourcentage ou barre fabriqués',()=>{
+ const fixture=structuredClone(data),row=fixture.scrutins[0].bureaux[0];
+ row.votants=0;row.abstentions=row.inscrits;row.blancs=0;row.nuls=0;row.exprimes=0;
+ row.candidats.forEach(candidate=>candidate.votes=0);
+ validateOfficialBureauResults(fixture,catalog);
+ const html=officialBureauResultHtml(fixture,row.bureauId);
+ assert.match(html,/Aucun suffrage exprimé/);assert.doesNotMatch(html,/bureau-vote-track|NaN|Infinity/);
+ assert.match(html,/0 voix · —/);
+});

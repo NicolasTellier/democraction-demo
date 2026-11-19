@@ -214,3 +214,9 @@ td strong{color:var(--cobalt)}
 .history-area-svg{display:block;width:100%;max-width:900px;height:auto;background:#fbfaf6}.history-area-svg .timeline-grid text{font-size:20px}
 .history-area-participation{fill:#1e3ac8;fill-opacity:.8}.history-area-abstention{fill:#ee4b23;fill-opacity:.8}.history-area-boundary{fill:none;stroke:#27364a;stroke-width:2}.history-area-point{fill:#fff;stroke:#27364a;stroke-width:2}
 .history-area ol{list-style:none;padding:0;margin:10px 0 0}.history-area-year{font-size:12px;padding:8px 0;border-top:1px solid #deded8}.history-area-year small{display:block;color:#54615d;margin-top:4px}
+
+/* DATA-02i : parts descriptives des voix, mêmes valeurs que la fiche bureau. */
+.official-bureau-candidates li{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:10px 0}
+.official-bureau-candidates li>span:first-child{overflow-wrap:anywhere}
+.bureau-vote-track{display:block;width:100%;height:12px;border-radius:4px;background:#e7e9e7;overflow:hidden}
+.bureau-vote-track i{display:block;height:100%;background:#1e3ac8}
