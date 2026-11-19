@@ -36,7 +36,7 @@ test('histogramme : classes, exclusions, année et périmètre sur ordinateur/mo
  })).toBe(true);
  await expect(figure.locator('[data-min="90"]')).toBeInViewport();
  await mkdir('test-results/captures',{recursive:true});
- await figure.screenshot({path:'test-results/captures/distribution-'+testInfo.project.name+'.png'});
+ await page.screenshot({path:'test-results/captures/distribution-'+testInfo.project.name+'.png'});
  await page.emulateMedia({reducedMotion:'no-preference'});
  await page.locator('#election-year').selectOption('2020');
  await page.getByText('Voir l’histogramme des communes',{exact:true}).click();
