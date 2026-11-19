@@ -40,3 +40,18 @@ test('barres historiques : même pondération, zéro explicite et absence sans b
  const noSeries=viewParticipationTimeline({rows:[{...base,votants:null}],type:'muni',tour:'t1',esc:String,panel:(t,b)=>b});
  assert.ok(!noSeries.includes('history-bars-year'));
 });
+
+test('barres empilées : parts complémentaires, zéro explicite, couverture et absence',()=>{
+ const rows=[{...base,annee:2014,votants:100},{...base,annee:2020,votants:50},{...base},
+  {...base,annee:2022,votants:null},{...base,codeInsee:'33366',inscrits:900,votants:null}];
+ const html=viewParticipationTimeline({rows,type:'muni',tour:'t1',meta:{source:'Source empilée'},
+  esc:String,fmtNumber:String,panel:(t,b)=>b});
+ assert.equal((html.match(/class="history-stacked-year"/g)||[]).length,3);
+ assert.ok(!html.includes('class="history-stacked-year" data-year="2022"'));
+ assert.ok(html.includes('chaque barre représente 100 % des inscrits'));
+ for(const width of [0,50,100])assert.ok(html.includes('class="history-stacked-participation" style="width:'+width+'%"'));
+ assert.ok(html.includes('Participation : <strong>0,0 %</strong>'));
+ assert.ok(html.includes('Abstention : <strong>100,0 %</strong>'));
+ assert.ok(html.includes('1 commune(s) · 100 inscrits'));
+ assert.ok(html.includes('Source empilée'));
+});

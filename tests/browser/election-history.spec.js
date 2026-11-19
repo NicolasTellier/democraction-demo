@@ -114,5 +114,18 @@ test('historique : couverture sans effectifs absents et zéro explicite sur ordi
  await bars.scrollIntoViewIfNeeded();
  await mkdir('test-results/captures',{recursive:true});
  await page.locator('.history-bars-details').screenshot({path:'test-results/captures/history-bars-'+testInfo.project.name+'.png'});
+ await page.getByText('Voir l’historique en barres empilées',{exact:true}).click();
+ const stacked=page.locator('.history-stacked');
+ await expect(stacked).toBeVisible();
+ await expect(stacked.locator('.history-stacked-year')).toHaveCount(2);
+ await expect(stacked.locator('[data-year="2022"]')).toHaveCount(0);
+ await expect(stacked.locator('[data-year="2026"]')).toContainText('1 commune(s) · 100 inscrits');
+ await expect(stacked.locator('[data-year="2026"] .history-stacked-participation')).toHaveAttribute('style','width:0%');
+ await expect(stacked.locator('[data-year="2026"] .history-stacked-abstention')).toHaveAttribute('style','width:100%');
+ await expect(stacked.locator('[data-year="2020"] .history-stacked-participation')).toHaveAttribute('style','width:50%');
+ await expect(stacked.locator('[data-year="2020"] .history-stacked-abstention')).toHaveAttribute('style','width:50%');
+ await stacked.scrollIntoViewIfNeeded();
+ await page.locator('.history-stacked-details').screenshot({path:'test-results/captures/history-stacked-'+testInfo.project.name+'.png'});
+
 
 });
