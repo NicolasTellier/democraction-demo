@@ -1,0 +1,93 @@
+import {test,expect} from '@playwright/test';
+import {readFile,mkdir} from 'node:fs/promises';
+test.use({serviceWorkers:'block'});
+
+test('critère 50 consolidé : graphiques sourcés, tours, absences et représentations du §12.1',async({page},info)=>{
+ test.skip(!['desktop','iphone'].includes(info.project.name));
+ test.setTimeout(120000);
+ const fixture=JSON.parse(await readFile(new URL('../../data/resultats-bureaux-officiels-2024.json',import.meta.url),'utf8'));
+ const bureau=fixture.scrutins[0].bureaux.find(row=>row.bureauId==='33067-1');
+ bureau.candidats=[{name:'Liste A fictive',nuance:'TEST',votes:bureau.exprimes},{name:'Liste B fictive',nuance:'TEST',votes:0}];
+ await page.route('**/data/resultats-bureaux-officiels-2024.json*',route=>route.fulfill({json:fixture}));
+ await page.goto('/');
+ const nav=async name=>page.locator('button[data-nav="'+name+'"]:visible').first().click();
+ const capture=async(name,target)=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await target.evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+  await mkdir('test-results/captures',{recursive:true});
+  await page.screenshot({path:'test-results/captures/criterion50-'+name+'-'+info.project.name+'.png'});
+ };
+ await nav('analyse');
+ await page.locator('#election-type').selectOption('muni');
+ await page.locator('#election-tour').selectOption('t1');
+ await page.locator('#election-year').selectOption('2026');
+ const history=page.locator('.panel').filter({has:page.getByRole('heading',{name:'Évolution de la participation et de l’abstention',exact:true})});
+ const table=history.getByRole('table',{name:'Valeurs exactes du graphique historique'});
+ await expect(history.locator('.election-timeline')).toHaveAttribute('aria-label',/Municipales · 1er tour/);
+ await expect(table.locator('tbody tr')).toHaveCount(4);
+ await expect(table.locator('tbody tr').first()).toContainText('2008');
+ await expect(table.locator('tbody tr').first().locator('td').first()).toHaveText('4');
+ await expect(table.locator('tbody tr').last()).toContainText('2026');
+ await expect(table.locator('tbody tr').last().locator('td').first()).toHaveText('87');
+ for(const [summary,selector]of[
+  ['Voir l’historique en barres','.history-bars-year'],
+  ['Voir l’historique en barres empilées','.history-stacked-year'],
+  ['Voir l’historique en aires empilées','.history-area-year']]){
+  await history.getByText(summary,{exact:true}).click();
+  await expect(history.locator(selector)).toHaveCount(4);
+ }
+ await expect(history).toContainText('Source : data.gouv.fr / ministère de l’Intérieur');
+ await expect(history).toContainText('mise à jour 2026-07-07');
+ await expect(history).toContainText('sans résultat mesuré pour les années intermédiaires');
+ await capture('historique',history.locator('.election-timeline'));
+ await page.getByText('Voir l’histogramme des communes',{exact:true}).click();
+ const histogram=page.locator('.participation-distribution');
+ await expect(histogram.locator('.distribution-bin')).toHaveCount(10);
+ const counts=await histogram.locator('.distribution-bin').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.count)));
+ expect(counts.reduce((a,b)=>a+b,0)).toBe(87);
+ await expect(histogram).toContainText('2026 · 1er tour');
+ await expect(histogram).toContainText('mise à jour 2026-07-07');
+ await capture('histogramme',histogram);
+ await page.locator('#analysis-ballot-a').selectOption('2020_muni_t1');
+ await page.locator('#analysis-ballot-b').selectOption('2026_muni_t1');
+ for(const code of ['33001','33366'])await page.locator('input[name="analysis-commune"][value="'+code+'"]').check();
+ const comparison=page.getByRole('table',{name:'Effectifs et taux exacts par commune'});
+ await expect(comparison.locator('tbody tr')).toHaveCount(2);
+ await expect(comparison).toContainText('Écart B − A');
+ await expect(page.locator('.territory-bars')).toHaveCount(2);
+ await capture('comparaison',comparison);
+ await page.locator('#filter-commune').selectOption('Abzac');
+ await page.locator('#election-type').selectOption('pres');
+ await page.locator('#election-tour').selectOption('t2');
+ await expect(history.locator('.election-timeline')).toHaveAttribute('aria-label',/Présidentielles · 2e tour/);
+ await expect(table.locator('tbody tr')).toHaveCount(3);
+ await expect(table.locator('tbody tr').last()).toContainText('2022');
+ await expect(table.locator('tbody tr').last().locator('td').first()).toHaveText('1');
+ await page.locator('#election-type').selectOption('euro');
+ await page.locator('#election-tour').selectOption('t2');
+ await expect(history).toContainText('Il faut au moins deux années comparables');
+ await expect(history.locator('.election-timeline,.history-bars,.history-stacked,.history-area')).toHaveCount(0);
+ await expect(page.getByText('Aucune commune admissible pour cet histogramme.')).toBeVisible();
+ await page.locator('#filter-commune').selectOption('');
+ await nav('carte');
+ await page.locator('#map-layer').selectOption('participation-difference');
+ await page.locator('#difference-a').selectOption('2020_muni_t1');
+ await page.locator('#difference-b').selectOption('2026_muni_t1');
+ await expect(page.locator('[data-difference-coverage]')).toContainText('87/87 communes');
+ const polygon=page.locator('#map [data-commune-code="33001"]');
+ await expect.poll(async()=>Number(await polygon.getAttribute('data-map-value'))).toBeCloseTo(11.635666695580698,8);
+ const legend=page.locator('#map .map-legend');
+ await expect(legend).toContainText('B − A');
+ await expect(legend).toContainText('points');
+ await expect(legend).toContainText('2026-07-07');
+ await capture('ecart',page.locator('#map'));
+ await page.locator('#map-scope').selectOption('bureau');
+ await page.locator('#bureau-commune').selectOption('Bourg');
+ await page.locator('#map-scope-value').selectOption('33067-1');
+ const shares=page.locator('.official-bureau-result');
+ await expect(shares).toContainText('Liste A fictive');
+ await expect(shares).toContainText('Blancs et nuls exclus du dénominateur');
+ await expect(shares.locator('.bureau-vote-track i').nth(0)).toHaveAttribute('style','width:100%');
+ await expect(shares.locator('.bureau-vote-track i').nth(1)).toHaveAttribute('style','width:0%');
+ await capture('voix',shares);
+});
