@@ -94,5 +94,27 @@ export function officialBureauComparisonHtml(data,firstId,secondId=''){
  [['Inscrits','inscrits'],['Votants','votants'],['Abstentions','abstentions'],['Exprimés','exprimes'],['Blancs','blancs'],['Nuls','nuls']].map(([label,key])=>`<tr><th scope="row">${label}</th><td>${number(result.first[key])}</td><td>${number(result.second[key])}</td><td>—</td></tr>`).join('')}
  <tr><th scope="row">Participation</th><td>${pct(result.first.participationRate)}</td><td>${pct(result.second.participationRate)}</td><td>${delta(result.delta.participation)}</td></tr>
  <tr><th scope="row">Abstention</th><td>${pct(result.first.abstentionRate)}</td><td>${pct(result.second.abstentionRate)}</td><td>${delta(result.delta.abstention)}</td></tr></tbody></table></div>`;
- return `<section class="official-bureau-comparison"><h3>Comparer deux bureaux</h3><p>${escapeHTML(election.label)} · ${escapeHTML(election.date)}</p><p class="hint">Couverture : ${election.coverage.matched}/${election.coverage.expected} bureaux appariés dans le référentiel fourni. Le périmètre géographique historique des bureaux n’a pas été vérifié ; ces écarts descriptifs ne prouvent aucun transfert individuel de voix.</p><label>Bureau B<select id="bureau-comparison-b" ${first?'':'disabled'}><option value="">Choisir un bureau apparié</option>${options}</select></label>${body}<p class="hint">Source : <a href="${escapeHTML(election.source.dataset)}" target="_blank" rel="noopener noreferrer">Ministère de l’Intérieur · résultats définitifs ↗</a>. Date du scrutin : ${escapeHTML(election.date)}. Taux arrondis uniquement à l’affichage ; écarts en points.</p></section>`;
+ return `<section class="official-bureau-comparison"><h3>Comparer deux bureaux</h3><p>${escapeHTML(election.label)} · ${escapeHTML(election.date)}</p><p class="hint">Couverture : ${election.coverage.matched}/${election.coverage.expected} bureaux appariés dans le référentiel fourni. Le périmètre géographique historique des bureaux n’a pas été vérifié ; ces écarts descriptifs ne prouvent aucun transfert individuel de voix.</p><label>Bureau B<select id="bureau-comparison-b" ${first?'':'disabled'}><option value="">Choisir un bureau apparié</option>${options}</select></label>${body}${result?.first&&result?.second?'<button type="button" class="btn btn-light" data-action="export-bureau-comparison">Exporter ces deux bureaux (CSV)</button>':''}<p class="hint">Source : <a href="${escapeHTML(election.source.dataset)}" target="_blank" rel="noopener noreferrer">Ministère de l’Intérieur · résultats définitifs ↗</a>. Date du scrutin : ${escapeHTML(election.date)}. Taux arrondis uniquement à l’affichage ; écarts en points.</p></section>`;
+}
+
+export const BUREAU_COMPARISON_FIELDS=[
+ 'scrutin','date_scrutin','tour','bureau_a','commune_a','inscrits_a','votants_a','abstentions_a','exprimes_a','blancs_a','nuls_a','participation_a','abstention_a',
+ 'bureau_b','commune_b','inscrits_b','votants_b','abstentions_b','exprimes_b','blancs_b','nuls_b','participation_b','abstention_b',
+ 'ecart_participation_points','ecart_abstention_points','source','ressource','empreinte_source','licence','couverture','perimetres_historiques'
+];
+export function officialBureauComparisonRecords(data,firstId,secondId){
+ const election=data?.scrutins?.[0];
+ const known=new Set([...(election?.bureaux||[]).map(row=>row.bureauId),...(election?.coverage?.missing||[])]);
+ if(!known.has(firstId)||!known.has(secondId))throw new Error('Bureau absent du référentiel des résultats.');
+ const comparison=compareOfficialBureauResults(data,firstId,secondId);
+ const row={scrutin:comparison.scrutin.id,date_scrutin:comparison.scrutin.date,tour:comparison.scrutin.tour,
+  ecart_participation_points:comparison.delta.participation,ecart_abstention_points:comparison.delta.abstention,
+  source:election.source.dataset,ressource:election.source.resource,empreinte_source:election.source.sha256,licence:election.source.license,
+  couverture:election.coverage.matched+'/'+election.coverage.expected,perimetres_historiques:'Non vérifiés'};
+ for(const [suffix,id,record] of [['a',firstId,comparison.first],['b',secondId,comparison.second]]){
+  row['bureau_'+suffix]=id;row['commune_'+suffix]=record?.commune??null;
+  for(const key of ['inscrits','votants','abstentions','exprimes','blancs','nuls'])row[key+'_'+suffix]=record?.[key]??null;
+  row['participation_'+suffix]=record?.participationRate??null;row['abstention_'+suffix]=record?.abstentionRate??null;
+ }
+ return [row];
 }

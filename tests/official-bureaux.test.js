@@ -1,7 +1,8 @@
+import {serializeCsv} from '../app/core.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {validateOfficialBureauResults,compareOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml} from '../app/official-bureaux.js';
+import {validateOfficialBureauResults,compareOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml,officialBureauComparisonRecords,BUREAU_COMPARISON_FIELDS} from '../app/official-bureaux.js';
 
 const read=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),'utf8'));
 const data=read('../data/resultats-bureaux-officiels-2024.json');
@@ -70,4 +71,25 @@ test('comparateur rendu : effectifs exacts, taux, couverture, source et absence 
  assert.doesNotMatch(html,/<option value="33114-2"/);
  const missing=officialBureauComparisonHtml(data,'33114-2','33067-1');
  assert.match(missing,/aucun résultat officiel apparié/);assert.doesNotMatch(missing,/<table/);
+});
+
+test('export des bureaux : valeurs exactes, provenance, absence vide et bornes',()=>{
+ const before=structuredClone(data);
+ const [row]=officialBureauComparisonRecords(data,'33067-1','33067-2');
+ assert.equal(row.inscrits_a,832);assert.equal(row.inscrits_b,853);
+ assert.equal(row.votants_a,530);assert.equal(row.votants_b,580);
+ assert.equal(row.ecart_participation_points,580*100/853-530*100/832);
+ assert.equal(row.date_scrutin,'2024-06-30');assert.equal(row.source,data.scrutins[0].source.dataset);
+ assert.equal(row.empreinte_source,data.scrutins[0].source.sha256);
+ const csv=serializeCsv([row],BUREAU_COMPARISON_FIELDS);
+ assert.ok(csv.startsWith('\uFEFFscrutin;date_scrutin;tour;bureau_a'));
+ assert.ok(csv.includes(';832;530;302;513;15;2;'));
+ const [missing]=officialBureauComparisonRecords(data,'33067-1','33114-2');
+ assert.equal(missing.inscrits_b,null);assert.equal(missing.ecart_participation_points,null);
+ const cells=serializeCsv([missing],BUREAU_COMPARISON_FIELDS).split('\r\n')[1].split(';');
+ assert.equal(cells[BUREAU_COMPARISON_FIELDS.indexOf('inscrits_b')],'');
+ assert.equal(cells[BUREAU_COMPARISON_FIELDS.indexOf('ecart_participation_points')],'');
+ assert.throws(()=>officialBureauComparisonRecords(data,'33067-1','inconnu'),/référentiel/);
+ assert.throws(()=>officialBureauComparisonRecords(data,'33067-1','33067-1'),/distincts/);
+ assert.deepEqual(data,before);
 });

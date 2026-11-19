@@ -1,4 +1,4 @@
-import {mkdir} from 'node:fs/promises';
+import {readFile,mkdir} from 'node:fs/promises';
 import {test,expect} from '@playwright/test';
 
 test.use({serviceWorkers:'block'});
@@ -52,6 +52,18 @@ test('comparaison de bureaux sourcée sur ordinateur et mobile émulé',async({p
  await expect(table.getByRole('row',{name:/^Abstention /})).toContainText('-4,3 points');
  await expect(page.locator('#bureau-comparison-b option[value="33114-2"]')).toHaveCount(0);
  await expect(comparison.getByRole('link')).toHaveAttribute('href',/data\.gouv\.fr/);
+ const [download]=await Promise.all([page.waitForEvent('download'),comparison.getByRole('button',{name:'Exporter ces deux bureaux (CSV)'}).click()]);
+ const csv=await readFile(await download.path(),'utf8');
+ expect(download.suggestedFilename()).toBe('comparaison-bureaux-33067-1-33067-2.csv');
+ const lines=csv.replace(/^\uFEFF/,'').split('\r\n');
+ const fields=lines[0].split(';'),values=lines[1].split(';');
+ const exported=Object.fromEntries(fields.map((key,index)=>[key,values[index]]));
+ expect(exported.bureau_a).toBe('33067-1');expect(exported.bureau_b).toBe('33067-2');
+ expect(exported.inscrits_a).toBe('832');expect(exported.inscrits_b).toBe('853');
+ expect(exported.votants_a).toBe('530');expect(exported.votants_b).toBe('580');
+ expect(Number(exported.ecart_participation_points)).toBeCloseTo(4.293387591306697,12);
+ expect(exported.source).toContain('data.gouv.fr/datasets/');
+ expect(exported.date_scrutin).toBe('2024-06-30');expect(exported.couverture).toBe('22/23');
  await comparison.scrollIntoViewIfNeeded();
  await mkdir('test-results/captures',{recursive:true});
  await comparison.screenshot({path:'test-results/captures/bureau-comparison-'+testInfo.project.name+'.png'});
@@ -60,4 +72,5 @@ test('comparaison de bureaux sourcée sur ordinateur et mobile émulé',async({p
  await expect(comparison).toContainText('aucun résultat officiel apparié');
  await expect(comparison.getByRole('table')).toHaveCount(0);
  await expect(page.locator('#bureau-comparison-b')).toBeDisabled();
+ await expect(comparison.getByRole('button',{name:'Exporter ces deux bureaux (CSV)'})).toHaveCount(0);
 });
