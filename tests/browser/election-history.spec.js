@@ -139,6 +139,14 @@ test('historique : couverture sans effectifs absents et zéro explicite sur ordi
  await expect(area.locator('[data-year="2026"]')).toContainText('Participation 0,0 % · Abstention 100,0 %');
  await expect(area.locator('.history-area-participation')).toHaveAttribute('points','50,190 50,115 650,190 650,190');
  await expect(area.locator('.history-area-abstention')).toHaveAttribute('points','50,40 650,40 650,190 50,115');
+ const clippedLabels=await area.locator('.history-area-svg').evaluate(svg=>{
+  const bounds=svg.getBoundingClientRect();
+  return [...svg.querySelectorAll('text')].filter(label=>{
+   const rect=label.getBoundingClientRect();
+   return rect.left<bounds.left-0.5||rect.right>bounds.right+0.5||rect.top<bounds.top-0.5||rect.bottom>bounds.bottom+0.5;
+  }).map(label=>label.textContent);
+ });
+ expect(clippedLabels).toEqual([]);
  await area.evaluate(element=>element.scrollIntoView({block:'center',behavior:'instant'}));
  await page.locator('.history-area-details').screenshot({path:'test-results/captures/history-area-'+testInfo.project.name+'.png'});
 

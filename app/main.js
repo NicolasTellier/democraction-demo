@@ -27,7 +27,7 @@ import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
-import {validateOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml,officialBureauComparisonRecords,BUREAU_COMPARISON_FIELDS} from './official-bureaux.js?v=20261119data30';
+import {validateOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml,officialBureauComparisonRecords,BUREAU_COMPARISON_FIELDS} from './official-bureaux.js?v=20261119data30b';
 import {readBureauFile,validateBureauImport} from './bureau-import.js';
 import {
   checkSession,
@@ -37,8 +37,8 @@ import {
   pushRemote,
   updateRemoteStatus,
 } from "./sync.js";
-import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261119data30";
-import { territoryComparison, comparableBallots } from "./territory-comparison.js?v=20261119data30";
+import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261119data30b";
+import { territoryComparison, comparableBallots } from "./territory-comparison.js?v=20261119data30b";
 import { COMPARISONS_KEY, parseComparisonViews, addComparisonView, findComparisonView } from "./comparison-views.js";
 import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
 const NAV = [
@@ -2327,7 +2327,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261119data30")
+        .register("./sw.js?v=20261119data30b")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;
