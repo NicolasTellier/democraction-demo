@@ -124,7 +124,11 @@ test('historique : couverture sans effectifs absents et zéro explicite sur ordi
  await expect(stacked.locator('[data-year="2026"] .history-stacked-abstention')).toHaveAttribute('style','width:100%');
  await expect(stacked.locator('[data-year="2020"] .history-stacked-participation')).toHaveAttribute('style','width:50%');
  await expect(stacked.locator('[data-year="2020"] .history-stacked-abstention')).toHaveAttribute('style','width:50%');
- await stacked.scrollIntoViewIfNeeded();
+ await stacked.evaluate(element=>element.scrollIntoView({block:'center'}));
+ if(testInfo.project.name==='iphone'){
+  const visible=await stacked.evaluate(element=>element.getBoundingClientRect().bottom<=document.querySelector('.mobile-nav').getBoundingClientRect().top);
+  expect(visible).toBe(true);
+ }
  await page.locator('.history-stacked-details').screenshot({path:'test-results/captures/history-stacked-'+testInfo.project.name+'.png'});
 
 
