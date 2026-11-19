@@ -34,6 +34,7 @@ export function validZone(geometry){
 }
 
 export function classification(values,{unit='%',method='quantile'}={}){
+ if(method==='diverging-points')return {breaks:[0,0,100],unit,method,colors:['#b35806','#f7f7f7','#2166ac'],labels:['−100 à < 0','0','> 0 à 100']};
  const nums=values.filter(v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))).map(Number).sort((a,b)=>a-b);
  if(!nums.length)return {breaks:[],unit,method,colors:PALETTE};
  let breaks;
@@ -46,6 +47,10 @@ export function classification(values,{unit='%',method='quantile'}={}){
 }
 
 export function classIndex(value,legend){
+ if(legend.method==='diverging-points'){
+  if(typeof value!=='number'||!Number.isFinite(value)||value < -100||value > 100)return -1;
+  return value===0?1:value<0?0:2;
+ }
  if(value===null||value===undefined||!Number.isFinite(Number(value))||!legend.breaks.length)return -1;
  const i=legend.breaks.findIndex(limit=>Number(value)<=limit);
  return i<0?legend.breaks.length-1:i;

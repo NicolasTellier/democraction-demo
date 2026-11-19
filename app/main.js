@@ -23,11 +23,11 @@ import {
 import { load, save, download, clearLocal } from "./store.js";
 import {summarizeMissionCoverage} from "./logistics-coverage.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261115ban21b";
+import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261119data33";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
-import {validateOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml,officialBureauComparisonRecords,BUREAU_COMPARISON_FIELDS} from './official-bureaux.js?v=20261119data32';
+import {validateOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml,officialBureauComparisonRecords,BUREAU_COMPARISON_FIELDS} from './official-bureaux.js?v=20261119data33';
 import {readBureauFile,validateBureauImport} from './bureau-import.js';
 import {
   checkSession,
@@ -37,8 +37,8 @@ import {
   pushRemote,
   updateRemoteStatus,
 } from "./sync.js";
-import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261119data32";
-import { territoryComparison, comparableBallots } from "./territory-comparison.js?v=20261119data32";
+import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261119data33";
+import { territoryComparison, comparableBallots, participationDifferenceLayer } from "./territory-comparison.js?v=20261119data33";
 import { COMPARISONS_KEY, parseComparisonViews, addComparisonView, findComparisonView } from "./comparison-views.js";
 import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
 const NAV = [
@@ -191,6 +191,7 @@ let demoContacts = loadSyntheticContacts(),
 const MAP_LAYERS = [
   ["participation", "Participation électorale", "%"],
   ["abstention", "Abstention électorale", "%"],
+  ["participation-difference", "Écart de participation B − A", "points"],
   ["population", "Population", "habitants"],
   ["tauxChomage", "Chômage", "%"],
   ["revenuMedian", "Revenu médian", "€"],
@@ -355,6 +356,13 @@ const mapCommunesFor = (
       (socio?.indicators || []).map((row) => [row.codeInsee, row]),
     ),
     meta = MAP_LAYERS.find((x) => x[0] === layer) || MAP_LAYERS[0];
+  if(layer==='participation-difference'){
+    const result=differenceData(candidates);
+    const byCode=new Map((result?.items||[]).map(item=>[item.codeInsee,item]));
+    return candidates.map(c=>{const item=byCode.get(c.codeInsee),value=item?.mapValue??null;
+      return {...c,mapValue:value,mapLabel:value===null?'Écart indisponible : résultat absent, invalide ou dupliqué':`B − A : ${value>=0?'+':''}${value.toFixed(1).replace('.',',')} points · A ${result.first.label} / B ${result.second.label}`};
+    });
+  }
   return candidates.map((c) => {
     const row = latest.get(c.codeInsee),
       sr = socioRows.get(c.codeInsee),
@@ -402,6 +410,21 @@ const comparedBallots = () => {
     ballots.find(x => x.type === left?.type && x.tour === left?.tour && x.year < left.year) || ballots[1];
   return [left, right];
 };
+
+const differenceSelection=()=>{
+ const ballots=comparableBallots(elections?.elections||[]);
+ const paired=ballots.find(a=>ballots.some(b=>b.id!==a.id&&b.type===a.type&&b.tour===a.tour));
+ const older=paired&&ballots.find(b=>b.id!==paired.id&&b.type===paired.type&&b.tour===paired.tour);
+ const first=ballots.find(b=>b.id===filters.compareLeft)||older||paired||ballots[0];
+ const alternatives=ballots.filter(b=>first&&b.id!==first.id&&b.type===first.type&&b.tour===first.tour);
+ const second=alternatives.find(b=>b.id===filters.compareRight)||alternatives[0];
+ return {ballots,first,second,alternatives};
+};
+const differenceData=(communes)=>{
+ const {first,second}=differenceSelection();if(!first||!second)return null;
+ return participationDifferenceLayer(elections?.elections||[],communes.map(c=>c.codeInsee),first.id,second.id,elections?.meta);
+};
+
 const selectedCommune = () =>
   territory?.communes.find((c) => norm(c.nom) === norm(filters.commune));
 async function searchStreets(query, commune) {
@@ -680,7 +703,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.32 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.33 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -827,6 +850,10 @@ function viewCarte() {
     )
     .join("");
   const comparable = leftBallot?.type === rightBallot?.type && leftBallot?.tour === rightBallot?.tour;
+  const diffSelection=filters.mapLayer==='participation-difference'?differenceSelection():{ballots:[],alternatives:[]};
+  const diffCommunes=filters.mapLayer==='participation-difference'?mapCommunesFor('participation-difference'):[];
+  const diffResult=filters.mapLayer==='participation-difference'?differenceData(diffCommunes):null;
+  const differenceControls=filters.mapLayer==='participation-difference'&&mapMode!=='compare'?`<section class="difference-controls"><h3>Écart de participation B − A</h3><label>Scrutin A<select id="difference-a">${diffSelection.ballots.map(b=>opt(b.id,b.label,b.id===diffSelection.first?.id)).join('')}</select></label><label>Scrutin B · même type et tour<select id="difference-b" ${diffSelection.second?'':'disabled'}>${diffSelection.alternatives.map(b=>opt(b.id,b.label,b.id===diffSelection.second?.id)).join('')||'<option value="">Aucun scrutin compatible</option>'}</select></label><p class="hint" data-difference-coverage>${diffResult?`${diffResult.coverage.paired}/${diffResult.coverage.requested} communes avec deux résultats ; ${diffResult.coverage.unavailable} indisponible(s).`:'Deux scrutins compatibles sont requis.'}</p><p class="hint">B − A en points de participation ; zéro est distinct d’une absence. Source : ${esc(elections?.meta?.source||'Non renseignée')} · mise à jour ${esc(elections?.meta?.miseAJour||'Non renseignée')}. Aucun transfert individuel de voix n’est observé. Le mode Comparer conserve deux cartes et un tableau A − B.</p></section>`:'';
   const compareControls = mapMode === "compare" ? `<section><h3>Comparer deux scrutins</h3><label>Carte A<select id="compare-left">${ballots.map(b => opt(b.id,b.label,b.id===compareLeft)).join("")}</select></label><label>Carte B<select id="compare-right">${ballots.map(b => opt(b.id,b.label,b.id===compareRight)).join("")}</select></label><p class="hint">Participation en % des inscrits ; écart en points. ${comparable ? "Même type de scrutin et même tour." : "Attention : types de scrutin ou tours différents, interprétation prudente."} Les communes sans résultat à un tour restent indisponibles.</p></section>` : "";
   const streetsHtml = `<p class="hint" role="status">${esc(roadStatus||'Choisissez une commune pour charger ses tracés.')}</p><div class="street-results">${streetSearchResults.map((s,i)=>`<button type="button" class="street-result" data-street-index="${i}"><strong>${esc(s.name)}</strong><small>${selectedStreets.some(r=>r.id===s.id)?'Sélectionnée':'Sélectionner le tracé'}</small></button>`).join("")}</div><div class="selected-streets">${selectedStreets.map((s,i)=>`<span class="street-chip">${esc(s.name)} <button type="button" data-remove-street="${i}" aria-label="Retirer ${attr(s.name)}">×</button></span>`).join("")}</div><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="show-addresses" ${selectedStreets.length?'':'disabled'}>Afficher les adresses de ces rues</button>`;
   const addressesHtml=`<section><h3>Points d’adresse BAN</h3><p class="hint">Choisissez une commune puis zoomez au niveau 16 ou davantage dans les zones denses. Les points de la zone visible se chargent progressivement. Déplacez la carte pour voir les suivants ; touchez un point pour ouvrir sa fiche publique.</p><button type="button" class="btn btn-light btn-sm map-rail-action" data-action="toggle-address-viewport">${addressViewportEnabled?'Masquer les points BAN':'Afficher les points BAN autour de la carte'}</button><p id="address-viewport-status" class="hint" role="status">${esc(addressStatus||'Aucune personne associée à ces adresses publiques.')}</p></section>`;
@@ -838,7 +865,7 @@ function viewCarte() {
   const roadsInventoryHtml=`<section class="road-inventory"><h3>Couverture des voies</h3><p role="status"><strong>${indexedRoads.length} / ${territory.communes.length}</strong> communes avec tracés IGN répertoriés · ${notIndexed} sans tracés en paquet ou cache.</p>${auditSummary}<p class="hint">${roadGaps.length?`${roadGaps.length} commune(s) avec objets IGN écartés : ${roadGaps.slice(0,4).map(row=>esc(territory.communes.find(c=>c.codeInsee===row.code)?.nom||row.code)).join(', ')}${roadGaps.length>4?'…':''}.`:'Aucun objet écarté dans les communes déjà relevées.'} Les tracés sont téléchargés commune par commune. Ils ne prouvent pas l’exhaustivité des chemins, des lieux-dits et de l’adressage BAN.</p>${notIndexed?`<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch" ${roadPrefetchController?'disabled':''}>Précharger les 5 prochaines communes</button>${roadPrefetchController?'<button type="button" class="btn btn-light btn-sm map-rail-action" data-action="road-prefetch-stop">Arrêter</button>':''}<p class="hint" role="status">${esc(roadPrefetchStatus)}</p>`:''}<p class="hint">Les voies sont tracées en paquet ; les adresses sont chargées par la zone visible ou par rue. Aucun habitant n’est associé.</p></section>`;
   const activeSector = demoSectors.find(s => s.id === sectorBeingEdited);
   const sectorForm = mapMode === "draw" ? `<section><h3>${activeSector ? "Modifier le secteur" : "Nouveau secteur"}</h3><label>Nom<input id="sector-name" maxlength="100" value="${attr(activeSector?.name||"")}" placeholder="Ex. Bourg centre"></label><label>Couleur<input id="sector-color" type="color" value="${attr(activeSector?.color||"#9c6b2a")}"></label><p class="hint">Dessinez sur la carte, puis cliquez sur Enregistrer le contour. Clic droit sur un sommet pour le retirer.</p></section>` : "";
-  const leftRows = mapCommunesFor(filters.mapLayer, compareLeft),rightIndex = new Map(mapCommunesFor(filters.mapLayer, compareRight).map(c=>[c.codeInsee,c]));
+  const leftRows = mapCommunesFor(filters.mapLayer==='participation-difference'?'participation':filters.mapLayer, compareLeft),rightIndex = new Map(mapCommunesFor(filters.mapLayer==='participation-difference'?'participation':filters.mapLayer, compareRight).map(c=>[c.codeInsee,c]));
   const comparison = mapMode === "compare" ? `<div class="map-compare-table"><strong>Écarts A − B · points de participation</strong><p class="hint">Ministère de l’Intérieur · ${esc(leftBallot?.label || "")} / ${esc(rightBallot?.label || "")}. Seules les communes ayant deux résultats sont comparées.</p><div class="tablewrap"><table><thead><tr><th>Commune</th><th>${esc(leftBallot?.label || "A")}</th><th>${esc(rightBallot?.label || "B")}</th><th>Écart (points)</th></tr></thead><tbody>${leftRows.filter(a=>Number.isFinite(a.mapValue)&&Number.isFinite(rightIndex.get(a.codeInsee)?.mapValue)).map(a=>{const b=rightIndex.get(a.codeInsee),d=a.mapValue-b.mapValue;return `<tr><td>${esc(a.nom)}</td><td>${a.mapValue.toFixed(1)}</td><td>${b.mapValue.toFixed(1)}</td><td>${d>=0?"+":""}${d.toFixed(1)}</td></tr>`}).join("")}</tbody></table></div></div>` : "";
   const bureauWarning = mapSelection.kind === "bureau" ?
     `<section><h3>Référentiel des bureaux</h3><label>Commune<select id="bureau-commune"><option value="">Toutes les communes</option>${territory.communes.map(c=>opt(c.nom,c.nom,bureauCommune===c.nom)).join('')}</select></label><p class="hint">${pollingCatalog.length} bureaux fournis · ${bureauFeatures().length} contour(s) importé(s) sur cet appareil.</p><div class="warning-note">Les effectifs communiqués n’ont pas de nature ni de millésime vérifiés. Sans contour, la carte surligne seulement la commune parente.</div><label>Source déclarée du fichier<input id="bureau-source" maxlength="200" placeholder="Ex. export My Maps transmis par la commune"></label><label>Importer des contours (GeoJSON, KML, KMZ)<input id="bureau-import" type="file" accept=".geojson,.json,.kml,.kmz,application/geo+json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"></label><p class="hint">Pour KML/KMZ : choisissez d’abord la commune ; nommez chaque repère « Bureau 1 », « Bureau 2 »… Un GeoJSON peut fournir ses identifiants. Un import local n’atteste pas la provenance officielle. Un contour du même identifiant remplace le précédent sur cet appareil.</p></section>` : "";
@@ -864,12 +891,12 @@ function viewCarte() {
     '</div></div><div class="map-workspace"><aside class="map-rail"><section><h3>Indicateur cartographique</h3><select id="map-layer">' +
     layerOptions +
     '</select><p class="hint">' +
-    (["participation","abstention"].includes(filters.mapLayer)
+    (filters.mapLayer==="participation-difference" ? (mapMode==="compare"?"Le mode Comparer affiche deux cartes de participation et un tableau A − B. Revenez à Explorer pour la couche B − A.":"Écart descriptif B − A de participation, en points, sur deux scrutins comparables. Zéro ne signifie pas donnée absente.") : ["participation","abstention"].includes(filters.mapLayer)
       ? "Résultats publics agrégés depuis 2008. Abstention = (inscrits − votants) / inscrits."
       : "Indicateur socio-démographique communal issu du référentiel public.") +
     "</p>" +
-    abstentionControls + compareControls +
-    '</section><section><h3>Carroyage Insee · Filosofi 2021</h3><label>Résolution<select id="insee-grid-resolution" '+(mapMode==='compare'?'disabled':'')+'><option value="" '+(!filters.gridResolution?'selected':'')+'>Masqué</option><option value="1000" '+(filters.gridResolution==='1000'?'selected':'')+'>1 km</option><option value="200" '+(filters.gridResolution==='200'?'selected':'')+'>200 m</option></select></label><p id="insee-grid-status" class="hint" role="status">'+(mapMode==='compare'?'Couche masquée dans la comparaison de deux cartes.':filters.gridResolution?'Choisissez une commune ; zoomez pour afficher les carreaux.':'Choisissez une résolution puis une commune.')+'</p><p class="hint">Individus au sens fiscal ; le millésime 2021 diffère des chiffres communaux du recensement. Valeurs imputées en pointillés, sans effectif dans la fenêtre. Une case décrit un territoire, jamais une adresse ni une personne.</p><a href="https://www.insee.fr/fr/statistiques/8735243" target="_blank" rel="noopener noreferrer">Méthode Insee ↗</a></section><section><h3>Zone à surligner</h3><select id="map-scope">' +
+    abstentionControls + differenceControls + compareControls +
+    '</section><section><h3>Carroyage Insee · Filosofi 2021</h3><label>Résolution<select id="insee-grid-resolution" '+(mapMode==='compare'||filters.mapLayer==='participation-difference'?'disabled':'')+'><option value="" '+(!filters.gridResolution?'selected':'')+'>Masqué</option><option value="1000" '+(filters.gridResolution==='1000'?'selected':'')+'>1 km</option><option value="200" '+(filters.gridResolution==='200'?'selected':'')+'>200 m</option></select></label><p id="insee-grid-status" class="hint" role="status">'+(mapMode==='compare'?'Couche masquée dans la comparaison de deux cartes.':filters.mapLayer==='participation-difference'?'Carroyage masqué dans cette couche d’écart.':filters.gridResolution?'Choisissez une commune ; zoomez pour afficher les carreaux.':'Choisissez une résolution puis une commune.')+'</p><p class="hint">Individus au sens fiscal ; le millésime 2021 diffère des chiffres communaux du recensement. Valeurs imputées en pointillés, sans effectif dans la fenêtre. Une case décrit un territoire, jamais une adresse ni une personne.</p><a href="https://www.insee.fr/fr/statistiques/8735243" target="_blank" rel="noopener noreferrer">Méthode Insee ↗</a></section><section><h3>Zone à surligner</h3><select id="map-scope">' +
     scopeKindOptions +
     '</select><select id="map-scope-value" class="map-scope-value"><option value="">Choisir…</option>' +
     scopeValueOptions +
@@ -1154,7 +1181,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.32</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.33</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1192,9 +1219,9 @@ function render() {
       allowDraw: tab === "carte" && mapMode === "draw",
       legendTitle: layer[1],
       legendUnit: layer[2],
-      legendMethod: ["participation", "abstention"].includes(filters.mapLayer) ? "fixed-percent" : "quantile",
-      sourceLabel: filters.mapLayer === "abstention" ? `Ministère de l’Intérieur · ${abstentionBallot?.label||"scrutin indisponible"}` : filters.mapLayer === "participation" ? `Ministère de l’Intérieur · ${filters.electionYear || "dernier scrutin disponible"}` : `Insee · ${socio?.meta?.millesime || "millésime inconnu"}`,
-      inseeGrid: tab === 'carte' && mapMode !== 'compare' && ['200','1000'].includes(filters.gridResolution) ? {
+      legendMethod: filters.mapLayer==="participation-difference"&&mapMode!=="compare"?"diverging-points":["participation", "abstention"].includes(filters.mapLayer) ? "fixed-percent" : "quantile",
+      sourceLabel: filters.mapLayer === "participation-difference" ? `B − A · ${differenceSelection().first?.label||"A"} / ${differenceSelection().second?.label||"B"} · ${elections?.meta?.source||"source non renseignée"} · ${elections?.meta?.miseAJour||"date inconnue"}` : filters.mapLayer === "abstention" ? `Ministère de l’Intérieur · ${abstentionBallot?.label||"scrutin indisponible"}` : filters.mapLayer === "participation" ? `Ministère de l’Intérieur · ${filters.electionYear || "dernier scrutin disponible"}` : `Insee · ${socio?.meta?.millesime || "millésime inconnu"}`,
+      inseeGrid: tab === 'carte' && mapMode !== 'compare' && filters.mapLayer!=='participation-difference' && ['200','1000'].includes(filters.gridResolution) ? {
         resolution: Number(filters.gridResolution),
         code: activeCode || '',
       } : null,
@@ -1229,13 +1256,13 @@ function render() {
           "map-left",
           compareA,
           console.log,
-          { ...mapOptions, sourceLabel:`Ministère de l’Intérieur · ${leftBallot?.label || ""}`, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
+          { ...mapOptions, legendMethod:filters.mapLayer==="participation-difference"?"fixed-percent":mapOptions.legendMethod,legendTitle:filters.mapLayer==="participation-difference"?"Participation électorale":mapOptions.legendTitle,legendUnit:filters.mapLayer==="participation-difference"?"%":mapOptions.legendUnit, sourceLabel:`Ministère de l’Intérieur · ${leftBallot?.label || ""}`, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
         );
         void drawMap(
           "map-right",
           compareB,
           console.log,
-          { ...mapOptions, sourceLabel:`Ministère de l’Intérieur · ${rightBallot?.label || ""}`, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
+          { ...mapOptions, legendMethod:filters.mapLayer==="participation-difference"?"fixed-percent":mapOptions.legendMethod,legendTitle:filters.mapLayer==="participation-difference"?"Participation électorale":mapOptions.legendTitle,legendUnit:filters.mapLayer==="participation-difference"?"%":mapOptions.legendUnit, sourceLabel:`Ministère de l’Intérieur · ${rightBallot?.label || ""}`, legendValues:[...compareA,...compareB].map(x=>x.mapValue) },
         );
       } else {
         const mapTarget = tab === "carte" ? "map" : "map-dashboard";
@@ -1746,6 +1773,11 @@ root.addEventListener("change", async (e) => {
     render();
     return;
   }
+  if (el.id === "difference-a" || el.id === "difference-b") {
+    filters[el.id==="difference-a"?"compareLeft":"compareRight"]=el.value;
+    if(el.id==="difference-a")filters.compareRight="";
+    render();return;
+  }
   if (el.id === "compare-left") {
     filters.compareLeft = el.value;
     render();
@@ -1870,6 +1902,7 @@ root.addEventListener("change", (e) => {
   const key = map[e.target.id];
   if (key) {
     filters[key] = e.target.value;
+    if(key==="mapLayer"&&e.target.value==="participation-difference")mapMode="explore";
     if (key === "analysisBallotA") filters.analysisBallotB = "";
     render();
   }
@@ -2327,7 +2360,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261119data32")
+        .register("./sw.js?v=20261119data33")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;

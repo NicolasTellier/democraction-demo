@@ -1,5 +1,5 @@
 import {norm,escapeHTML} from './core.js';
-import {validPolygon,classification,classIndex} from './geo-utils.js';
+import {validPolygon,classification,classIndex} from './geo-utils.js?v=20261119data33';
 import {attachGrid} from './insee-grid.js';
 
 const GEO_KEY='democraction-33-geo-v2';
@@ -88,7 +88,7 @@ export function selectionGeometry(codes=[]){
 
 function colour(value,selected,legend){
  const i=classIndex(value,legend),fill=i<0?'#c8d0d7':legend.colors[i];
- return {color:selected?'#16163f':'#5f667c',fillColor:selected?'#ffb71b':fill,fillOpacity:selected?.67:.68,weight:selected?3:1};
+ return {color:selected?'#16163f':'#5f667c',fillColor:selected&&legend.method!=='diverging-points'?'#ffb71b':fill,fillOpacity:selected?.67:.68,weight:selected?3:1};
 }
 
 function addDrawingTools(box,map,target,options){
@@ -127,8 +127,8 @@ function addLegend(map,legend,options){
  control.onAdd=()=>{const el=window.L.DomUtil.create('div','map-legend');window.L.DomEvent.disableClickPropagation(el);
   const format=n=>Number(n).toLocaleString('fr-FR',{maximumFractionDigits:1});
   let previous=legend.method==='fixed-percent'?0:null;
-  const classes=legend.breaks.map((limit,i)=>{const low=previous;previous=limit;return `<span><i style="background:${legend.colors[i]}"></i>${low===null?'≤ '+format(limit):`${format(low)}–${format(limit)}`} ${escapeHTML(legend.unit)}</span>`}).join('');
-  el.innerHTML=`<strong>${escapeHTML(options.legendTitle||'Indicateur')}</strong><small>${escapeHTML(options.sourceLabel||'Données agrégées')} · ${legend.method==='quantile'?'classes par quantiles':'intervalles réguliers'}</small><div>${classes}<span><i style="background:#c8d0d7"></i>Indisponible</span></div>`;return el};control.addTo(map);
+  const classes=legend.labels?legend.labels.map((label,i)=>`<span><i style="background:${legend.colors[i]}"></i>${escapeHTML(label)} ${escapeHTML(legend.unit)}</span>`).join(''):legend.breaks.map((limit,i)=>{const low=previous;previous=limit;return `<span><i style="background:${legend.colors[i]}"></i>${low===null?'≤ '+format(limit):`${format(low)}–${format(limit)}`} ${escapeHTML(legend.unit)}</span>`}).join('');
+  el.innerHTML=`<strong>${escapeHTML(options.legendTitle||'Indicateur')}</strong><small>${escapeHTML(options.sourceLabel||'Données agrégées')} · ${legend.method==='diverging-points'?'classes fixes centrées sur zéro · B − A':legend.method==='quantile'?'classes par quantiles':'intervalles réguliers'}</small><div>${classes}<span><i style="background:#c8d0d7"></i>Indisponible</span></div>`;return el};control.addTo(map);
 }
 
 function renderAddressMarkers(map,addresses,onSelect){
@@ -180,6 +180,7 @@ export async function drawMap(target,communes,notify,options={}){
    const code=String(c.codeInsee||'');const feature=contourIndex.get(code);const selected=selection.has(norm(c.nom));
    if(feature){try{
     const layer=window.L.geoJSON(feature,{style:colour(c.mapValue,selected,legend),onEachFeature:(_,polygon)=>{
+     polygon.on('add',()=>{const node=polygon.getElement?.();if(node){node.setAttribute('data-commune-code',code);node.setAttribute('data-map-value',Number.isFinite(c.mapValue)?String(c.mapValue):'missing');}});
      polygon.bindTooltip(`${escapeHTML(c.nom)} · ${escapeHTML(c.mapLabel||'Donnée indisponible')}`,{sticky:true});
      polygon.bindPopup(`<strong>${escapeHTML(c.nom)}</strong><div>${escapeHTML(c.epci||'')}</div><div>${escapeHTML(c.mapLabel||'Donnée indisponible')}</div><small>Contour communal officiel · Source : geo.api.gouv.fr</small>`);
      polygon.on('click',event=>{if(!map.getContainer().classList.contains('map-drawing'))options.onSelect?.(c,event)});

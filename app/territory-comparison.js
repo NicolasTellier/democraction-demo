@@ -59,3 +59,63 @@ export function viewTerritoryComparison({ rows, communes, filters, meta, savedVi
 
   return panel('Comparer plusieurs communes', `<p class="description">Participation et abstention descriptives à partir des effectifs communaux. Sélectionnez des communes du périmètre géographique actif, puis deux années d’un même type de scrutin et d’un même tour. Les écarts portent sur des taux agrégés. Le filtre Année de l’historique ne limite pas ces deux sélecteurs.</p><div class="form-inline profile-controls"><label>Scrutin A<select id="analysis-ballot-a">${optionsA}</select></label><label>Scrutin B · même type et même tour<select id="analysis-ballot-b" ${second ? '' : 'disabled'}>${optionsB || '<option value="">Pas d’autre millésime comparable</option>'}</select></label></div><fieldset class="territory-picker"><legend>Communes à comparer (5 maximum)</legend><label class="territory-picker-search">Rechercher une commune<input id="analysis-commune-search" type="search" value="${attr(filters.analysisSearch || '')}" placeholder="Nom ou code INSEE"></label><div class="territory-picker-list">${optionsCommunes}</div></fieldset>${selected.length ? `<p class="hint">${selected.length} commune(s) sélectionnée(s). ${coverage} Une absence de résultat est signalée par « — » ; elle ne vaut pas zéro.</p><div class="territory-bars-list" role="img" aria-label="Participation comparée pour ${selected.length} communes, scrutin A${second ? ' et scrutin B' : ''}">${bar}</div><div class="tablewrap"><table id="territory-comparison-table"><caption>Effectifs et taux exacts par commune</caption><thead><tr><th scope="col">Commune</th><th scope="col">Inscrits A</th><th scope="col">Votants A</th><th scope="col">Participation A</th><th scope="col">Abstention A</th><th scope="col">Inscrits B</th><th scope="col">Votants B</th><th scope="col">Participation B</th><th scope="col">Abstention B</th><th scope="col">Écart B − A</th></tr></thead><tbody>${table}</tbody></table></div><button class="btn btn-light" data-action="export-territory-comparison">Exporter cette comparaison (CSV)</button> ${selected.length >= 2 && second ? '<button type="button" class="btn btn-light" data-action="save-comparison-view">Enregistrer cette comparaison</button>' : ''}` : '<p class="hint">Cochez au moins deux communes pour une comparaison entre territoires.</p>'}<p class="hint">A : ${esc(first?.label || 'indisponible')}${second ? ` · B : ${esc(second.label)}` : ''}. Source : ${esc(source)}${meta?.miseAJour ? ` · mise à jour ${esc(meta.miseAJour)}` : ''}. La couverture peut varier selon le scrutin. Aucun transfert individuel de voix ne peut être déduit de ces écarts.</p>${savedHtml}`);
 }
+
+
+// Adaptateur de données uniquement ; l'affichage cartographique est traité séparément.
+export function participationDifferenceLayer(rows, codes, firstId, secondId, meta = {}) {
+  if (!Array.isArray(rows) || !Array.isArray(codes)) throw new Error('Jeu de résultats et codes requis.');
+  if (typeof firstId !== 'string' || !firstId || typeof secondId !== 'string' || !secondId || firstId === secondId)
+    throw new Error('Deux scrutins distincts sont requis.');
+  if (codes.some(code => typeof code !== 'string' || !/^[0-9]{5}$/.test(code)))
+    throw new Error('Codes INSEE textuels à cinq chiffres requis.');
+  const requested = [...new Set(codes)];
+  const selected = rows.filter(row => row && (row.id === firstId || row.id === secondId));
+  const metadata = id => {
+    const entries = selected.filter(row => row.id === id);
+    if (!entries.length) throw new Error('Scrutin inconnu : ' + id);
+    const valid = row => typeof row.type === 'string' && row.type &&
+      typeof row.tour === 'string' && row.tour &&
+      Number.isInteger(Number(row.annee)) && Number(row.annee) >= 2008;
+    const first = entries[0];
+    if (entries.some(row => !valid(row) || row.type !== first.type || row.tour !== first.tour || Number(row.annee) !== Number(first.annee)))
+      throw new Error('Métadonnées de scrutin ambiguës : ' + id);
+    return { id, type: first.type, tour: first.tour, year: Number(first.annee), label: electionBallotLabel(first) };
+  };
+  const first = metadata(firstId), second = metadata(secondId);
+  if (first.type !== second.type || first.tour !== second.tour)
+    throw new Error('Deux scrutins de même type et de même tour sont requis.');
+  const strictRow = row => validRow(row) && Number.isSafeInteger(Number(row.inscrits)) && Number.isSafeInteger(Number(row.votants));
+  const key = (code, id) => code + '|' + id;
+  const groups = new Map();
+  for (const row of selected) {
+    const id = key(row.codeInsee, row.id);
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(row);
+  }
+  const status = (code, id) => {
+    const entries = groups.get(key(code, id));
+    return !entries ? 'missing' : entries.length !== 1 ? 'duplicate' : strictRow(entries[0]) ? 'available' : 'invalid';
+  };
+  const clean = selected.filter(row => groups.get(key(row.codeInsee, row.id)).length === 1 && strictRow(row));
+  const ballots = comparableBallots(clean, first.type, first.tour);
+  for (const ballot of [first, second]) ballot.label = ballots.find(item => item.id === ballot.id)?.label || ballot.label;
+  const percentage = (row, value) => !row ? null : Number(row.votants) === Number(row.inscrits) ? 100 : Math.max(0, Math.min(100, value));
+  const items = territoryComparison(clean, requested, firstId, secondId).map(item => {
+    // Des taux égaux restent exactement zéro, même avec des effectifs de tailles différentes.
+    const equalRates = item.first && item.second &&
+      BigInt(Number(item.first.votants)) * BigInt(Number(item.second.inscrits)) ===
+      BigInt(Number(item.second.votants)) * BigInt(Number(item.first.inscrits));
+    return {
+      codeInsee: item.codeInsee, participationA: percentage(item.first, item.a), participationB: percentage(item.second, item.b),
+      mapValue: item.delta === null ? null : equalRates ? 0 : Math.max(-100, Math.min(100, item.delta)),
+      statusA: status(item.codeInsee, firstId), statusB: status(item.codeInsee, secondId),
+    };
+  });
+  const paired = items.filter(item => item.mapValue !== null).length;
+  return {
+    first, second, direction: 'B − A', unit: 'points de participation', domain: [-100, 100],
+    source: { label: typeof meta?.source === 'string' ? meta.source : null, updatedAt: typeof meta?.miseAJour === 'string' ? meta.miseAJour : null },
+    coverage: { requested: items.length, paired, unavailable: items.length - paired },
+    items,
+  };
+}

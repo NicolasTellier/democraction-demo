@@ -1,0 +1,133 @@
+{
+  "dataBlob": "30fa9ae3e40ecb9b40497c7799c70b9a85945d3b",
+  "source": "data.gouv.fr / ministère de l’Intérieur",
+  "updated": "2026-07-07",
+  "scenarios": [
+    {
+      "type": "muni",
+      "tour": "t1",
+      "year": 2008,
+      "scope": "",
+      "eligible": 4,
+      "excluded": 0,
+      "duplicates": 0,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "muni",
+      "tour": "t1",
+      "year": 2020,
+      "scope": "",
+      "eligible": 87,
+      "excluded": 0,
+      "duplicates": 0,
+      "bins": [
+        0,
+        0,
+        0,
+        10,
+        29,
+        35,
+        10,
+        3,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "muni",
+      "tour": "t1",
+      "year": 2026,
+      "scope": "",
+      "eligible": 87,
+      "excluded": 0,
+      "duplicates": 0,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        3,
+        28,
+        44,
+        8,
+        4,
+        0
+      ]
+    },
+    {
+      "type": "pres",
+      "tour": "t1",
+      "year": 2022,
+      "scope": "",
+      "eligible": 87,
+      "excluded": 0,
+      "duplicates": 0,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        47,
+        39,
+        0
+      ]
+    },
+    {
+      "type": "pres",
+      "tour": "t2",
+      "year": 2022,
+      "scope": "Abzac",
+      "eligible": 1,
+      "excluded": 0,
+      "duplicates": 0,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "muni",
+      "tour": "t1",
+      "year": 2026,
+      "scope": "Abzac",
+      "eligible": 1,
+      "excluded": 0,
+      "duplicates": 0,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}
