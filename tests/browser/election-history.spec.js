@@ -1,6 +1,6 @@
 import {gzipSync} from 'node:zlib';
 import { test, expect } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 
 test('la courbe historique est sourcée et ne mélange pas les tours', async ({ page }, testInfo) => {
   test.skip(['iphone', 'android'].includes(testInfo.project.name), 'Navigation des résultats réservée à la version desktop de la démonstration');
@@ -102,4 +102,17 @@ test('historique : couverture sans effectifs absents et zéro explicite sur ordi
  await expect(current.locator('td').nth(3)).toHaveText('100,0 %');
  await expect(table).not.toContainText('2022');
  await expect(page.getByText(/Source : Source synthétique DATA-02d/).first()).toBeVisible();
+ await page.getByText('Voir l’historique en barres',{exact:true}).click();
+ const bars=page.locator('.history-bars');
+ await expect(bars).toBeVisible();
+ await expect(bars.locator('.history-bars-year')).toHaveCount(2);
+ await expect(bars.locator('[data-year="2022"]')).toHaveCount(0);
+ await expect(bars.locator('[data-year="2026"]')).toContainText('1 commune(s) · 100 inscrits');
+ await expect(bars.locator('[data-year="2026"] .history-bar-participation')).toHaveAttribute('style','width:0%');
+ await expect(bars.locator('[data-year="2026"] .history-bar-abstention')).toHaveAttribute('style','width:100%');
+ await expect(bars.locator('[data-year="2020"] .history-bar-participation')).toHaveAttribute('style','width:50%');
+ await bars.scrollIntoViewIfNeeded();
+ await mkdir('test-results/captures',{recursive:true});
+ await page.locator('.history-bars-details').screenshot({path:'test-results/captures/history-bars-'+testInfo.project.name+'.png'});
+
 });

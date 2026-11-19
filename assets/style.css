@@ -190,3 +190,13 @@ td strong{color:var(--cobalt)}
 .comparison-saved-list li small{color:var(--muted);margin-top:3px}
 
 .official-bureau-comparison{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.official-bureau-comparison select{width:100%;max-width:100%}.bureau-comparison-table{min-width:480px;width:100%;border-collapse:collapse}.bureau-comparison-table th,.bureau-comparison-table td{padding:8px;border-bottom:1px solid var(--line);text-align:right}.bureau-comparison-table th:first-child{text-align:left}.bureau-comparison-table caption{text-align:left;font-weight:600;padding:8px 0}
+
+.history-bars-details{margin:16px 0;border:1px solid #deded8;border-radius:10px;padding:12px;background:#fbfaf6}
+.history-bars-details summary{cursor:pointer;font-weight:700;color:#27364a;min-height:28px}
+.history-bars-details summary:focus-visible{outline:2px solid #1e3ac8;outline-offset:4px}
+.history-bars{margin:14px 0 0;min-width:0}.history-bars figcaption{font-size:13px;color:#54615d}
+.history-bars ol{list-style:none;padding:0;margin:12px 0 0}.history-bars-year{padding:10px 0;border-top:1px solid #deded8}
+.history-bars-year h4{margin:0 0 10px}.history-bars-year h4 small{display:block;font-weight:400;color:#54615d;margin-top:3px}
+.history-bar-row{display:grid;grid-template-columns:82px minmax(20px,1fr) 62px;align-items:center;gap:8px;font-size:12px;margin:8px 0}
+.history-bar-row strong{text-align:right}.history-bar-track{display:block;background:#e7e9e7;height:14px;border-radius:4px;overflow:hidden}
+.history-bar-track i{display:block;height:100%}.history-bar-participation{background:#1e3ac8}.history-bar-abstention{background:#ee4b23}

@@ -26,3 +26,17 @@ test('historique : effectifs absents exclus, zéro explicite préservé et couve
  assert.ok(html.includes('Source synthétique'));assert.ok(html.includes('2026-11-19'));
  assert.ok(!html.includes('2022</th>'));assert.ok(html.includes('400</td>'));
 });
+
+test('barres historiques : même pondération, zéro explicite et absence sans barre',()=>{
+ const rows=[{...base,annee:2020,votants:50},{...base},{...base,annee:2022,votants:null},
+  {...base,codeInsee:'33366',inscrits:900,votants:null}];
+ const html=viewParticipationTimeline({rows,type:'muni',tour:'t1',meta:{source:'Source de barres',miseAJour:'2026-11-19'},
+  esc:String,fmtNumber:String,panel:(title,body)=>body});
+ assert.ok(html.includes('Voir l’historique en barres'));assert.ok(html.includes('échelle de 0 à 100 %'));
+ assert.equal((html.match(/class="history-bars-year"/g)||[]).length,2);
+ assert.ok(html.includes('style="width:0%"'));assert.ok(html.includes('style="width:100%"'));
+ assert.ok(html.includes('style="width:50%"'));assert.ok(!html.includes('data-year="2022"'));
+ assert.ok(html.includes('1 commune(s) · 100 inscrits'));assert.ok(html.includes('Source de barres'));
+ const noSeries=viewParticipationTimeline({rows:[{...base,votants:null}],type:'muni',tour:'t1',esc:String,panel:(t,b)=>b});
+ assert.ok(!noSeries.includes('history-bars-year'));
+});
