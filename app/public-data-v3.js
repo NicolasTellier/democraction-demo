@@ -1,5 +1,5 @@
 import { electionTypeLabel, electionBallotLabel } from './election-labels.js';
-import { viewParticipationTimeline } from './election-history-chart.js?v=20261119data29';
+import { viewParticipationTimeline } from './election-history-chart.js?v=20261119data30';
 import { viewTerritoryComparison } from './territory-comparison.js?v=20261118data24';
 
 const INDICATORS = [

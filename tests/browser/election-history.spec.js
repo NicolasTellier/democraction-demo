@@ -130,6 +130,18 @@ test('historique : couverture sans effectifs absents et zéro explicite sur ordi
   expect(visible).toBe(true);
  }
  await page.locator('.history-stacked-details').screenshot({path:'test-results/captures/history-stacked-'+testInfo.project.name+'.png'});
+ await page.getByText('Voir l’historique en aires empilées',{exact:true}).click();
+ const area=page.locator('.history-area');
+ await expect(area).toBeVisible();
+ await expect(area.locator('.history-area-year')).toHaveCount(2);
+ await expect(area.locator('[data-year="2022"]')).toHaveCount(0);
+ await expect(area).toContainText('sans résultat mesuré pour les années intermédiaires');
+ await expect(area.locator('[data-year="2026"]')).toContainText('Participation 0,0 % · Abstention 100,0 %');
+ await expect(area.locator('.history-area-participation')).toHaveAttribute('points','50,190 50,115 650,190 650,190');
+ await expect(area.locator('.history-area-abstention')).toHaveAttribute('points','50,40 650,40 650,190 50,115');
+ await area.evaluate(element=>element.scrollIntoView({block:'center',behavior:'instant'}));
+ await page.locator('.history-area-details').screenshot({path:'test-results/captures/history-area-'+testInfo.project.name+'.png'});
+
 
 
 });

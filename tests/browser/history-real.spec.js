@@ -30,6 +30,8 @@ test('historique réel : scrutins, tours, périmètres et concordance courbe bar
   await expect(panel.locator('.history-bars-year')).toHaveCount(scenario.rows.length);
   await panel.getByText('Voir l’historique en barres empilées',{exact:true}).click();
   await expect(panel.locator('.history-stacked-year')).toHaveCount(scenario.rows.length);
+  await panel.getByText('Voir l’historique en aires empilées',{exact:true}).click();
+  await expect(panel.locator('.history-area-year')).toHaveCount(scenario.rows.length);
   for(let i=0;i<scenario.rows.length;i++){
    const [year,registered,voters,communes]=scenario.rows[i];
    const participation=100*voters/registered,abstention=100*(registered-voters)/registered;
@@ -54,6 +56,10 @@ test('historique réel : scrutins, tours, périmètres et concordance courbe bar
    const abstWidth=Number((await stacked.locator('.history-stacked-abstention').getAttribute('style')).replace('width:','').replace('%',''));
    expect(partWidth).toBeCloseTo(participation,10);expect(abstWidth).toBeCloseTo(abstention,10);
    expect(partWidth+abstWidth).toBeCloseTo(100,10);
+   const area=panel.locator('.history-area-year[data-year="'+year+'"]');
+   await expect(area).toContainText(pct(participation));await expect(area).toContainText(pct(abstention));
+   expect(Number(await panel.locator('.history-area-point').nth(i).getAttribute('cy'))).toBeCloseTo(190-1.5*participation,10);
+
 
   }
   await expect(panel).toContainText('Source : data.gouv.fr / ministère de l’Intérieur');
@@ -68,4 +74,5 @@ test('historique réel : scrutins, tours, périmètres et concordance courbe bar
  await expect(panel.locator('.election-timeline')).toHaveCount(0);
  await expect(panel.locator('.history-bars')).toHaveCount(0);
  await expect(panel.locator('.history-stacked')).toHaveCount(0);
+ await expect(panel.locator('.history-area')).toHaveCount(0);
 });

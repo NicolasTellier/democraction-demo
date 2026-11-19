@@ -55,3 +55,17 @@ test('barres empilées : parts complémentaires, zéro explicite, couverture et 
  assert.ok(html.includes('1 commune(s) · 100 inscrits'));
  assert.ok(html.includes('Source empilée'));
 });
+
+test('aires empilées : géométrie bornée, complémentarité et dates réellement observées',()=>{
+ const rows=[{...base,annee:2014,votants:100},{...base,annee:2020,votants:50},{...base},
+  {...base,annee:2022,votants:null}];
+ const html=viewParticipationTimeline({rows,type:'muni',tour:'t1',meta:{source:'Source des aires'},
+  esc:String,fmtNumber:String,panel:(t,b)=>b});
+ assert.ok(html.includes('class="history-area-participation" points="50,190 50,40 350,115 650,190 650,190"'));
+ assert.ok(html.includes('class="history-area-abstention" points="50,40 650,40 650,190 350,115 50,40"'));
+ assert.equal((html.match(/class="history-area-point"/g)||[]).length,3);
+ assert.equal((html.match(/class="history-area-year"/g)||[]).length,3);
+ assert.ok(!html.includes('class="history-area-year" data-year="2022"'));
+ assert.ok(html.includes('sans résultat mesuré pour les années intermédiaires'));
+ assert.ok(html.includes('Source des aires'));assert.ok(html.includes('1 commune(s) · 100 inscrits'));
+});
