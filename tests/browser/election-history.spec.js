@@ -45,3 +45,35 @@ test('comparaison communale sourcée sur ordinateur et smartphone, conservée ap
   await expect(page.locator('#analysis-ballot-a')).toHaveValue('2020_muni_t1');
   await expect(page.locator('#analysis-ballot-b')).toHaveValue('2026_muni_t1');
 });
+
+test('une comparaison descriptive enregistrée se rouvre et se supprime sur ordinateur et smartphone', async ({ page }, testInfo) => {
+  test.skip(!['desktop', 'iphone'].includes(testInfo.project.name));
+  await page.goto('/');
+  if (testInfo.project.name === 'iphone') await page.locator('.mobile-nav [data-nav="analyse"]').click();
+  else await page.getByRole('button', { name: 'Résultats électoraux' }).click();
+  await page.locator('#election-type').selectOption('muni');
+  await page.locator('#election-tour').selectOption('t1');
+  await page.locator('#analysis-ballot-a').selectOption('2020_muni_t1');
+  await page.locator('#analysis-ballot-b').selectOption('2026_muni_t1');
+  await page.locator('input[name="analysis-commune"][value="33001"]').check();
+  await page.locator('input[name="analysis-commune"][value="33366"]').check();
+  await page.getByRole('button', { name: 'Enregistrer cette comparaison' }).click();
+  await expect(page.locator('.comparison-saved-list li')).toHaveCount(1);
+  await expect(page.locator('.comparison-saved-list')).toContainText('Source : data.gouv.fr / ministère de l’Intérieur');
+  await page.locator('input[name="analysis-commune"][value="33001"]').uncheck();
+  await page.reload();
+  if (testInfo.project.name === 'iphone') await page.locator('.mobile-nav [data-nav="analyse"]').click();
+  else await page.getByRole('button', { name: 'Résultats électoraux' }).click();
+  await expect(page.locator('input[name="analysis-commune"]:checked')).toHaveCount(1);
+  await page.locator('.comparison-saved-list').getByRole('button', { name: 'Ouvrir' }).click();
+  await expect(page.locator('input[name="analysis-commune"]:checked')).toHaveCount(2);
+  await expect(page.locator('#analysis-ballot-a')).toHaveValue('2020_muni_t1');
+  await expect(page.locator('#analysis-ballot-b')).toHaveValue('2026_muni_t1');
+  await page.screenshot({ path: `test-results/captures/comparison-saved-${testInfo.project.name}.png`, fullPage: true });
+  await page.locator('.comparison-saved-list').getByRole('button', { name: 'Supprimer' }).click();
+  await expect(page.locator('.comparison-saved-list li')).toHaveCount(0);
+  await page.reload();
+  if (testInfo.project.name === 'iphone') await page.locator('.mobile-nav [data-nav="analyse"]').click();
+  else await page.getByRole('button', { name: 'Résultats électoraux' }).click();
+  await expect(page.getByText('Aucune comparaison enregistrée sur cet appareil.')).toBeVisible();
+});

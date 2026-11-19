@@ -31,6 +31,33 @@ test('comparaison communale : calcul depuis les effectifs, absence explicite de 
   assert.equal(values[2].delta, null);
 });
 
+test('un effectif absent ne devient pas une participation nulle', () => {
+  for (const missing of [null, undefined, '', ' ', '\t\n', false]) {
+    const incomplete = [{ ...rows[0], votants: missing }, rows[1], rows[2]];
+    const [value] = territoryComparison(incomplete, ['33001'], '2020_muni_t1', '2026_muni_t1');
+    assert.equal(value.a, null, `votants absent : ${String(missing)}`);
+    assert.equal(value.first, undefined);
+    assert.equal(value.delta, null);
+    assert.deepEqual(comparableBallots([incomplete[0]], 'muni', 't1'), []);
+    const html = viewTerritoryComparison({ rows: incomplete, communes: [communes[0]],
+      filters: { electionType: 'muni', electionTour: 't1', analysisCommuneCodes: ['33001'],
+        analysisBallotA: '2020_muni_t1', analysisBallotB: '2026_muni_t1' },
+      meta: {}, esc: String, attr: String, fmtNumber: String, panel: (title, body) => body });
+    assert.match(html, /<th scope="row">Abzac<\/th><td class="num">—<\/td><td class="num">—<\/td><td class="num">—<\/td>/);
+    assert.doesNotMatch(html, />0,0 %<|>100,0 %</);
+  }
+});
+
+test('zéro votant explicite reste un résultat valide', () => {
+  for (const zero of [0, '0']) {
+    const explicitZero = [{ ...rows[0], votants: zero }, rows[2]];
+    const [value] = territoryComparison(explicitZero, ['33001'], '2020_muni_t1', '2026_muni_t1');
+    assert.equal(value.a, 0);
+    assert.equal(value.delta, 80);
+    assert.deepEqual(comparableBallots(explicitZero, 'muni', 't1').map(ballot => ballot.id), ['2026_muni_t1', '2020_muni_t1']);
+  }
+});
+
 test('la vue sépare deux scrutins comparables et expose la source et les valeurs exactes', () => {
   const html = viewTerritoryComparison({ rows, communes, filters: { electionType: 'muni', electionTour: 't1', analysisCommuneCodes: ['33001', '33002', '33003'] },
     meta: { source: 'Source de recette', miseAJour: '2026-07-07' }, esc: String, attr: String, fmtNumber: String, panel: (title, body) => `${title}${body}` });
@@ -40,4 +67,18 @@ test('la vue sépare deux scrutins comparables et expose la source et les valeur
   assert.match(html, /<th scope="row">Abzac<\/th><td class="num">100<\/td><td class="num">50<\/td><td class="num">50,0 %<\/td><td class="num">50,0 %<\/td><td class="num">100<\/td><td class="num">80<\/td><td class="num">80,0 %<\/td><td class="num">20,0 %<\/td><td class="num">\+30,0 points/);
   assert.match(html, /<th scope="row">Commune sans résultat valide<\/th><td class="num">—<\/td>/);
   assert.doesNotMatch(html, /99,0 %/);
+});
+
+test('la vue propose enregistrement, rappel et suppression sans contenu nominatif', () => {
+  const html = viewTerritoryComparison({ rows, communes,
+    filters: { electionType: 'muni', electionTour: 't1', analysisCommuneCodes: ['33001', '33002'] },
+    savedViews: [{ id: 'vue-1', ballotA: '2020_muni_t1', ballotB: '2026_muni_t1',
+      communeCodes: ['33001', '33002'], savedAt: '2026-11-18T19:00:00.000Z',
+      source: 'Source de recette', sourceDate: '2026-07-07' }],
+    meta: { source: 'Source de recette', miseAJour: '2026-07-07' },
+    esc: String, attr: String, fmtNumber: String, panel: (title, body) => body });
+  assert.match(html, /data-action="save-comparison-view"/);
+  assert.match(html, /data-action="open-comparison-view" data-comparison-id="vue-1"/);
+  assert.match(html, /data-action="delete-comparison-view" data-comparison-id="vue-1"/);
+  assert.match(html, /Source : Source de recette · mise à jour 2026-07-07/);
 });

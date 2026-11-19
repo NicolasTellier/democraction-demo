@@ -36,8 +36,9 @@ import {
   pushRemote,
   updateRemoteStatus,
 } from "./sync.js";
-import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js";
-import { territoryComparison } from "./territory-comparison.js";
+import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261118data24";
+import { territoryComparison, comparableBallots } from "./territory-comparison.js?v=20261118data24";
+import { COMPARISONS_KEY, parseComparisonViews, addComparisonView, findComparisonView } from "./comparison-views.js";
 import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
 const NAV = [
   ["dashboard", "Vue d’ensemble", "▦"],
@@ -197,6 +198,8 @@ const MAP_LAYERS = [
 ];
 
 const PREFS_KEY = "democraction-demo-preferences";
+let savedComparisons = [];
+try { savedComparisons = parseComparisonViews(localStorage.getItem(COMPARISONS_KEY)); } catch {}
 const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "gridResolution", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "analysisBallotA", "analysisBallotB"];
 function restorePreferences(preferences) {
   if (!preferences || typeof preferences !== "object") return;
@@ -676,7 +679,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.23 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.24 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -1111,6 +1114,7 @@ const VIEWS = {
       elections,
       matching,
       filters,
+      savedViews: savedComparisons,
       esc,
       attr,
       fmtNumber,
@@ -1149,7 +1153,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.23</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.24</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1321,6 +1325,52 @@ const dlAnalysisComparison = () => {
   }));
   download(serializeCsv(records, fields), `comparaison-communale-${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8');
 };
+function comparisonViewAction(action, viewId) {
+  if (action === "save-comparison-view") {
+    const ballotA = root.querySelector('#analysis-ballot-a')?.value;
+    const ballotB = root.querySelector('#analysis-ballot-b')?.value;
+    const ballots = comparableBallots(elections?.elections || []);
+    const first = ballots.find(ballot => ballot.id === ballotA);
+    const second = ballots.find(ballot => ballot.id === ballotB);
+    const codes = [...root.querySelectorAll('input[name="analysis-commune"]:checked')].map(input => input.value);
+    if (!first || !second || first.type !== second.type || first.tour !== second.tour)
+      return toast("Choisissez deux scrutins du même type et du même tour.", "warning");
+    try {
+      const next = addComparisonView(savedComparisons, {
+        version: 1, id: crypto.randomUUID(), ballotA, ballotB, type: first.type, tour: first.tour,
+        communeCodes: codes, savedAt: new Date().toISOString(),
+        source: elections?.meta?.source || 'Ministère de l’Intérieur, via data.gouv.fr',
+        sourceDate: elections?.meta?.miseAJour || '',
+      });
+      localStorage.setItem(COMPARISONS_KEY, JSON.stringify(next));
+      savedComparisons = next;
+      toast("Comparaison enregistrée sur cet appareil.");
+    } catch (error) { toast("Enregistrement impossible : " + error.message, "warning"); }
+    return;
+  }
+  if (action === "open-comparison-view") {
+    try {
+      const view = findComparisonView(savedComparisons, viewId, comparableBallots(elections?.elections || []),
+        territory.communes.map(commune => commune.codeInsee));
+      filters.canton = ""; filters.epci = ""; filters.commune = ""; filters.query = "";
+      filters.electionType = view.type; filters.electionTour = view.tour; filters.electionYear = "";
+      filters.analysisBallotA = view.ballotA; filters.analysisBallotB = view.ballotB;
+      filters.analysisCommuneCodes = [...view.communeCodes]; filters.analysisSearch = "";
+      toast("Comparaison rouverte. Source enregistrée : " + view.source +
+        (view.sourceDate ? " · mise à jour " + view.sourceDate : "") + ".");
+    } catch (error) { toast(error.message, "warning"); }
+    return;
+  }
+  if (action === "delete-comparison-view") {
+    const next = savedComparisons.filter(view => view.id !== viewId);
+    if (next.length === savedComparisons.length) return toast("Vue enregistrée introuvable.", "warning");
+    try {
+      localStorage.setItem(COMPARISONS_KEY, JSON.stringify(next));
+      savedComparisons = next;
+      toast("Comparaison supprimée de cet appareil.");
+    } catch (error) { toast("Suppression impossible : " + error.message, "warning"); }
+  }
+}
 function resetData() {
   if (
     !confirm(
@@ -1329,7 +1379,8 @@ function resetData() {
   )
     return;
   clearLocal();
-  for (const key of ["democraction-demo-sectors", "democraction-demo-bureaux", "democraction-demo-contacts", "democraction-demo-funds", "democraction-demo-events", PREFS_KEY]) localStorage.removeItem(key);
+  for (const key of ["democraction-demo-sectors", "democraction-demo-bureaux", "democraction-demo-contacts", "democraction-demo-funds", "democraction-demo-events", PREFS_KEY, COMPARISONS_KEY]) localStorage.removeItem(key);
+  savedComparisons = [];
   demoSectors = []; demoContacts = []; demoFunds = []; demoEvents = []; bureauxLayer = null;
   for (const key of PREF_KEYS) filters[key] = key === "mapLayer" ? "participation" : "";
   filters.analysisCommuneCodes = [];
@@ -1564,6 +1615,10 @@ root.addEventListener("click", async (e) => {
     selectedStreets.splice(Number(t.dataset.removeStreet), 1);
     addressData=[];addressSelected=null;addressStatus='';
     render();
+    return;
+  }
+  if (["save-comparison-view", "open-comparison-view", "delete-comparison-view"].includes(t.dataset.action)) {
+    comparisonViewAction(t.dataset.action, t.dataset.comparisonId);
     return;
   }
   if (t.dataset.action) {
@@ -2256,7 +2311,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261115comparison19")
+        .register("./sw.js?v=20261118data24")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;
