@@ -1,10 +1,13 @@
 import { electionTypeLabel } from './election-labels.js';
 
+const hasCount=value=>(typeof value==='number'||typeof value==='string'&&value.trim()!=='')&&Number.isSafeInteger(Number(value));
+
 export function historicalParticipation(rows, type, tour) {
   if (!type || !tour) return [];
   const years = new Map();
   for (const row of rows || []) {
     if (row.type !== type || row.tour !== tour) continue;
+    if(!hasCount(row.inscrits)||!hasCount(row.votants))continue;
     const year = Number(row.annee);
     const registered = Number(row.inscrits);
     const voters = Number(row.votants);

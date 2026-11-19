@@ -1,3 +1,4 @@
+import {gzipSync} from 'node:zlib';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
@@ -76,4 +77,29 @@ test('une comparaison descriptive enregistrée se rouvre et se supprime sur ordi
   if (testInfo.project.name === 'iphone') await page.locator('.mobile-nav [data-nav="analyse"]').click();
   else await page.getByRole('button', { name: 'Résultats électoraux' }).click();
   await expect(page.getByText('Aucune comparaison enregistrée sur cet appareil.')).toBeVisible();
+});
+
+test('historique : couverture sans effectifs absents et zéro explicite sur ordinateur et mobile émulé',async({page},testInfo)=>{
+ test.skip(!['desktop','iphone'].includes(testInfo.project.name));
+ const row={type:'muni',tour:'t1',codeInsee:'33001',commune:'Abzac',inscrits:100,votants:0,libelle:'Municipales',candidats:[]};
+ const elections={meta:{source:'Source synthétique DATA-02d',miseAJour:'2026-11-19'},elections:[
+  {...row,id:'2020_muni_t1',annee:2020,votants:50},
+  {...row,id:'2026_muni_t1',annee:2026},
+  {...row,id:'2026_muni_t1',annee:2026,codeInsee:'33366',commune:'Saint-André-de-Cubzac',inscrits:900,votants:null},
+  {...row,id:'2022_muni_t1',annee:2022,votants:''}
+ ]};
+ await page.route('**/data/elections-2008-2026.json.gz*',route=>route.fulfill({status:200,contentType:'application/octet-stream',body:gzipSync(JSON.stringify(elections))}));
+ await page.goto('/');
+ await page.locator('button[data-nav="analyse"]:visible').first().click();
+ await page.locator('#election-type').selectOption('muni');
+ await page.locator('#election-tour').selectOption('t1');
+ const table=page.getByRole('table',{name:'Valeurs exactes du graphique historique'});
+ await expect(table.locator('tbody tr')).toHaveCount(2);
+ const current=table.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:'2026',exact:true})});
+ await expect(current.locator('td').nth(0)).toHaveText('1');
+ await expect(current.locator('td').nth(1)).toHaveText('100');
+ await expect(current.locator('td').nth(2)).toHaveText('0,0 %');
+ await expect(current.locator('td').nth(3)).toHaveText('100,0 %');
+ await expect(table).not.toContainText('2022');
+ await expect(page.getByText(/Source : Source synthétique DATA-02d/).first()).toBeVisible();
 });
