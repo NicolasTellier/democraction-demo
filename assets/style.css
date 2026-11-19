@@ -188,3 +188,5 @@ td strong{color:var(--cobalt)}
 .comparison-saved-list li span{flex:1 1 260px;min-width:0}
 .comparison-saved-list li strong,.comparison-saved-list li small{display:block;overflow-wrap:anywhere}
 .comparison-saved-list li small{color:var(--muted);margin-top:3px}
+
+.official-bureau-comparison{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.official-bureau-comparison select{width:100%;max-width:100%}.bureau-comparison-table{min-width:480px;width:100%;border-collapse:collapse}.bureau-comparison-table th,.bureau-comparison-table td{padding:8px;border-bottom:1px solid var(--line);text-align:right}.bureau-comparison-table th:first-child{text-align:left}.bureau-comparison-table caption{text-align:left;font-weight:600;padding:8px 0}

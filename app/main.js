@@ -1,3 +1,4 @@
+let bureauComparisonB = '';
 import {
   VERSION,
   emptyState,
@@ -26,7 +27,7 @@ import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
-import {validateOfficialBureauResults,officialBureauResultHtml} from './official-bureaux.js';
+import {validateOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml} from './official-bureaux.js?v=20261119data25';
 import {readBureauFile,validateBureauImport} from './bureau-import.js';
 import {
   checkSession,
@@ -36,8 +37,8 @@ import {
   pushRemote,
   updateRemoteStatus,
 } from "./sync.js";
-import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261118data24";
-import { territoryComparison, comparableBallots } from "./territory-comparison.js?v=20261118data24";
+import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261119data25";
+import { territoryComparison, comparableBallots } from "./territory-comparison.js?v=20261119data25";
 import { COMPARISONS_KEY, parseComparisonViews, addComparisonView, findComparisonView } from "./comparison-views.js";
 import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
 const NAV = [
@@ -583,7 +584,7 @@ function mapDetail() {
     const station=pollingCatalog.find(row=>row.id===mapSelection.value);
     const feature=bureauFeature(bureauFeatures(),mapSelection.value);
     const provenance=feature?`<div class="detail-list"><div><span>Origine</span><strong>Fourni localement</strong></div><div><span>Validation</span><strong>À confirmer</strong></div><div><span>Source déclarée</span><strong>${esc(feature.properties?.source||'Non renseignée')}</strong></div><div><span>Importé le</span><strong>${esc(feature.properties?.importedAt?.slice(0,10)||'Date indisponible')}</strong></div></div>`:'';
-    if(station)return panel(`Bureau ${station.numero} · ${esc(station.commune)}`,`<div class="detail-list"><div><span>Identifiant</span><strong>${esc(station.id)}</strong></div><div><span>Valeur communiquée séparément</span><strong>${fmtNumber(station.reportedValue)}</strong></div><div><span>Contour du bureau</span><strong>${feature?'Importé localement':'Géométrie absente'}</strong></div></div><p class="hint">Effectif communiqué, nature et millésime à vérifier. Source : cahier des charges V1.1 fourni par le propriétaire. Cette valeur est distincte des résultats officiels ci-dessous.</p>${officialBureauResultHtml(officialBureauResults,station.id)}${provenance}<p class="hint">${feature?'Le contour importé reste à valider ; sa provenance officielle n’est pas attestée.':'Seule la commune parente est surlignée. Le périmètre du bureau n’est pas connu.'}</p>`);
+    if(station)return panel(`Bureau ${station.numero} · ${esc(station.commune)}`,`<div class="detail-list"><div><span>Identifiant</span><strong>${esc(station.id)}</strong></div><div><span>Valeur communiquée séparément</span><strong>${fmtNumber(station.reportedValue)}</strong></div><div><span>Contour du bureau</span><strong>${feature?'Importé localement':'Géométrie absente'}</strong></div></div><p class="hint">Effectif communiqué, nature et millésime à vérifier. Source : cahier des charges V1.1 fourni par le propriétaire. Cette valeur est distincte des résultats officiels ci-dessous.</p>${officialBureauResultHtml(officialBureauResults,station.id)}${officialBureauComparisonHtml(officialBureauResults,station.id,bureauComparisonB)}${provenance}<p class="hint">${feature?'Le contour importé reste à valider ; sa provenance officielle n’est pas attestée.':'Seule la commune parente est surlignée. Le périmètre du bureau n’est pas connu.'}</p>`);
     if(feature)return panel("Bureau de vote · " + esc(feature.properties?.nom||mapSelection.value), `<p>Identifiant : ${esc(mapSelection.value)}</p><p>Commune : ${esc(feature.properties?.commune||feature.properties?.codeInsee||"Non renseignée")}</p>${provenance}<p>Contour importé localement ; provenance et validation à confirmer.</p>`);
   }
   if (!c)
@@ -679,7 +680,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.24 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.25 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -1153,7 +1154,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.24</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.25</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1831,6 +1832,11 @@ root.addEventListener("change", async (e) => {
   }
 });
 root.addEventListener("change", (e) => {
+  if(e.target.id === "bureau-comparison-b"){
+    bureauComparisonB=e.target.value;render();
+    root.querySelector('#bureau-comparison-b')?.focus();
+    return;
+  }
   if (e.target.matches('input[name="analysis-commune"]')) {
     const selected = [...root.querySelectorAll('input[name="analysis-commune"]:checked')].map(input => input.value);
     if (selected.length > 5) { e.target.checked = false; toast("Choisissez au maximum cinq communes.", "warning"); return; }
@@ -2311,7 +2317,7 @@ async function init() {
       .catch(() => {});
     if ("serviceWorker" in navigator && location.protocol !== "file:")
       navigator.serviceWorker
-        .register("./sw.js?v=20261118data24")
+        .register("./sw.js?v=20261119data25")
         .catch(console.warn);
   } catch (e) {
     root.innerHTML = `<main class="fatal"><h1>Chargement du référentiel impossible</h1><p>Ouvrez cette application depuis un serveur web local (par exemple <code>python -m http.server 8080</code>), pas directement par un double clic sur index.html.</p><small>${esc(e.message)}</small></main>`;

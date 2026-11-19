@@ -34,6 +34,39 @@ export function validateOfficialBureauResults(data,catalog){
  return data;
 }
 
+const bureauSummary=record=>record?{
+ bureauId:record.bureauId,
+ codeInsee:record.codeInsee,
+ numero:record.numero,
+ commune:record.commune,
+ inscrits:record.inscrits,
+ votants:record.votants,
+ abstentions:record.abstentions,
+ blancs:record.blancs,
+ nuls:record.nuls,
+ exprimes:record.exprimes,
+ participationRate:record.inscrits?record.votants*100/record.inscrits:null,
+ abstentionRate:record.inscrits?record.abstentions*100/record.inscrits:null
+}:null;
+
+export function compareOfficialBureauResults(data,firstId,secondId){
+ if(typeof firstId!=='string'||typeof secondId!=='string'||!firstId||!secondId||firstId===secondId)
+  throw new Error('Deux bureaux distincts sont requis.');
+ const election=data?.scrutins?.[0];
+ if(!election||!Array.isArray(election.bureaux))throw new Error('Résultats officiels indisponibles.');
+ const first=bureauSummary(election.bureaux.find(row=>row.bureauId===firstId));
+ const second=bureauSummary(election.bureaux.find(row=>row.bureauId===secondId));
+ return {
+  scrutin:{id:election.id,label:election.label,date:election.date,tour:election.tour,source:{...election.source}},
+  first,
+  second,
+  delta:{
+   participation:first&&second&&first.participationRate!==null&&second.participationRate!==null?second.participationRate-first.participationRate:null,
+   abstention:first&&second&&first.abstentionRate!==null&&second.abstentionRate!==null?second.abstentionRate-first.abstentionRate:null
+  }
+ };
+}
+
 export function officialBureauResultHtml(data,bureauId){
  if(!data)return '<section class="official-bureau-result"><h3>Résultat officiel par bureau</h3><p class="hint">Source officielle indisponible pour le moment.</p></section>';
  const election=data.scrutins[0],record=election.bureaux.find(row=>row.bureauId===bureauId);
@@ -42,4 +75,24 @@ export function officialBureauResultHtml(data,bureauId){
  if(!record)return `<section class="official-bureau-result"><h3>Législatives 2024 · 1er tour</h3><p>Aucun résultat officiel apparié pour ce numéro de bureau dans le fichier de 2024.</p><p class="hint">Cavignac comptait un seul bureau dans la source de 2024. L’identifiant 33114-2 du référentiel fourni n’y figure pas.</p><p class="hint">Source : ${source}.</p>${t2}</section>`;
  const candidates=record.candidats.map(candidate=>`<li><span>${escapeHTML(candidate.name)} <small>(${escapeHTML(candidate.nuance)})</small></span><strong>${number(candidate.votes)} voix · ${percent(candidate.votes,record.exprimes)}</strong></li>`).join('');
  return `<section class="official-bureau-result"><h3>Législatives 2024 · 1er tour (30 juin)</h3><div class="detail-list"><div><span>Inscrits</span><strong>${number(record.inscrits)}</strong></div><div><span>Votants</span><strong>${number(record.votants)} · ${percent(record.votants,record.inscrits)}</strong></div><div><span>Abstentions</span><strong>${number(record.abstentions)} · ${percent(record.abstentions,record.inscrits)}</strong></div><div><span>Exprimés</span><strong>${number(record.exprimes)}</strong></div><div><span>Blancs et nuls</span><strong>${number(record.blancs)} + ${number(record.nuls)}</strong></div></div><h4>Voix par candidat</h4><ul class="official-bureau-candidates">${candidates}</ul><p class="hint">Source : ${source}. Nuances et voix issues du fichier officiel, pour le scrutin indiqué.</p><p class="hint">Correspondance par code INSEE et numéro de bureau. Le périmètre géographique de ce bureau en 2024 n’a pas été vérifié par rapport au référentiel actuel.</p>${t2}</section>`;
+}
+
+
+export function officialBureauComparisonHtml(data,firstId,secondId=''){
+ if(!data)return '';
+ const election=data.scrutins[0];
+ const first=election.bureaux.find(row=>row.bureauId===firstId);
+ const choices=election.bureaux.filter(row=>row.bureauId!==firstId);
+ const selected=choices.some(row=>row.bureauId===secondId)?secondId:'';
+ const options=choices.map(row=>`<option value="${escapeHTML(row.bureauId)}" ${row.bureauId===selected?'selected':''}>${escapeHTML(row.commune)} · Bureau ${number(row.numero)} (${escapeHTML(row.bureauId)})</option>`).join('');
+ const result=selected?compareOfficialBureauResults(data,firstId,selected):null;
+ const pct=value=>value===null?'—':value.toFixed(1).replace('.',',')+' %';
+ const delta=value=>value===null?'—':(value>=0?'+':'')+value.toFixed(1).replace('.',',')+' points';
+ const body=!first?'<p class="hint">Bureau A : aucun résultat officiel apparié. Aucun écart ne peut être calculé.</p>':
+ !result?'<p class="hint">Choisissez un bureau B pour afficher les effectifs et les écarts.</p>':
+ `<div class="tablewrap"><table class="bureau-comparison-table"><caption>Comparaison descriptive des bureaux · écarts B − A</caption><thead><tr><th scope="col">Indicateur</th><th scope="col">A · ${escapeHTML(result.first.commune)} · Bureau ${number(result.first.numero)}</th><th scope="col">B · ${escapeHTML(result.second.commune)} · Bureau ${number(result.second.numero)}</th><th scope="col">Écart B − A</th></tr></thead><tbody>${
+ [['Inscrits','inscrits'],['Votants','votants'],['Abstentions','abstentions'],['Exprimés','exprimes'],['Blancs','blancs'],['Nuls','nuls']].map(([label,key])=>`<tr><th scope="row">${label}</th><td>${number(result.first[key])}</td><td>${number(result.second[key])}</td><td>—</td></tr>`).join('')}
+ <tr><th scope="row">Participation</th><td>${pct(result.first.participationRate)}</td><td>${pct(result.second.participationRate)}</td><td>${delta(result.delta.participation)}</td></tr>
+ <tr><th scope="row">Abstention</th><td>${pct(result.first.abstentionRate)}</td><td>${pct(result.second.abstentionRate)}</td><td>${delta(result.delta.abstention)}</td></tr></tbody></table></div>`;
+ return `<section class="official-bureau-comparison"><h3>Comparer deux bureaux</h3><p>${escapeHTML(election.label)} · ${escapeHTML(election.date)}</p><p class="hint">Couverture : ${election.coverage.matched}/${election.coverage.expected} bureaux appariés dans le référentiel fourni. Le périmètre géographique historique des bureaux n’a pas été vérifié ; ces écarts descriptifs ne prouvent aucun transfert individuel de voix.</p><label>Bureau B<select id="bureau-comparison-b" ${first?'':'disabled'}><option value="">Choisir un bureau apparié</option>${options}</select></label>${body}<p class="hint">Source : <a href="${escapeHTML(election.source.dataset)}" target="_blank" rel="noopener noreferrer">Ministère de l’Intérieur · résultats définitifs ↗</a>. Date du scrutin : ${escapeHTML(election.date)}. Taux arrondis uniquement à l’affichage ; écarts en points.</p></section>`;
 }

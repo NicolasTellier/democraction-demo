@@ -1,3 +1,4 @@
+import {mkdir} from 'node:fs/promises';
 import {test,expect} from '@playwright/test';
 
 test.use({serviceWorkers:'block'});
@@ -26,4 +27,37 @@ test('fiche bureau : résultats ministériels T1 distincts de la valeur communiq
  await expect(missing).toContainText('Aucun résultat officiel apparié');
  await expect(missing).toContainText('un seul bureau');
  await expect(missing.locator('.official-bureau-candidates')).toHaveCount(0);
+});
+
+test('comparaison de bureaux sourcée sur ordinateur et mobile émulé',async({page},testInfo)=>{
+ test.skip(!['desktop','iphone'].includes(testInfo.project.name));
+ await page.goto('/');
+ await page.locator('button[data-nav=carte]:visible').first().click();
+ await page.locator('#map-scope').selectOption('bureau');
+ await page.locator('#bureau-commune').selectOption('Bourg');
+ await page.locator('#map-scope-value').selectOption('33067-1');
+ await page.locator('#bureau-comparison-b').selectOption('33067-2');
+ const comparison=page.locator('.official-bureau-comparison');
+ await expect(comparison).toContainText('22/23');
+ await expect(comparison).toContainText('2024-06-30');
+ await expect(comparison).toContainText('périmètre géographique historique');
+ const table=comparison.getByRole('table');
+ await expect(table.getByRole('row',{name:/^Inscrits/})).toContainText('832');
+ await expect(table.getByRole('row',{name:/^Inscrits/})).toContainText('853');
+ await expect(table.getByRole('row',{name:/^Votants/})).toContainText('530');
+ await expect(table.getByRole('row',{name:/^Votants/})).toContainText('580');
+ await expect(table.getByRole('row',{name:/^Participation/})).toContainText('63,7 %');
+ await expect(table.getByRole('row',{name:/^Participation/})).toContainText('68,0 %');
+ await expect(table.getByRole('row',{name:/^Participation/})).toContainText('+4,3 points');
+ await expect(table.getByRole('row',{name:/^Abstention /})).toContainText('-4,3 points');
+ await expect(page.locator('#bureau-comparison-b option[value="33114-2"]')).toHaveCount(0);
+ await expect(comparison.getByRole('link')).toHaveAttribute('href',/data\.gouv\.fr/);
+ await comparison.scrollIntoViewIfNeeded();
+ await mkdir('test-results/captures',{recursive:true});
+ await comparison.screenshot({path:'test-results/captures/bureau-comparison-'+testInfo.project.name+'.png'});
+ await page.locator('#bureau-commune').selectOption('Cavignac');
+ await page.locator('#map-scope-value').selectOption('33114-2');
+ await expect(comparison).toContainText('aucun résultat officiel apparié');
+ await expect(comparison.getByRole('table')).toHaveCount(0);
+ await expect(page.locator('#bureau-comparison-b')).toBeDisabled();
 });
