@@ -223,5 +223,5 @@ td strong{color:var(--cobalt)}
 
 .distribution-details{margin:12px 0}.distribution-details summary{cursor:pointer;font-weight:700;min-height:32px}.distribution-details summary:focus-visible{outline:2px solid #1e3ac8}
 .participation-distribution{margin:10px 0;min-width:0}.participation-distribution figcaption{font-weight:700}.participation-distribution .hint{font-size:12px;margin:8px 0}
-.participation-distribution table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:11px}.participation-distribution th,.participation-distribution td{padding:6px 3px;border-bottom:1px solid #deded8;text-align:left;overflow-wrap:anywhere}.participation-distribution th:first-child{width:38%}.participation-distribution th:nth-child(2){width:23%}
+.participation-distribution table{min-width:0;width:100%;table-layout:fixed;border-collapse:collapse;font-size:11px}.participation-distribution th,.participation-distribution td{padding:6px 3px;border-bottom:1px solid #deded8;text-align:left;overflow-wrap:anywhere}.participation-distribution th:first-child{width:38%}.participation-distribution th:nth-child(2){width:23%}
 .distribution-track{display:block;width:100%;height:12px;background:#e7e9e7;overflow:hidden}.distribution-track i{display:block;height:100%;background:#1e3ac8}

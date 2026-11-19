@@ -32,9 +32,11 @@ test('histogramme : classes, exclusions, année et périmètre sur ordinateur/mo
  await expect.poll(()=>figure.evaluate(element=>{
   const rect=element.getBoundingClientRect(),nav=document.querySelector('.mobile-nav');
   const bottom=nav&&getComputedStyle(nav).display!=='none'?nav.getBoundingClientRect().top:innerHeight;
-  return rect.top>=0&&rect.bottom<=bottom;
+  const table=element.querySelector('table').getBoundingClientRect();
+  return rect.top>=0&&rect.bottom<=bottom&&table.left>=rect.left-0.5&&table.right<=rect.right+0.5;
  })).toBe(true);
  await expect(figure.locator('[data-min="90"]')).toBeInViewport();
+ await expect(figure.getByRole('columnheader',{name:'Fréquence',exact:true})).toBeInViewport();
  await mkdir('test-results/captures',{recursive:true});
  await page.screenshot({path:'test-results/captures/distribution-'+testInfo.project.name+'.png'});
  await page.emulateMedia({reducedMotion:'no-preference'});
