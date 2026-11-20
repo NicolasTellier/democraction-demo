@@ -76,9 +76,11 @@ export async function roadInventory(codes){
 
 export async function loadRoads(code,{signal}={}){
  if(!/^33\d{3}$/.test(String(code)))throw new Error('Code de commune invalide.');
+ signal?.throwIfAborted();
  if(localRoads.has(code))return localRoads.get(code);
  let collection,source,asOf,usedPackage=false;
  const packageRow=(await roadManifest()).find(row=>row.code===code);
+ signal?.throwIfAborted();
  if(packageRow){
   try{
    const response=await fetch(new URL(`../${packageRow.file}`,import.meta.url),{signal});
@@ -88,13 +90,18 @@ export async function loadRoads(code,{signal}={}){
     :await response.json();
    if(collection.meta?.commune!==code||collection.features?.length!==packageRow.count||
       normalizeRoads(collection,code).length!==packageRow.count)throw new Error('Catalogue local incomplet.');
+   signal?.throwIfAborted();
    source='IGN BD TOPO · voie nommée · paquet vérifié';asOf=packageRow.asOf;
    usedPackage=true;
-  }catch{ /* Le WFS officiel prend le relais si le paquet local n'est pas disponible. */ }
+  }catch{
+   signal?.throwIfAborted();
+   collection=null; // Un paquet rejeté ne doit jamais empêcher le repli cache/WFS.
+  }
  }
  if(!collection){
   let cached=null;
   try{cached=await readRoadCache(code)}catch{ /* Cache bloqué : continuer en ligne. */ }
+  signal?.throwIfAborted();
   if(cached?.features?.length && Date.now()-Date.parse(cached.asOf)<ROAD_CACHE_AGE_MS){
    const features=normalizeRoads({type:'FeatureCollection',features:cached.features},code);
    if(features.length===cached.features.length){
@@ -108,7 +115,7 @@ export async function loadRoads(code,{signal}={}){
    collection=await wfsCollection('BDTOPO_V3:voie_nommee',filter,{signal});
    source='IGN BD TOPO · voie nommée · WFS';asOf=new Date().toISOString();
   }catch(error){
-   if(signal?.aborted)throw error;
+   signal?.throwIfAborted();
    if(cached?.features?.length){
     const features=normalizeRoads({type:'FeatureCollection',features:cached.features},code);
     if(features.length===cached.features.length){
@@ -120,6 +127,7 @@ export async function loadRoads(code,{signal}={}){
    throw error;
   }
  }
+ signal?.throwIfAborted();
  const features=normalizeRoads(collection,code);
  if(!features.length)throw new Error('Aucune géométrie linéaire exploitable pour cette commune.');
  const matched=collection.numberMatched??collection.meta?.numberMatched??features.length;
@@ -127,6 +135,7 @@ export async function loadRoads(code,{signal}={}){
   rejected:usedPackage?packageRow.rejected:Math.max(0,matched-features.length),
   merged:usedPackage?packageRow.merged:0};
  if(!usedPackage)try{result.stored=(await writeRoadCache(result))===code}catch{result.stored=false}
+ signal?.throwIfAborted();
  localRoads.set(code,result);return result;
 }
 
