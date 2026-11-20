@@ -113,7 +113,31 @@ test('secteur dessiné, édition et action géométrique préexistante conservé
  await expect(page.locator(`[data-sector-select="${sector.id}"]`)).toHaveCount(0);
  await page.locator('button[data-nav=imports]:visible').first().click();
  page.once('dialog',dialog=>dialog.accept());
+ // La lecture de fichier est asynchrone : contrôler son achèvement avant reload.
+ // Une promesse explicite reproduit une lecture lente sans délai arbitraire.
+ await page.evaluate(()=>{
+  const original=File.prototype.text;
+  window.__restoreReadStarted=false;
+  File.prototype.text=async function(...args){
+   if(this.name==='recette.json'){
+    window.__restoreReadStarted=true;
+    await new Promise(resolve=>{window.__releaseRestoreRead=resolve;});
+    File.prototype.text=original;
+   }
+   return original.apply(this,args);
+  };
+ });
  await page.locator('#restore-backup').setInputFiles({name:'recette.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
+ await expect.poll(()=>page.evaluate(()=>window.__restoreReadStarted)).toBe(true);
+ await expect(page.locator('.notice[role=status]').filter({hasText:'Sauvegarde et secteurs restaurés.'})).toHaveCount(0);
+ expect(await page.evaluate(id=>JSON.parse(localStorage.getItem('democraction-demo-sectors')).some(s=>s.id===id),sector.id)).toBe(false);
+ await page.evaluate(()=>window.__releaseRestoreRead());
+ await expect(page.locator('.notice[role=status]').filter({hasText:'Sauvegarde et secteurs restaurés.'})).toBeVisible();
+ await expect.poll(()=>page.evaluate(({sectorId,missionId})=>{
+  const restored=JSON.parse(localStorage.getItem('democraction-demo-sectors')).find(s=>s.id===sectorId);
+  const restoredMission=JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(m=>m.id===missionId);
+  return {name:restored?.name,geometry:restored?.geometry,title:restoredMission?.title,status:restoredMission?.status};
+ },{sectorId:sector.id,missionId:mission.id})).toEqual({name:'Secteur test modifié',geometry:edited.geometry,title:'Action sur secteur test',status:'En cours'});
  await page.reload();
  await page.locator('button[data-nav=carte]:visible').first().click();
  await expect(page.locator(`[data-sector-select="${sector.id}"]`)).toContainText('Secteur test modifié');
