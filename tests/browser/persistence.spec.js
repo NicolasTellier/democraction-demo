@@ -1,6 +1,7 @@
+import {openManualMission, seedLegacyGeometryMission} from '../helpers/mission-simulation.js';
 import {test,expect} from '@playwright/test';
 
-test('secteur et action fictifs survivent à la fermeture de l’onglet',async({page,context},testInfo)=>{
+test('secteur et action géométrique préexistante survivent à la fermeture de l’onglet',async({page,context},testInfo)=>{
  test.skip(['iphone','android'].includes(testInfo.project.name),'Le dessin au doigt requiert une recette manuelle mobile');
 
  const sectorName='Secteur fictif de persistance';
@@ -20,9 +21,8 @@ test('secteur et action fictifs survivent à la fermeture de l’onglet',async({
  const sector=await page.evaluate(name=>JSON.parse(localStorage.getItem('democraction-demo-sectors')).find(item=>item.name===name),sectorName);
  expect(sector.geometry.coordinates[0]).toHaveLength(5);
 
- await page.locator('[data-action=new-mission-from-map]').last().click();
- await page.locator('#mission-form [name=title]').fill(actionTitle);
- await page.locator('#mission-form button[type=submit]').click();
+ await expect(page.locator('[data-action=new-mission-from-map]')).toHaveCount(0);
+ await seedLegacyGeometryMission(page,{title:actionTitle,zoneKind:'sector',zoneId:sector.id,zoneGeometry:sector.geometry});
  const action=await page.evaluate(id=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(item=>item.zoneId===id),sector.id);
  expect(action.title).toBe(actionTitle);
  expect(action.zoneKind).toBe('sector');

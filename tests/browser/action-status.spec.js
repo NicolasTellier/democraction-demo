@@ -1,3 +1,4 @@
+import {openManualMission, seedLegacyGeometryMission} from '../helpers/mission-simulation.js';
 import {test,expect} from '@playwright/test';
 
 test.use({serviceWorkers:'block'});
@@ -7,10 +8,7 @@ test('le statut d’une action change sur la liste et la carte puis persiste',as
  await page.goto('/');
  await page.locator('button[data-nav=carte]:visible').first().click();
  await page.locator('#map-scope-value').selectOption({label:'Saint-André-de-Cubzac'});
- await page.locator('[data-action=new-mission-from-map]').last().click();
- await page.locator('#mission-form [name=title]').fill('Action logistique de recette');
- await page.locator('#mission-form [name=status]').selectOption('À faire');
- await page.locator('#mission-form button[type=submit]').click();
+ await seedLegacyGeometryMission(page,{title:'Action logistique de recette'});
  const mission=await page.evaluate(()=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(m=>m.title==='Action logistique de recette'));
  expect(mission?.zoneGeometry?.type).toMatch(/Polygon/);
 

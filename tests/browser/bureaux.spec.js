@@ -17,8 +17,7 @@ test('les 23 bureaux sont consultables sans attribuer un faux contour ou un rés
  await expect.poll(()=>page.locator('#map .leaflet-interactive').count(),{timeout:20000}).toBeGreaterThanOrEqual(87);
  await expect.poll(()=>page.locator('#map .leaflet-interactive[stroke="#16163f"]').count(),{timeout:20000}).toBeGreaterThanOrEqual(1);
  await expect(page.locator('#map .leaflet-interactive[stroke="#7a1838"]')).toHaveCount(0);
- await page.locator('[data-action=new-mission-from-map]').last().click();
- await expect(page.locator('.notice')).toContainText('ne possède pas de contour');
+ await expect(page.locator('[data-action=new-mission-from-map]')).toHaveCount(0);
  await expect(page.locator('#mission-form')).toHaveCount(0);
  await page.locator('#bureau-commune').selectOption('Coutras');
  await expect(page.locator('#map-scope-value option')).toHaveCount(8);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { comparableBallots, territoryComparison, viewTerritoryComparison } from '../app/territory-comparison.js';
+import { comparableBallots, territoryComparison, territoryComparisonMeasure, viewTerritoryComparison } from '../app/territory-comparison.js';
 
 const rows = [
   { id: '2020_muni_t1', type: 'muni', tour: 't1', annee: 2020, codeInsee: '33001', inscrits: 100, votants: 50 },
@@ -81,4 +81,23 @@ test('la vue propose enregistrement, rappel et suppression sans contenu nominati
   assert.match(html, /data-action="open-comparison-view" data-comparison-id="vue-1"/);
   assert.match(html, /data-action="delete-comparison-view" data-comparison-id="vue-1"/);
   assert.match(html, /Source : Source de recette · mise à jour 2026-07-07/);
+});
+
+test('indicateur communal : complémentarité et écart opposé, inversion, entrées intactes',()=>{
+ const before=structuredClone(rows);
+ const p=territoryComparisonMeasure(rows,['33001'],'2020_muni_t1','2026_muni_t1');
+ const a=territoryComparisonMeasure(rows,['33001'],'2020_muni_t1','2026_muni_t1','abstention');
+ assert.deepEqual([p[0].measureA,p[0].measureB,p[0].measureDelta],[50,80,30]);
+ assert.deepEqual([a[0].measureA,a[0].measureB,a[0].measureDelta],[50,20,-30]);
+ assert.equal(a[0].a,50);assert.equal(a[0].b,80);assert.equal(a[0].delta,30);
+ assert.equal(territoryComparisonMeasure(rows,['33001'],'2026_muni_t1','2020_muni_t1','abstention')[0].measureDelta,30);
+ assert.deepEqual(rows,before);assert.throws(()=>territoryComparisonMeasure(rows,[],'a','b','votes'),/invalide/);
+});
+test('indicateur communal : absence et bornes zéro/100 sans zéro négatif',()=>{
+ const data=[{...rows[0],votants:0},{...rows[2],votants:0}];
+ const [same,missing]=territoryComparisonMeasure(data,['33001','33002'],'2020_muni_t1','2026_muni_t1','abstention');
+ assert.equal(same.measureA,100);assert.equal(same.measureDelta,0);assert.equal(Object.is(same.measureDelta,-0),false);
+ assert.equal(missing.measureA,null);assert.equal(missing.measureDelta,null);
+ data[1].votants=100;
+ assert.equal(territoryComparisonMeasure(data,['33001'],'2020_muni_t1','2026_muni_t1','abstention')[0].measureDelta,-100);
 });

@@ -1,8 +1,9 @@
+import {openManualMission, seedLegacyGeometryMission} from '../helpers/mission-simulation.js';
 import {test,expect} from '@playwright/test';
 
 test.use({serviceWorkers:'block'});
 
-test('voies IGN linéaires, sélection multiple et action géométrique conservée',async({page})=>{
+test('voies IGN linéaires, sélection multiple et action géométrique préexistante conservée',async({page})=>{
  await page.goto('/');
  await page.locator('button[data-nav=carte]:visible').first().click();
  await page.locator('#map-scope-value').selectOption('Saint-André-de-Cubzac');
@@ -18,9 +19,8 @@ test('voies IGN linéaires, sélection multiple et action géométrique conserv�
  await page.locator('#street-search-form button').click();
  await page.locator('.street-result').filter({has:page.locator('strong',{hasText:/^Rue Nationale$/})}).click();
  await expect(page.locator('.street-chip')).toHaveCount(2);
- await page.locator('[data-action=new-mission-from-map]').last().click();
- await page.locator('#mission-form [name=title]').fill('Tournée fictive des deux rues');
- await page.locator('#mission-form button[type=submit]').click();
+ await expect(page.locator('[data-action=new-mission-from-map]')).toHaveCount(0);
+ await seedLegacyGeometryMission(page,{title:'Tournée fictive des deux rues',zoneKind:'streets',roadIds:['33366_0265','33366_0750'],zoneGeometry:{type:'MultiLineString',coordinates:[[[-0.4332,44.9985],[-0.432,44.9985]],[[-0.431,45],[-0.430,45]]]}});
  const mission=await page.evaluate(()=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(m=>m.title==='Tournée fictive des deux rues'));
  expect(mission.roadIds).toEqual(['33366_0265','33366_0750']);
  expect(mission.zoneKind).toBe('streets');

@@ -26,6 +26,16 @@ export function territoryComparison(rows, codes, firstId, secondId = '') {
   });
 }
 
+export function territoryComparisonMeasure(rows, codes, firstId, secondId = '', measure = 'participation') {
+  if (!['participation', 'abstention'].includes(measure)) throw new Error('Indicateur communal invalide.');
+  return territoryComparison(rows, codes, firstId, secondId).map(item => ({
+    ...item, measure,
+    measureA: item.a === null ? null : measure === 'abstention' ? 100 - item.a : item.a,
+    measureB: item.b === null ? null : measure === 'abstention' ? 100 - item.b : item.b,
+    measureDelta: item.delta === null ? null : measure === 'abstention' && item.delta !== 0 ? -item.delta : item.delta,
+  }));
+}
+
 export function viewTerritoryComparison({ rows, communes, filters, meta, savedViews = [], esc, attr, fmtNumber, panel }) {
   const ballots = comparableBallots(rows, filters.electionType, filters.electionTour);
   const paired = ballots.find(ballot => ballots.some(other => other.id !== ballot.id && other.type === ballot.type && other.tour === ballot.tour));

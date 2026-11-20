@@ -1,3 +1,4 @@
+import {openManualMission, seedLegacyGeometryMission} from '../helpers/mission-simulation.js';
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 
@@ -66,7 +67,7 @@ test('comparaison de deux scrutins identifiés avec cartes et écarts',async({pa
  await expect(page.locator('.map-compare-table tbody tr')).toHaveCount(87);
 });
 
-test('secteur dessiné, édition et action liée conservés au rechargement',async({page},testInfo)=>{
+test('secteur dessiné, édition et action géométrique préexistante conservés au rechargement',async({page},testInfo)=>{
  test.skip(['iphone','android'].includes(testInfo.project.name),'Le parcours complet de dessin au doigt requiert une recette manuelle mobile');
  await page.goto('/');
  await page.locator('button[data-nav=carte]:visible').first().click();
@@ -91,9 +92,8 @@ test('secteur dessiné, édition et action liée conservés au rechargement',asy
  const edited=await page.evaluate(id=>JSON.parse(localStorage.getItem('democraction-demo-sectors')).find(s=>s.id===id),sector.id);
  expect(edited.name).toBe('Secteur test modifié');
  expect(edited.geometry.coordinates[0]).toHaveLength(6);
- await page.locator('[data-action=new-mission-from-map]').last().click();
- await page.locator('#mission-form [name=title]').fill('Action sur secteur test');
- await page.locator('#mission-form button[type=submit]').click();
+ await expect(page.locator('[data-action=new-mission-from-map]')).toHaveCount(0);
+ await seedLegacyGeometryMission(page,{title:'Action sur secteur test',zoneKind:'sector',zoneId:sector.id,zoneGeometry:edited.geometry});
  const mission=await page.evaluate(id=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(m=>m.zoneId===id),sector.id);
  expect(mission.zoneKind).toBe('sector');
  expect(mission.zoneGeometry).toEqual(edited.geometry);

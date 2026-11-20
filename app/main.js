@@ -24,9 +24,9 @@ import {
 import { load, save, download, clearLocal } from "./store.js";
 import {summarizeMissionCoverage} from "./logistics-coverage.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261120data34";
+import { drawMap, locate, updateMapAddresses } from "./map.js?v=20261120data34";
 import { validPolygon,validZone } from "./geo-utils.js";
-import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
+import {loadRoads,roadInventory,searchRoads,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
 import {validateOfficialBureauResults,officialBureauResultHtml,officialBureauComparisonHtml,officialBureauComparisonRecords,BUREAU_COMPARISON_FIELDS} from './official-bureaux.js?v=20261119data33';
 import {readBureauFile,validateBureauImport} from './bureau-import.js';
@@ -38,7 +38,7 @@ import {
   pushRemote,
   updateRemoteStatus,
 } from "./sync.js";
-import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261119data33";
+import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261120sep38";
 import { territoryComparison, comparableBallots, participationDifferenceLayer } from "./territory-comparison.js?v=20261119data33";
 import { COMPARISONS_KEY, parseComparisonViews, addComparisonView, findComparisonView } from "./comparison-views.js";
 import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
@@ -181,7 +181,6 @@ let demoContacts = loadSyntheticContacts(),
   mapSelectedCommunes = [],
   mapMode = "explore",
   actionView = 'list',
-  missionPrefill = null,
   mapSelection = { kind: "commune", value: "" },
   pollingCatalog = [],
   officialBureauResults = null,
@@ -215,7 +214,7 @@ function restorePreferences(preferences) {
     filters.analysisCommuneCodes = [...new Set(preferences.filters.analysisCommuneCodes.filter(code => typeof code === "string" && /^\d{5}$/.test(code)))].slice(0, 5);
   if (["commune", "epci", "canton", "bureau", "sector", "road"].includes(preferences.mapSelection?.kind) && typeof preferences.mapSelection.value === "string" && preferences.mapSelection.value.length < 160)
     mapSelection = {kind:preferences.mapSelection.kind,value:preferences.mapSelection.value};
-  if (["explore", "compare", "draw", "organize"].includes(preferences.mapMode)) mapMode = preferences.mapMode;
+  if (["explore", "compare", "draw"].includes(preferences.mapMode)) mapMode = preferences.mapMode;
 }
 function savePreferences() {
   try { localStorage.setItem(PREFS_KEY, JSON.stringify({filters:{...Object.fromEntries(PREF_KEYS.map(key=>[key,filters[key]])),analysisCommuneCodes:filters.analysisCommuneCodes},mapSelection,mapMode})); } catch {}
@@ -594,15 +593,15 @@ function mapDetail() {
     const populations = selected.map(row => Number(socioByCode.get(row.codeInsee)?.population)).filter(value => Number.isFinite(value) && value > 0);
     const complete = populations.length === selected.length;
     const title = mapSelection.kind === "commune" ? "Communes sélectionnées" : mapSelection.kind === "epci" ? "Intercommunalité · " + mapSelection.value : "Canton · " + mapSelection.value;
-    return panel(esc(title), `<div class="territory-card"><div><span class="kicker">Communes</span><strong>${selected.length}</strong></div><div><span class="kicker">Population Insee 2023</span><strong>${complete ? fmtNumber(populations.reduce((sum,value)=>sum+value,0)) : "Indisponible"}</strong></div><div><span class="kicker">Actions locales</span><strong>${currentMissions().filter(m=>names.includes(m.commune)).length}</strong></div><div><span class="kicker">Secteurs sauvegardés</span><strong>${demoSectors.filter(s=>names.includes(s.commune)).length}</strong></div></div><p class="hint">${esc(names.join(", "))}</p><p class="hint">Population additionnée uniquement lorsque chaque commune dispose d’une valeur. Les périmètres réunissent les contours communaux du référentiel 2026.</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button>`);
+    return panel(esc(title), `<div class="territory-card"><div><span class="kicker">Communes</span><strong>${selected.length}</strong></div><div><span class="kicker">Population Insee 2023</span><strong>${complete ? fmtNumber(populations.reduce((sum,value)=>sum+value,0)) : "Indisponible"}</strong></div><div><span class="kicker">Actions locales</span><strong>${currentMissions().filter(m=>names.includes(m.commune)).length}</strong></div><div><span class="kicker">Secteurs sauvegardés</span><strong>${demoSectors.filter(s=>names.includes(s.commune)).length}</strong></div></div><p class="hint">${esc(names.join(", "))}</p><p class="hint">Population additionnée uniquement lorsque chaque commune dispose d’une valeur. Les périmètres réunissent les contours communaux du référentiel 2026.</p>`);
   }
   if (mapSelection.kind === "sector") {
     const sector = demoSectors.find(x => x.id === mapSelection.value);
-    if (sector) return panel("Secteur · " + esc(sector.name), `<p>${esc(sector.commune || "Secteur libre")}</p><p>Identifiant : ${esc(sector.id)}</p><p>Contour enregistré : ${sector.geometry?.coordinates?.[0]?.length-1 || 0} sommets</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button>`);
+    if (sector) return panel("Secteur · " + esc(sector.name), `<p>${esc(sector.commune || "Secteur libre")}</p><p>Identifiant : ${esc(sector.id)}</p><p>Contour enregistré : ${sector.geometry?.coordinates?.[0]?.length-1 || 0} sommets</p>`);
   }
   if(mapSelection.kind==='road'){
     const road=roadData?.features.find(f=>f.properties.id===mapSelection.value);
-    if(road)return panel('Rue · '+esc(road.properties.name),`<p>${esc(territory.communes.find(c=>c.codeInsee===road.properties.code)?.nom||'')} · ${esc(road.properties.id)}</p><p>Tracé linéaire officiel IGN BD TOPO, relevé ${esc(roadData.asOf?.slice(0,10)||'date indisponible')}.</p><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action sur cette rue</button>`);
+    if(road)return panel('Rue · '+esc(road.properties.name),`<p>${esc(territory.communes.find(c=>c.codeInsee===road.properties.code)?.nom||'')} · ${esc(road.properties.id)}</p><p>Tracé linéaire officiel IGN BD TOPO, relevé ${esc(roadData.asOf?.slice(0,10)||'date indisponible')}.</p>`);
   }
   if (mapSelection.kind === "bureau") {
     const station=pollingCatalog.find(row=>row.id===mapSelection.value);
@@ -630,7 +629,7 @@ function mapDetail() {
   const sectors = demoSectors.filter((s) => !s.commune || s.commune === c.nom);
   return panel(
     c.nom,
-    `<div class="territory-card"><div><span class="kicker">Code INSEE</span><strong>${esc(c.codeInsee || "—")}</strong></div><div><span class="kicker">Canton</span><strong>${esc(c.canton)}</strong></div><div><span class="kicker">Intercommunalité</span><strong>${esc(c.epci)}</strong></div><div><span class="kicker">Population</span><strong>${sr?.population ? fmtNumber(sr.population) : "—"}</strong></div></div><div class="detail-list"><div><span>Dernière participation disponible</span><strong>${last ? `${Number(last.participation).toFixed(1).replace(".", ",")} %` : "—"}</strong></div>${selectedBallot?`<div><span>Abstention · ${esc(selectedBallot.label)}</span><strong>${abstention===null?'—':`${abstention.toFixed(1).replace('.',',')} %`}</strong></div>`:''}<div><span>Actions enregistrées</span><strong>${missions.length}</strong></div><div><span>Secteurs sauvegardés</span><strong>${sectors.length}</strong></div></div><div class="button-row"><button class="btn btn-primary" data-action="new-mission-from-map">Créer une action ici</button><button class="btn btn-light" data-nav="analyse">Voir l’historique</button></div><p class="hint">Les résultats et indicateurs sont agrégés à l’échelle de la commune. Ils ne décrivent aucune personne.</p>`,
+    `<div class="territory-card"><div><span class="kicker">Code INSEE</span><strong>${esc(c.codeInsee || "—")}</strong></div><div><span class="kicker">Canton</span><strong>${esc(c.canton)}</strong></div><div><span class="kicker">Intercommunalité</span><strong>${esc(c.epci)}</strong></div><div><span class="kicker">Population</span><strong>${sr?.population ? fmtNumber(sr.population) : "—"}</strong></div></div><div class="detail-list"><div><span>Dernière participation disponible</span><strong>${last ? `${Number(last.participation).toFixed(1).replace(".", ",")} %` : "—"}</strong></div>${selectedBallot?`<div><span>Abstention · ${esc(selectedBallot.label)}</span><strong>${abstention===null?'—':`${abstention.toFixed(1).replace('.',',')} %`}</strong></div>`:''}<div><span>Actions enregistrées</span><strong>${missions.length}</strong></div><div><span>Secteurs sauvegardés</span><strong>${sectors.length}</strong></div></div><div class="button-row"><button class="btn btn-light" data-nav="analyse">Voir l’historique</button></div><p class="hint">Les résultats et indicateurs sont agrégés à l’échelle de la commune. Ils ne décrivent aucune personne.</p>`,
   );
 }
 function pointInSector(coordinates,geometry){
@@ -704,7 +703,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.37 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.38 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -818,7 +817,6 @@ function viewCarte() {
     ["explore", "Explorer"],
     ["compare", "Comparer"],
     ["draw", "Dessiner"],
-    ["organize", "Organiser"],
   ]
     .map(
       (row) =>
@@ -883,11 +881,9 @@ function viewCarte() {
       ? "Comparer deux millésimes"
       : mapMode === "draw"
         ? "Dessiner et enregistrer un secteur"
-        : mapMode === "organize"
-          ? "Organiser les actions"
-          : "Explorer les données";
+        : "Explorer les données";
   return (
-    '<div class="map-head"><div><div class="kicker">ESPACE CARTOGRAPHIQUE</div><h2>Carte territoriale interactive</h2><p>Consultez les résultats électoraux et les indicateurs publics agrégés, avec surbrillance translucide des périmètres sélectionnés. La sélection géographique sert à préparer les actions.</p></div><div class="map-mode-tabs">' +
+    '<div class="map-head"><div><div class="kicker">ESPACE CARTOGRAPHIQUE</div><h2>Carte territoriale interactive</h2><p>Consultez les résultats électoraux et les indicateurs publics agrégés, avec surbrillance translucide des périmètres sélectionnés. La sélection géographique sert uniquement à la lecture descriptive.</p></div><div class="map-mode-tabs">' +
     modeButtons +
     '</div></div><div class="map-workspace"><aside class="map-rail"><section><h3>Indicateur cartographique</h3><select id="map-layer">' +
     layerOptions +
@@ -934,11 +930,7 @@ function viewCarte() {
       : "Les contours sélectionnés sont affichés avec une transparence renforcée.") +
     "</small></div>" +
     mapDetail() +
-    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux et indicateurs publics agrégés. Tracés nommés IGN BD TOPO par commune, en paquet daté ; WFS à la demande si un fichier manque. Adresses : BAN WFS, chargées par petite emprise au zoom ou par rue. Les tracés ne garantissent pas tous les chemins et lieux-dits. Aucune géométrie de bureau n’est inventée.</p><a href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/diffusion/wfs/" target="_blank" rel="noopener noreferrer">Documentation WFS IGN ↗</a><a href="https://adresse.data.gouv.fr/commune/33366" target="_blank" rel="noopener noreferrer">Source BAN Saint-André ↗</a></div><div class="map-action-card"><strong>Action depuis la carte</strong><p>' +
-    (mapSelection.value
-      ? esc(mapSelectionLabel()) + " · " + selectedNames.length + " commune(s) · " + selectedStreets.length + " rue(s)"
-      : "Sélectionnez une commune ou une zone enregistrée.") +
-    '</p><button class="btn btn-primary btn-sm" data-action="new-mission-from-map">Créer une action avec cette sélection</button></div></aside></div>'
+    '<div class="map-source-card"><strong>Sources et méthode</strong><p>Résultats électoraux et indicateurs publics agrégés. Tracés nommés IGN BD TOPO par commune, en paquet daté ; WFS à la demande si un fichier manque. Adresses : BAN WFS, chargées par petite emprise au zoom ou par rue. Les tracés ne garantissent pas tous les chemins et lieux-dits. Aucune géométrie de bureau n’est inventée.</p><a href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/diffusion/wfs/" target="_blank" rel="noopener noreferrer">Documentation WFS IGN ↗</a><a href="https://adresse.data.gouv.fr/commune/33366" target="_blank" rel="noopener noreferrer">Source BAN Saint-André ↗</a></div><div class="map-source-card"><strong>Lecture descriptive</strong><p>La sélection de cette carte ne prépare aucune action. La création manuelle se fait dans Actions de terrain, avec un nouveau choix de commune.</p></div></aside></div>'
   );
 }
 function missionRows(data) {
@@ -1162,8 +1154,8 @@ const VIEWS = {
   config: viewConfig,
 };
 function missionModal() {
-  if (!modal) return "";
-  const m = editingMission || missionPrefill || {};
+  if (!modal || !fullEditor()) return "";
+  const m = editingMission || {};
   const isEditing = Boolean(editingMission?.id);
   const selectedRues = m.rues || [];
   const rues = unique([
@@ -1182,7 +1174,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.37</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.38</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1280,7 +1272,6 @@ function switchTab(next) {
     next = "dashboard";
   tab = next;
   modal = "";
-  missionPrefill = null;
   notice = "";
   window.scrollTo({ top: 0, behavior: "instant" });
   render();
@@ -1476,37 +1467,14 @@ function dispatchAction(action) {
       );
       break;
     case "new-mission":
-      missionPrefill = null;
+      if (!fullEditor() || tab !== "actions") return;
       editingMission = null;
       modal = "mission";
       render();
       break;
     case "new-mission-from-map":
-      const selectedSector=mapSelection.kind==="sector"?demoSectors.find(s=>s.id===mapSelection.value):null;
-      const selectedBureau=mapSelection.kind==="bureau"?bureauFeature(bureauFeatures(),mapSelection.value):null;
-      if(mapSelection.kind==='bureau'&&!selectedBureau){toast('Ce bureau ne possède pas de contour : choisissez sa commune ou importez un périmètre avant de créer une action sur ce bureau.','warning');break;}
-      const selectedNames=mapSelectionCommunes();
-      const primary=selectedSector?.commune||selectedNames[0]||filters.commune;
-      if (!primary) {
-        toast(
-          "Sélectionnez une commune ou un secteur rattaché à une commune.",
-          "warning",
-        );
-        break;
-      }
-      missionPrefill = {
-        commune: primary,
-        rues: selectedStreets.map((x) => x.name),
-        secteur: selectedSector?.name || "",
-        zoneKind: selectedStreets.length?'streets':mapSelection.kind,
-        zoneId: selectedStreets.length?territory.communes.find(c=>c.nom===primary)?.codeInsee||'':selectedSector?.id || mapSelection.value || territory.communes.find(c=>c.nom===primary)?.codeInsee || "",
-        zoneCommunes: selectedNames.length ? selectedNames : [primary],
-        zoneGeometry: selectedStreets.length?roadGeometry(selectedStreets):selectedSector?.geometry || selectedBureau?.geometry || selectionGeometry((selectedNames.length?selectedNames:[primary]).map(name=>territory.communes.find(c=>c.nom===name)?.codeInsee).filter(Boolean)),
-        roadIds:selectedStreets.map(x=>x.id),
-      };
-      editingMission = null;
-      modal = "mission";
-      render();
+      // Reject stale controls: analytical selections never prefill an action.
+      toast("Création depuis la carte désactivée. Utilisez Actions de terrain et choisissez manuellement la commune.", "warning");
       break;
     case "clear-map-selection":
       mapSelectedCommunes = [];
@@ -1617,6 +1585,7 @@ root.addEventListener("click", async (e) => {
     return;
   }
   if (t.dataset.mapMode) {
+    if (!["explore", "compare", "draw"].includes(t.dataset.mapMode)) return;
     mapMode = t.dataset.mapMode;
     if(mapMode==="compare")filters.mapLayer="participation";
     if(mapMode!=="draw")sectorBeingEdited=null;
@@ -2039,6 +2008,7 @@ root.addEventListener("submit", (e) => {
   }
 
   if (form.id === "mission-form") {
+    if (!fullEditor() || (!editingMission && tab !== "actions")) return;
     const title = get("title"),
       commune = get("commune"),
       geo = territory.communes.some((c) => c.nom === commune);
@@ -2053,11 +2023,11 @@ root.addEventListener("submit", (e) => {
       type: get("type"),
       commune,
       secteur: get("secteur"),
-      zoneKind: editingMission?.zoneKind||missionPrefill?.zoneKind||"",
-      zoneId: editingMission?.zoneId||missionPrefill?.zoneId||"",
-      zoneCommunes: editingMission?.zoneCommunes||missionPrefill?.zoneCommunes||[commune],
-      zoneGeometry: editingMission?.zoneGeometry||missionPrefill?.zoneGeometry||null,
-      roadIds:editingMission?.roadIds||missionPrefill?.roadIds||[],
+      zoneKind: editingMission?.zoneKind||"",
+      zoneId: editingMission?.zoneId||"",
+      zoneCommunes: editingMission?.zoneCommunes||[commune],
+      zoneGeometry: editingMission?.zoneGeometry||null,
+      roadIds:editingMission?.roadIds||[],
       rues: fd
         .getAll("rues")
         .map((v) => String(v).trim())
@@ -2084,7 +2054,6 @@ root.addEventListener("submit", (e) => {
     };
     modal = "";
     editingMission = null;
-    missionPrefill = null;
     mutate((s) => ({
       ...s,
       missions: s.missions.some((m) => m.id === item.id)

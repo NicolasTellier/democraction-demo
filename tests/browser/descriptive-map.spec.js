@@ -1,3 +1,4 @@
+import {openManualMission, seedLegacyGeometryMission} from '../helpers/mission-simulation.js';
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 import {readFile} from 'node:fs/promises';
@@ -76,7 +77,7 @@ function expectApplicationPreserved(actual,expected){
  expect(Number.isFinite(new Date(actual.lastSaved).getTime())).toBe(true);
 }
 
-test('ancienne préférence de priorité migrée vers une carte descriptive et action depuis la commune',async({page},testInfo)=>{
+test('ancienne préférence de priorité migrée vers une carte descriptive et création manuelle séparée',async({page},testInfo)=>{
  test.setTimeout(60000);
  await page.addInitScript(({key,preferences})=>{
   if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(preferences));
@@ -89,16 +90,15 @@ test('ancienne préférence de priorité migrée vers une carte descriptive et a
  await page.reload();await openMap(page);await expectDescriptiveMap(page,'revenuMedian');
  await captureMap(page,testInfo,'carte-descriptive-preferences-migrees');
 
- await page.locator('[data-action=new-mission-from-map]').last().click();
- await expect(page.locator('#mission-commune')).toHaveValue(COMMUNE);
- await page.locator('#mission-form [name=title]').fill('Action logistique après migration');
+ await expect(page.locator('[data-action=new-mission-from-map]')).toHaveCount(0);
+ await openManualMission(page,'Action logistique après migration',COMMUNE);
  await page.locator('#mission-form button[type=submit]').click();
  await expect(page.locator('#mission-form')).toHaveCount(0);
  const mission=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).missions.find(item=>item.title==='Action logistique après migration'),APP_KEY);
  expect(mission?.commune).toBe(COMMUNE);
- expect(mission?.zoneKind).toBe('commune');
+ expect(mission?.zoneKind).toBe('');
  expect(mission?.zoneCommunes).toEqual([COMMUNE]);
- expect(mission?.zoneGeometry?.type).toMatch(/Polygon/);
+ expect(mission?.zoneGeometry).toBeNull();
  const exported=await exportBackup(page);
  expectMigratedPreferences(exported.preferences,'revenuMedian');
  expect(exported.application.missions.find(item=>item.id===mission.id)).toEqual(mission);
