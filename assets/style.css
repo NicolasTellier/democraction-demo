@@ -64,7 +64,7 @@ input:focus,select:focus,textarea:focus{outline:3px solid var(--sun);border-colo
 .content{max-width:1540px}
 .app-footer{color:#55557e}
 .hero{background:var(--cobalt);border:2px solid var(--ink);border-radius:9px;box-shadow:7px 7px 0 var(--ink);color:var(--cream)}
-.hero:after{content:"";position:absolute;right:20px;bottom:-36px;width:145px;height:145px;border-radius:50%;background:var(--sun);opacity:.92}
+.hero:after{pointer-events:none;content:"";position:absolute;right:20px;bottom:-36px;width:145px;height:145px;border-radius:50%;background:var(--sun);opacity:.92}
 .hero h2{font-family:Shrikhand, Georgia, serif;color:var(--cream);font-weight:400;letter-spacing:0}
 .hero p{color:#fff4e0}
 .hero .kicker{color:var(--sun)}

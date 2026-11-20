@@ -1,0 +1,35 @@
+import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
+
+test.use({serviceWorkers:'block'});
+test('accueil : boutons accessibles au clic et au toucher, action manuelle sans héritage',async({page},testInfo)=>{
+ await page.goto('/');
+ const touch=['iphone','android'].includes(testInfo.project.name);
+ const activate=locator=>touch?locator.tap():locator.click();
+ const heroAction=page.locator('.hero [data-nav=actions]');
+ await expect(heroAction).toBeVisible();
+ mkdirSync('test-results/captures',{recursive:true});
+ await heroAction.scrollIntoViewIfNeeded();
+ await page.screenshot({path:`test-results/captures/accueil-action-${testInfo.project.name}.png`});
+ await activate(heroAction);
+ await expect(page.locator('[data-action=new-mission]')).toBeVisible();
+ await activate(page.locator('[data-action=new-mission]'));
+ await expect(page.locator('#mission-commune')).toHaveValue('');
+ await expect(page.locator('#mission-form [name=secteur]')).toHaveValue('');
+ await expect(page.locator('#mission-streets option:checked')).toHaveCount(0);
+ await page.screenshot({path:`test-results/captures/accueil-formulaire-vide-${testInfo.project.name}.png`});
+ await page.locator('#mission-commune').selectOption('Bourg');
+ await page.locator('#mission-form [name=title]').fill('Action fictive depuis accueil');
+ await activate(page.locator('#mission-form button[type=submit]'));
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(x=>x.title==='Action fictive depuis accueil'));
+ expect(saved.commune).toBe('Bourg');expect(saved.zoneGeometry).toBeNull();
+ expect(saved.zoneId).toBe('');expect(saved.roadIds).toEqual([]);expect(saved.rues).toEqual([]);
+ await page.reload();
+ await activate(page.locator('.hero [data-nav=actions]'));
+ await expect(page.getByText('Action fictive depuis accueil',{exact:true})).toBeVisible();
+ expect(await page.evaluate(id=>JSON.parse(localStorage.getItem('democraction-v1-local')).missions.find(x=>x.id===id),saved.id)).toEqual(saved);
+ await activate(page.locator('.sidebar [data-nav=dashboard]:visible, .mobile-nav [data-nav=dashboard]:visible').first());
+ await activate(page.locator('.hero [data-nav=carte]'));
+ await expect(page.locator('#map-layer')).toBeVisible();
+ await expect(page.locator('[data-action=new-mission-from-map]')).toHaveCount(0);
+});
