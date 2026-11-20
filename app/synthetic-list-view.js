@@ -1,5 +1,6 @@
 import {compareSyntheticListResults} from './territory-comparison.js?v=20261120data35';
-import {escapeHTML as esc} from './core.js';
+import {escapeHTML as esc,serializeCsv} from './core.js';
+import {download} from './store.js';
 import {electionBallotLabel} from './election-labels.js';
 
 // Jeu fermé de démonstration : aucun résultat réel et aucune correspondance nominative.
@@ -15,6 +16,33 @@ export const syntheticListFixture = () => ({
  ],
 });
 const communes=[['33001','Commune fictive 1'],['33002','Commune fictive 2'],['33003','Commune fictive 3']];
+
+export const SYNTHETIC_LIST_CSV_FIELDS=[
+ 'synthetic','schema_version','code_insee','mesure','unite_ecart','direction',
+ 'scrutin_a','libelle_scrutin_a','date_scrutin_a','source_a','date_source_a','liste_a','libelle_liste_a',
+ 'scrutin_b','libelle_scrutin_b','date_scrutin_b','source_b','date_source_b','liste_b','libelle_liste_b',
+ 'voix_a','exprimes_a','part_exprimes_a','statut_a','statut_part_a',
+ 'voix_b','exprimes_b','part_exprimes_b','statut_b','statut_part_b',
+ 'valeur_a','valeur_b','ecart_b_moins_a','couverture_paire','communes_selectionnees',
+];
+export function syntheticListComparisonCsv(state,data=syntheticListFixture()){
+ const r=compareSyntheticListResults(data,state);
+ const records=r.items.map(item=>{
+  const row={synthetic:true,schema_version:r.schemaVersion,code_insee:item.codeInsee,mesure:r.metric,
+   unite_ecart:r.unit,direction:r.direction,valeur_a:item.a,valeur_b:item.b,ecart_b_moins_a:item.delta,
+   couverture_paire:r.coverage.paired,communes_selectionnees:r.coverage.requested};
+  for(const [suffix,ballot,list,listId] of [['a',r.first,item.first,r.listAId],['b',r.second,item.second,r.listBId]]){
+   Object.assign(row,{['scrutin_'+suffix]:ballot.id,['libelle_scrutin_'+suffix]:ballot.label,
+    ['date_scrutin_'+suffix]:ballot.date,['source_'+suffix]:ballot.source.label,['date_source_'+suffix]:ballot.source.date,
+    ['liste_'+suffix]:listId,['libelle_liste_'+suffix]:list.label,['voix_'+suffix]:list.votes,
+    ['exprimes_'+suffix]:list.expressed,['part_exprimes_'+suffix]:list.share,
+    ['statut_'+suffix]:list.status,['statut_part_'+suffix]:list.shareStatus});
+  }
+  return row;
+ });
+ return serializeCsv(records,SYNTHETIC_LIST_CSV_FIELDS);
+}
+
 export function viewSyntheticListComparison(state,data=syntheticListFixture()){
  const options=(values,selected)=>values.map(([id,label])=>'<option value="'+esc(id)+'" '+(id===selected?'selected':'')+'>'+esc(label)+'</option>').join('');
  const lists=id=>[...new Map(data.results.filter(r=>r.ballotId===id).flatMap(r=>r.listes).map(l=>[l.id,l.label]))];
@@ -33,9 +61,9 @@ export function viewSyntheticListComparison(state,data=syntheticListFixture()){
   const status=v=>v.status!=='available'?'Résultat ou liste indisponible':state.metric==='share'&&v.shareStatus==='zero-denominator'?'Aucun exprimé : pourcentage indisponible':'Disponible';
   body='<p role="status">'+r.coverage.paired+'/'+r.coverage.requested+' comparaisons disponibles · '+esc(r.unit)+' · B − A</p>'+
    '<div class="tablewrap" style="max-width:100%;overflow-x:auto"><table><caption>Comparaison de listes fictives</caption><thead><tr><th>Commune fictive</th><th>A</th><th>B</th><th>Écart B − A</th><th>Disponibilité A / B</th></tr></thead><tbody>'+
-   r.items.map(v=>'<tr><th scope="row">'+esc(communes.find(c=>c[0]===v.codeInsee)[1])+'</th><td>'+number(v.a)+'</td><td>'+number(v.b)+'</td><td>'+(v.delta===null?'—':(v.delta>0?'+':'')+number(v.delta))+'</td><td>'+esc(status(v.first))+' / '+esc(status(v.second))+'</td></tr>').join('')+'</tbody></table></div>';
+   r.items.map(v=>'<tr><th scope="row">'+esc(communes.find(c=>c[0]===v.codeInsee)[1])+'</th><td>'+number(v.a)+'</td><td>'+number(v.b)+'</td><td>'+(v.delta===null?'—':(v.delta>0?'+':'')+number(v.delta))+'</td><td>'+esc(status(v.first))+' / '+esc(status(v.second))+'</td></tr>').join('')+'</tbody></table></div><button type="button" class="btn btn-light" data-list-export>Exporter les listes fictives (CSV)</button>';
  }
- return '<h3>Comparer des listes — démonstration fictive</h3><p>Jeu entièrement fictif, indépendant des filtres géographiques et des résultats publics ci-dessus. Aucun rapprochement de personnes ou de nuances. Choix temporaires sur cet écran ; export et sauvegarde non disponibles.</p>'+
+ return '<h3>Comparer des listes — démonstration fictive</h3><p>Jeu entièrement fictif, indépendant des filtres géographiques et des résultats publics ci-dessus. Aucun rapprochement de personnes ou de nuances. Choix temporaires sur cet écran ; export CSV disponible après sélection ; sauvegarde non disponible.</p>'+
  '<div class="form-inline profile-controls">'+controls+'</div><fieldset><legend>Communes fictives</legend>'+communes.map(([id,label])=>'<label style="display:block"><input type="checkbox" data-list-code="'+id+'" '+(state.codes.includes(id)?'checked':'')+'> '+label+'</label>').join('')+'</fieldset>'+body+
  data.ballots.filter(b=>[state.firstId,state.secondId].includes(b.id)).map(b=>'<p class="hint">'+esc(electionBallotLabel(b))+' · Date du scrutin fictif : '+esc(b.date)+' · Source : '+esc(b.source.label)+' · mise à jour '+esc(b.source.date)+'</p>').join('')+
  '<p class="hint">Les absences ne valent pas zéro. Les pourcentages utilisent les exprimés ; blancs et nuls sont exclus. Ces écarts descriptifs ne prouvent aucun transfert individuel de voix.</p>';
@@ -46,6 +74,11 @@ if(typeof customElements!=='undefined'&&!customElements.get('synthetic-list-comp
    this.style.display='block';this.style.minWidth='0';
    this.state={codes:communes.map(c=>c[0]),firstId:'a',secondId:'b',listAId:'',listBId:'',metric:'votes'};
    this.render();
+   this.onclick=e=>{
+    if(!e.target.closest('[data-list-export]'))return;
+    e.stopPropagation();
+    download(syntheticListComparisonCsv(this.state),'comparaison-listes-fictives.csv','text/csv;charset=utf-8');
+   };
    this.onchange=e=>{
     e.stopPropagation();
     const field=e.target.dataset.listField,code=e.target.dataset.listCode;

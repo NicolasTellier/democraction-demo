@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';import {mkdir} from 'node:fs/promises';
+import {test,expect} from '@playwright/test';import {mkdir,readFile} from 'node:fs/promises';
 test.use({serviceWorkers:'block'});
 test('listes fictives : choix, mesure, inversion, absence et cadre mobile',async({page},info)=>{
  test.skip(!['desktop','iphone'].includes(info.project.name));
@@ -8,11 +8,16 @@ test('listes fictives : choix, mesure, inversion, absence et cadre mobile',async
  await expect(root).toContainText('Choisissez explicitement');
  await pick('listAId','a-1');await pick('listBId','b-2');
  await expect(root.locator('tbody tr').first()).toContainText('+70');
+ const exportCsv=async()=>{const [d]=await Promise.all([page.waitForEvent('download'),root.locator('[data-list-export]').click()]);expect(d.suggestedFilename()).toBe('comparaison-listes-fictives.csv');return readFile(await d.path(),'utf8');};
+ const votesCsv=await exportCsv();expect(votesCsv).toContain('voix_a;exprimes_a;part_exprimes_a');
+ expect(votesCsv).toContain(';votes;voix;B − A;');
  await pick('metric','share');
  await expect(root.locator('tbody tr').first()).toContainText('+15');
  await expect(root).toContainText('Aucun exprimé');
  await expect(root).toContainText('Résultat ou liste indisponible');
  await expect(root).toContainText('1/3 comparaisons disponibles');
+ const shareCsv=await exportCsv();expect(shareCsv).toContain('zero-denominator');expect(shareCsv).toContain('missing-result');
+ expect(shareCsv).toContain('Jeu de démonstration fictif A');expect(shareCsv).toContain('2026-11-20');
  await pick('firstId','b');
  await expect(root).toContainText('Choisissez explicitement');
  await pick('listAId','b-2');await pick('listBId','a-1');
@@ -20,6 +25,15 @@ test('listes fictives : choix, mesure, inversion, absence et cadre mobile',async
  await root.locator('[data-list-code="33003"]').uncheck();
  await expect(root).toContainText('1/2 comparaisons disponibles');
  await expect(root).toContainText('2026-11-20');
+ const finalCsv=await exportCsv();
+ const lines=finalCsv.replace(/^\uFEFF/,'').split('\r\n');
+ const fields=lines[0].split(';');expect(lines).toHaveLength(3);
+ const row=Object.fromEntries(lines[1].split(';').map((value,i)=>[fields[i],value]));
+ expect(row.code_insee).toBe('33001');expect(row.liste_a).toBe('b-2');expect(row.liste_b).toBe('a-1');
+ expect(Number(row.ecart_b_moins_a.replace(/^'/,''))).toBe(-15);
+ await root.locator('[data-list-code="33001"]').uncheck();await root.locator('[data-list-code="33002"]').uncheck();
+ await expect(root.locator('[data-list-export]')).toHaveCount(0);
+ await root.locator('[data-list-code="33001"]').check();await root.locator('[data-list-code="33002"]').check();
  await root.scrollIntoViewIfNeeded();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await mkdir('test-results/captures',{recursive:true});
