@@ -119,3 +119,86 @@ export function participationDifferenceLayer(rows, codes, firstId, secondId, met
     items,
   };
 }
+
+/**
+ * Contrat de recette synthétique uniquement. Les identifiants de listes sont
+ * propres à chaque scrutin et choisis explicitement ; aucun rapprochement par nom.
+ * Les résultats contiennent toutes les listes et leur somme égale les exprimés.
+ */
+export function compareSyntheticListResults(data, {
+  codes, firstId, secondId, listAId, listBId, metric = 'votes',
+} = {}) {
+  const text = value => typeof value === 'string' && value.trim() !== '' && value === value.trim();
+  const date = value => text(value) && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    Number.isFinite(Date.parse(value + 'T00:00:00Z')) &&
+    new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
+  const count = value => Number.isSafeInteger(value) && value >= 0;
+  if (data?.schemaVersion !== 1 || data.synthetic !== true || !Array.isArray(data.ballots) || !Array.isArray(data.results))
+    throw new Error('Contrat synthétique version 1 requis.');
+  if (![firstId, secondId, listAId, listBId].every(text) || firstId === secondId)
+    throw new Error('Deux scrutins distincts et deux choix de listes explicites sont requis.');
+  if (!['votes', 'share'].includes(metric)) throw new Error('Mesure voix ou part des exprimés requise.');
+  if (!Array.isArray(codes) || !codes.length || codes.some(code => typeof code !== 'string' || !/^[0-9]{5}$/.test(code)))
+    throw new Error('Au moins un code INSEE textuel à cinq chiffres est requis.');
+  const ballot = id => {
+    const matches = data.ballots.filter(row => row?.id === id);
+    if (matches.length !== 1) throw new Error('Scrutin inconnu ou ambigu : ' + id);
+    const row = matches[0];
+    if (!text(row.type) || !/^t[1-9]$/.test(row.tour) || !Number.isSafeInteger(row.annee) || row.annee < 2008 ||
+        !date(row.date) || Number(row.date.slice(0, 4)) !== row.annee ||
+        !text(row.source?.label) || !date(row.source?.date))
+      throw new Error('Métadonnées, provenance et dates de scrutin requises : ' + id);
+    return { id, type: row.type, tour: row.tour, annee: row.annee, date: row.date,
+      label: electionBallotLabel(row), source: { label: row.source.label, date: row.source.date } };
+  };
+  const first = ballot(firstId), second = ballot(secondId);
+  if (first.type !== second.type || first.tour !== second.tour)
+    throw new Error('Deux scrutins de même type et de même tour sont requis.');
+  const requested = [...new Set(codes)];
+  const groups = new Map();
+  for (const row of data.results) {
+    if (!row || !requested.includes(row.codeInsee) || ![firstId, secondId].includes(row.ballotId)) continue;
+    const key = row.ballotId + '|' + row.codeInsee;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+  const result = (code, id, listId) => {
+    const unavailable = (status, expressed = null) => ({
+      listId, label: null, status, votes: null, expressed, share: null, shareStatus: status,
+    });
+    const rows = groups.get(id + '|' + code);
+    if (!rows) return unavailable('missing-result');
+    if (rows.length !== 1) return unavailable('duplicate-result');
+    const row = rows[0];
+    if (!count(row.exprimes) || !Array.isArray(row.listes) ||
+        row.listes.some(list => !list || !text(list.id) || !text(list.label) || !count(list.votes)))
+      return unavailable('invalid-result');
+    if (new Set(row.listes.map(list => list.id)).size !== row.listes.length)
+      return unavailable('duplicate-list');
+    if (row.listes.reduce((sum, list) => sum + BigInt(list.votes), 0n) !== BigInt(row.exprimes))
+      return unavailable('invalid-total');
+    const list = row.listes.find(list => list.id === listId);
+    if (!list) return unavailable('missing-list', row.exprimes);
+    return {
+      listId, label: list.label, status: 'available', votes: list.votes, expressed: row.exprimes,
+      share: row.exprimes > 0 ? list.votes / row.exprimes * 100 : null,
+      shareStatus: row.exprimes > 0 ? 'available' : 'zero-denominator',
+    };
+  };
+  const items = requested.map(codeInsee => {
+    const first = result(codeInsee, firstId, listAId), second = result(codeInsee, secondId, listBId);
+    const a = metric === 'votes' ? first.votes : first.share;
+    const b = metric === 'votes' ? second.votes : second.share;
+    const equal = a !== null && b !== null && (metric === 'votes' ? a === b :
+      BigInt(first.votes) * BigInt(second.expressed) === BigInt(second.votes) * BigInt(first.expressed));
+    return { codeInsee, first, second, a, b, delta: a === null || b === null ? null : equal ? 0 : b - a };
+  });
+  const paired = items.filter(item => item.delta !== null).length;
+  return {
+    schemaVersion: 1, synthetic: true, first, second, listAId, listBId, metric, direction: 'B − A',
+    unit: metric === 'votes' ? 'voix' : 'points des suffrages exprimés',
+    coverage: { requested: items.length, firstAvailable: items.filter(item => item.a !== null).length,
+      secondAvailable: items.filter(item => item.b !== null).length, paired, unavailable: items.length - paired },
+    items,
+  };
+}

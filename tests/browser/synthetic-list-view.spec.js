@@ -1,0 +1,28 @@
+import {test,expect} from '@playwright/test';import {mkdir} from 'node:fs/promises';
+test.use({serviceWorkers:'block'});
+test('listes fictives : choix, mesure, inversion, absence et cadre mobile',async({page},info)=>{
+ test.skip(!['desktop','iphone'].includes(info.project.name));
+ await page.goto('/');await page.locator('button[data-nav="analyse"]:visible').first().click();
+ const root=page.locator('synthetic-list-comparison');
+ const pick=(field,value)=>root.locator('[data-list-field="'+field+'"]').selectOption(value);
+ await expect(root).toContainText('Choisissez explicitement');
+ await pick('listAId','a-1');await pick('listBId','b-2');
+ await expect(root.locator('tbody tr').first()).toContainText('+70');
+ await pick('metric','share');
+ await expect(root.locator('tbody tr').first()).toContainText('+15');
+ await expect(root).toContainText('Aucun exprimé');
+ await expect(root).toContainText('Résultat ou liste indisponible');
+ await expect(root).toContainText('1/3 comparaisons disponibles');
+ await pick('firstId','b');
+ await expect(root).toContainText('Choisissez explicitement');
+ await pick('listAId','b-2');await pick('listBId','a-1');
+ await expect(root.locator('tbody tr').first()).toContainText('-15');
+ await root.locator('[data-list-code="33003"]').uncheck();
+ await expect(root).toContainText('1/2 comparaisons disponibles');
+ await expect(root).toContainText('2026-11-20');
+ await root.scrollIntoViewIfNeeded();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await mkdir('test-results/captures',{recursive:true});
+ await root.locator('.tablewrap').evaluate(e=>e.scrollIntoView({block:'center'}));
+ await page.screenshot({path:'test-results/captures/listes-fictives-'+info.project.name+'.png'});
+});

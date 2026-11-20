@@ -1,3 +1,4 @@
+import './synthetic-list-view.js?v=20261120data35';
 let bureauComparisonB = '';
 import {
   VERSION,
@@ -703,7 +704,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.34 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.35 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -1150,7 +1151,7 @@ const VIEWS = {
       rate,
       panel,
       empty,
-    }),
+ }) + panel("Comparaison de listes fictives", '<synthetic-list-comparison></synthetic-list-comparison>'),
   imports: viewImports,
   communication: viewCommunication,
   equipes: viewEquipes,
@@ -1181,7 +1182,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.34</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.35</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
