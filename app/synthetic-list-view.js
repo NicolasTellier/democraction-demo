@@ -1,3 +1,4 @@
+import {SYNTHETIC_COMPARISONS_KEY,SYNTHETIC_DATASET_ID,parseSyntheticComparisonViews,addSyntheticComparisonView,findSyntheticComparisonView} from './comparison-views.js?v=20261120data37';
 import {compareSyntheticListResults} from './territory-comparison.js?v=20261120data35';
 import {escapeHTML as esc,serializeCsv} from './core.js';
 import {download} from './store.js';
@@ -5,7 +6,7 @@ import {electionBallotLabel} from './election-labels.js';
 
 // Jeu fermé de démonstration : aucun résultat réel et aucune correspondance nominative.
 export const syntheticListFixture = () => ({
- schemaVersion:1,synthetic:true,
+ schemaVersion:1,synthetic:true,datasetId:SYNTHETIC_DATASET_ID,
  ballots:[2020,2026].map((annee,i)=>({id:i?'b':'a',type:'muni',tour:'t1',annee,date:annee+'-03-15',source:{label:'Jeu de démonstration fictif '+(i?'B':'A'),date:'2026-11-20'}})),
  results:[
   {ballotId:'a',codeInsee:'33001',exprimes:200,listes:[{id:'a-1',label:'Liste fictive A1',votes:50},{id:'a-2',label:'Liste fictive A2',votes:150}]},
@@ -61,9 +62,9 @@ export function viewSyntheticListComparison(state,data=syntheticListFixture()){
   const status=v=>v.status!=='available'?'Résultat ou liste indisponible':state.metric==='share'&&v.shareStatus==='zero-denominator'?'Aucun exprimé : pourcentage indisponible':'Disponible';
   body='<p role="status">'+r.coverage.paired+'/'+r.coverage.requested+' comparaisons disponibles · '+esc(r.unit)+' · B − A</p>'+
    '<div class="tablewrap" style="max-width:100%;overflow-x:auto"><table><caption>Comparaison de listes fictives</caption><thead><tr><th>Commune fictive</th><th>A</th><th>B</th><th>Écart B − A</th><th>Disponibilité A / B</th></tr></thead><tbody>'+
-   r.items.map(v=>'<tr><th scope="row">'+esc(communes.find(c=>c[0]===v.codeInsee)[1])+'</th><td>'+number(v.a)+'</td><td>'+number(v.b)+'</td><td>'+(v.delta===null?'—':(v.delta>0?'+':'')+number(v.delta))+'</td><td>'+esc(status(v.first))+' / '+esc(status(v.second))+'</td></tr>').join('')+'</tbody></table></div><button type="button" class="btn btn-light" data-list-export>Exporter les listes fictives (CSV)</button>';
+   r.items.map(v=>'<tr><th scope="row">'+esc(communes.find(c=>c[0]===v.codeInsee)[1])+'</th><td>'+number(v.a)+'</td><td>'+number(v.b)+'</td><td>'+(v.delta===null?'—':(v.delta>0?'+':'')+number(v.delta))+'</td><td>'+esc(status(v.first))+' / '+esc(status(v.second))+'</td></tr>').join('')+'</tbody></table></div><button type="button" class="btn btn-light" data-list-export>Exporter les listes fictives (CSV)</button> <button type="button" class="btn btn-light" data-list-save>Enregistrer cette comparaison fictive</button>';
  }
- return '<h3>Comparer des listes — démonstration fictive</h3><p>Jeu entièrement fictif, indépendant des filtres géographiques et des résultats publics ci-dessus. Aucun rapprochement de personnes ou de nuances. Choix temporaires sur cet écran ; export CSV disponible après sélection ; sauvegarde non disponible.</p>'+
+ return '<h3>Comparer des listes — démonstration fictive</h3><p>Jeu entièrement fictif, indépendant des filtres géographiques et des résultats publics ci-dessus. Aucun rapprochement de personnes ou de nuances. Vues enregistrées sur cet appareil : paramètres uniquement, résultats recalculés à l’ouverture depuis le jeu fictif versionné. Export CSV disponible après sélection.</p>'+
  '<div class="form-inline profile-controls">'+controls+'</div><fieldset><legend>Communes fictives</legend>'+communes.map(([id,label])=>'<label style="display:block"><input type="checkbox" data-list-code="'+id+'" '+(state.codes.includes(id)?'checked':'')+'> '+label+'</label>').join('')+'</fieldset>'+body+
  data.ballots.filter(b=>[state.firstId,state.secondId].includes(b.id)).map(b=>'<p class="hint">'+esc(electionBallotLabel(b))+' · Date du scrutin fictif : '+esc(b.date)+' · Source : '+esc(b.source.label)+' · mise à jour '+esc(b.source.date)+'</p>').join('')+
  '<p class="hint">Les absences ne valent pas zéro. Les pourcentages utilisent les exprimés ; blancs et nuls sont exclus. Ces écarts descriptifs ne prouvent aucun transfert individuel de voix.</p>';
@@ -73,14 +74,35 @@ if(typeof customElements!=='undefined'&&!customElements.get('synthetic-list-comp
   connectedCallback(){
    this.style.display='block';this.style.minWidth='0';
    this.state={codes:communes.map(c=>c[0]),firstId:'a',secondId:'b',listAId:'',listBId:'',metric:'votes'};
+   this.views=[];this.notice='';
+   try{this.views=this.readViews();}catch{this.notice='Stockage local indisponible.';}
    this.render();
    this.onclick=e=>{
-    if(!e.target.closest('[data-list-export]'))return;
+    const button=e.target.closest('[data-list-export],[data-list-save],[data-list-open],[data-list-delete]');
+    if(!button)return;
     e.stopPropagation();
-    download(syntheticListComparisonCsv(this.state),'comparaison-listes-fictives.csv','text/csv;charset=utf-8');
+    try{
+     if(button.hasAttribute('data-list-export')){
+      download(syntheticListComparisonCsv(this.state),'comparaison-listes-fictives.csv','text/csv;charset=utf-8');return;
+     }
+     const views=this.readViews();
+     if(button.hasAttribute('data-list-save')){
+      // Le modèle vérifie les paramètres avant toute écriture locale.
+      compareSyntheticListResults(syntheticListFixture(),this.state);
+      const next=addSyntheticComparisonView(views,{version:1,datasetId:SYNTHETIC_DATASET_ID,id:crypto.randomUUID(),savedAt:new Date().toISOString(),params:this.state});
+      this.writeViews(next);this.notice='Comparaison fictive enregistrée sur cet appareil.';
+     }else if(button.hasAttribute('data-list-open')){
+      const view=findSyntheticComparisonView(views,button.dataset.listOpen,syntheticListFixture(),communes.map(c=>c[0]));
+      this.state=view.params;this.views=views;this.notice='Paramètres fictifs restitués ; résultats recalculés.';
+     }else{
+      if(!views.some(v=>v.id===button.dataset.listDelete))throw new Error('Vue fictive introuvable.');
+      this.writeViews(views.filter(v=>v.id!==button.dataset.listDelete));this.notice='Vue fictive supprimée de cet appareil.';
+     }
+    }catch(error){this.notice=error.message||'Stockage local indisponible.';}
+    this.render();
    };
    this.onchange=e=>{
-    e.stopPropagation();
+    e.stopPropagation();this.notice='';
     const field=e.target.dataset.listField,code=e.target.dataset.listCode;
     if(code)this.state.codes=e.target.checked?[...new Set([...this.state.codes,code])]:this.state.codes.filter(c=>c!==code);
     if(field){
@@ -92,6 +114,13 @@ if(typeof customElements!=='undefined'&&!customElements.get('synthetic-list-comp
     if(field)this.querySelector('[data-list-field="'+field+'"]')?.focus({preventScroll:true});
    };
   }
-  render(){this.innerHTML=viewSyntheticListComparison(this.state);}
+  readViews(){return parseSyntheticComparisonViews(localStorage.getItem(SYNTHETIC_COMPARISONS_KEY));}
+  writeViews(views){localStorage.setItem(SYNTHETIC_COMPARISONS_KEY,JSON.stringify(views));this.views=views;}
+  render(){
+   this.innerHTML=viewSyntheticListComparison(this.state)+
+    (this.notice?'<p role="status" class="synthetic-saved-notice">'+esc(this.notice)+'</p>':'')+
+    '<section class="synthetic-saved-list"><h4>Comparaisons fictives enregistrées</h4>'+
+    (this.views.length?'<ul>'+this.views.map(v=>{const data=syntheticListFixture(),p=v.params;const ballot=id=>data.ballots.find(b=>b.id===id);const list=(id,lid)=>data.results.filter(r=>r.ballotId===id).flatMap(r=>r.listes).find(l=>l.id===lid)?.label||'Liste indisponible';return '<li><strong>'+esc(p.codes.length+' commune(s) · '+(ballot(p.firstId)?electionBallotLabel(ballot(p.firstId)):'Scrutin indisponible')+' / '+(ballot(p.secondId)?electionBallotLabel(ballot(p.secondId)):'Scrutin indisponible')+' · '+list(p.firstId,p.listAId)+' / '+list(p.secondId,p.listBId)+' · '+(p.metric==='votes'?'Voix':'Pourcentage des exprimés'))+'</strong> <small>'+esc(new Date(v.savedAt).toLocaleString('fr-FR'))+'</small> <button type="button" class="btn btn-light" data-list-open="'+esc(v.id)+'">Ouvrir</button> <button type="button" class="btn btn-light" data-list-delete="'+esc(v.id)+'">Supprimer</button></li>';}).join('')+'</ul>':'<p>Aucune comparaison fictive enregistrée sur cet appareil.</p>')+'</section>';
+  }
  });
 }
