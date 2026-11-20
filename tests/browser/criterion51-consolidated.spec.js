@@ -60,7 +60,16 @@ test('comparaisons consolidées : sélection, vues, référence périmée, carte
  await expect(abzac.locator('td').last()).toHaveText('-11.6');
  await expect(page.locator('#map-left .map-legend')).toContainText('Participation électorale');
  await expect(page.locator('#map-right .map-legend')).toContainText('Participation électorale');
+ for(const id of ['map-left','map-right']){
+  await page.locator('#'+id).evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+  const legend=await page.locator('#'+id+' .map-legend').boundingBox();
+  const attribution=await page.locator('#'+id+' .leaflet-control-attribution').boundingBox();
+  const zoom=await page.locator('#'+id+' .leaflet-control-zoom').boundingBox();
+  expect(attribution.y+attribution.height).toBeLessThanOrEqual(legend.y);
+  expect(attribution.x).toBeGreaterThanOrEqual(zoom.x+zoom.width);
+ }
  await capture('deux-cartes',page.locator('#map-left'));
+ await capture('carte-b',page.locator('#map-right'));
  await page.locator('[data-map-mode="explore"]').click();
  await page.locator('#map-scope').selectOption('bureau');
  await page.locator('#bureau-commune').selectOption('Bourg');
@@ -76,6 +85,10 @@ test('comparaisons consolidées : sélection, vues, référence périmée, carte
  expect(exported.bureau_a).toBe('33067-1');expect(exported.bureau_b).toBe('33067-2');
  expect(Number(exported.ecart_participation_points)).toBeCloseTo(4.293387591306697,12);
  expect(exported.source).toContain('data.gouv.fr/datasets/');expect(exported.date_scrutin).toBe('2024-06-30');
+ const deltaCell=bureau.getByRole('row',{name:/^Participation/}).locator('td').last();
+ await deltaCell.scrollIntoViewIfNeeded();
+ await expect(deltaCell).toBeInViewport();
+ await expect(deltaCell).toHaveText('+4,3 points');
  await capture('bureaux',bureau);
  await page.locator('#bureau-commune').selectOption('Cavignac');await page.locator('#map-scope-value').selectOption('33114-2');
  await expect(bureau).toContainText('aucun résultat officiel apparié');

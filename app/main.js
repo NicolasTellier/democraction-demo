@@ -23,7 +23,7 @@ import {
 import { load, save, download, clearLocal } from "./store.js";
 import {summarizeMissionCoverage} from "./logistics-coverage.js";
 import { parseXlsx } from "./xlsx.js";
-import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261119data33b";
+import { drawMap, locate, selectionGeometry, updateMapAddresses } from "./map.js?v=20261120data34";
 import { validPolygon,validZone } from "./geo-utils.js";
 import {loadRoads,roadInventory,searchRoads,roadGeometry,loadAddressesForRoad,loadAddressesInBounds} from './roads.js';
 import {validatePollingCatalog,bureauFeature} from './polling-stations.js';
@@ -703,7 +703,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.33 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.34 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -1181,7 +1181,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.33</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.34</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],

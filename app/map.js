@@ -172,10 +172,12 @@ export async function drawMap(target,communes,notify,options={}){
   box.innerHTML='';const map=window.L.map(box,{zoomControl:true,scrollWheelZoom:true}).setView([45.07,-0.48],9);maps.set(target,map);
   const ign='https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
   window.L.tileLayer(ign,{attribution:'© <a href="https://www.ign.fr/" target="_blank" rel="noopener noreferrer">IGN</a> — données géographiques françaises',maxZoom:18}).addTo(map);
-  if(options.legendMethod==='diverging-points'){
-   map.attributionControl.setPosition('topright');
-   map.attributionControl.getContainer().style.maxWidth='min(220px, calc(100vw - 100px))';
-  }
+  // Garder l'attribution hors de la légende, y compris dans les deux cartes étroites.
+  map.attributionControl.setPosition('topright');
+  const fitAttribution=()=>{
+   map.attributionControl.getContainer().style.maxWidth=Math.max(80,Math.min(220,map.getSize().x-80))+'px';
+  };
+  map.on('resize',fitAttribution);fitAttribution();
   const contourIndex=new Map(contours.map(f=>[String(f.properties?.code||''),f]));
   const group=window.L.featureGroup(),selectedGroup=window.L.featureGroup(),selection=new Set((options.selectedNames||[]).map(norm));
   const legend=classification(options.legendValues||communes.map(c=>c.mapValue),{unit:options.legendUnit||'%',method:options.legendMethod||'quantile'});
