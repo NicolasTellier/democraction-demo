@@ -906,7 +906,7 @@ function viewCarte() {
     bureauWarning +
     '<section><h3>Recherche de rues</h3><form id="street-search-form"><label>Commune<select name="commune"><option value="">Choisir…</option>' +
     streetOptions +
-    '</select></label><label>Rue<input name="query" value="'+attr(roadQuery)+'" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher les tracés IGN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont surlignées et reprises dans l’action créée depuis la carte. Les adresses BAN ne contiennent aucun habitant.</p></section>' + addressesHtml + roadsInventoryHtml + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
+    '</select></label><label>Rue<input name="query" value="'+attr(roadQuery)+'" placeholder="Ex. rue Nationale"></label><button class="btn btn-light btn-sm map-rail-action" type="submit">Rechercher les tracés IGN</button></form>' + streetsHtml + '<p class="hint">Les rues sélectionnées sont surlignées pour consultation. Les actions se créent manuellement dans Actions de terrain. Les adresses BAN ne contiennent aucun habitant.</p></section>' + addressesHtml + roadsInventoryHtml + sectorForm + '<section><h3>Secteurs enregistrés</h3>' +
     (demoSectors.length
       ? '<div class="sector-list">' + selectedSector + "</div>"
       : empty(
