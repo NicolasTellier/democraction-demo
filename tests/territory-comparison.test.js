@@ -101,3 +101,14 @@ test('indicateur communal : absence et bornes zéro/100 sans zéro négatif',()=
  data[1].votants=100;
  assert.equal(territoryComparisonMeasure(data,['33001'],'2020_muni_t1','2026_muni_t1','abstention')[0].measureDelta,-100);
 });
+
+test('rendu communal abstention : barres complémentaires, écart opposé et source intacte',()=>{
+ const html=viewTerritoryComparison({rows,communes,filters:{electionType:'muni',electionTour:'t1',analysisBallotA:'2020_muni_t1',analysisBallotB:'2026_muni_t1',analysisCommuneCodes:['33001','33002','33003'],analysisMeasure:'abstention'},meta:{source:'Source fictive'},esc:String,attr:String,fmtNumber:String,panel:(_,body)=>body});
+ assert.match(html,/value="abstention" selected/);assert.match(html,/width:20%/);
+ assert.match(html,/Écart B − A · abstention/);assert.match(html,/-30,0 points/);assert.match(html,/\+30,0 points/);
+ assert.match(html,/Abstention comparée/);assert.match(html,/Source fictive/);
+});
+test('rendu communal : mesure inconnue revient à participation et absences restent absentes',()=>{
+ const html=viewTerritoryComparison({rows:[{...rows[0],votants:null},rows[2]],communes:[communes[0]],filters:{analysisCommuneCodes:['33001'],analysisBallotA:'2020_muni_t1',analysisBallotB:'2026_muni_t1',analysisMeasure:'unknown'},meta:{},esc:String,attr:String,fmtNumber:String,panel:(_,body)=>body});
+ assert.match(html,/value="participation" selected/);assert.match(html,/Écart B − A · participation/);assert.match(html,/>—</);
+});

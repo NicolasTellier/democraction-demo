@@ -65,7 +65,7 @@ test('critère 50 consolidé : graphiques sourcés, tours, absences et représen
  await capture('comparaison',comparison);
  if(info.project.name==='iphone'){
   await comparison.evaluate(t=>{t.parentElement.scrollLeft=t.parentElement.scrollWidth;});
-  await expect(comparison.getByRole('columnheader',{name:'Écart B − A',exact:true})).toBeInViewport();
+  await expect(comparison.getByRole('columnheader',{name:'Écart B − A · participation',exact:true})).toBeInViewport();
   await capture('comparaison-droite',comparison.locator('..'));
  }
  await page.locator('#filter-commune').selectOption('Abzac');

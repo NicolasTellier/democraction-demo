@@ -82,3 +82,22 @@ test('paramètres fictifs : huit vues au maximum et suppression sans mutation',(
  assert.equal(views.filter(v=>v.id!=='f-1').length,7);assert.equal(views.length,8);
  assert.throws(()=>findSyntheticComparisonView(views,'absent',syntheticListFixture(),['33001']),/introuvable/);
 });
+
+test('vues communales : v1 préservée, v2 avec indicateur et doublons distincts',()=>{
+ const legacy=sample();const abstention={...sample('abstention'),version:2,measure:'abstention',privateData:'exclure'};
+ const v2=addComparisonView([legacy],abstention);
+ assert.equal(v2.length,2);assert.equal(v2[0].measure,'abstention');assert.equal(v2[0].version,2);
+ assert.equal('privateData' in v2[0],false);
+ assert.deepEqual(parseComparisonViews(JSON.stringify([legacy]))[0],legacy);
+ assert.deepEqual(findComparisonView(parseComparisonViews(JSON.stringify(v2)),'abstention',ballots,codes),v2[0]);
+ assert.throws(()=>addComparisonView(v2,{...abstention,id:'duplicate',communeCodes:[...codes].reverse()}),/déjà/);
+ assert.throws(()=>addComparisonView([legacy],{...legacy,version:2,measure:'participation',id:'same'}),/déjà/);
+});
+test('vues communales : mesure inconnue, version inconnue et référence périmée refusées',()=>{
+ for(const patch of [{version:2},{version:2,measure:'autre'},{version:3,measure:'abstention'}]){
+  const invalid={...sample(),...patch};assert.deepEqual(parseComparisonViews(JSON.stringify([invalid])),[]);
+  assert.throws(()=>addComparisonView([],invalid),/Choisissez/);
+ }
+ const view={...sample(),version:2,measure:'abstention'};
+ assert.throws(()=>findComparisonView([view],view.id,ballots.slice(0,1),codes),/plus dans les données/);
+});

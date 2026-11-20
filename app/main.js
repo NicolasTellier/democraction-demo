@@ -39,8 +39,8 @@ import {
   updateRemoteStatus,
 } from "./sync.js";
 import { viewPublicProfile, viewElectionHistory } from "./public-data-v3.js?v=20261120sep38";
-import { territoryComparison, comparableBallots, participationDifferenceLayer } from "./territory-comparison.js?v=20261119data33";
-import { COMPARISONS_KEY, parseComparisonViews, addComparisonView, findComparisonView } from "./comparison-views.js";
+import { territoryComparisonMeasure, comparableBallots, participationDifferenceLayer } from "./territory-comparison.js?v=20261120data39";
+import { COMPARISONS_KEY, parseComparisonViews, addComparisonView, findComparisonView } from "./comparison-views.js?v=20261120data39";
 import { electionBallotLabel, importedScrutinLabel } from "./election-labels.js";
 const NAV = [
   ["dashboard", "Vue d’ensemble", "▦"],
@@ -106,6 +106,7 @@ let territory = null,
     compareRight: "",
     analysisBallotA: "",
     analysisBallotB: "",
+    analysisMeasure: "participation",
     analysisCommuneCodes: [],
     analysisSearch: "",
   },
@@ -202,7 +203,7 @@ const MAP_LAYERS = [
 const PREFS_KEY = "democraction-demo-preferences";
 let savedComparisons = [];
 try { savedComparisons = parseComparisonViews(localStorage.getItem(COMPARISONS_KEY)); } catch {}
-const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "gridResolution", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "analysisBallotA", "analysisBallotB"];
+const PREF_KEYS = ["canton", "epci", "commune", "query", "socioIndicator", "socioMin", "socioMax", "mapLayer", "gridResolution", "electionType", "electionYear", "electionTour", "mapBallot", "compareLeft", "compareRight", "analysisBallotA", "analysisBallotB", "analysisMeasure"];
 function restorePreferences(preferences) {
   if (!preferences || typeof preferences !== "object") return;
   for (const key of PREF_KEYS)
@@ -703,7 +704,7 @@ function header() {
     .map(navItem)
     .join(
       "",
-    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.38 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
+    )}</nav><div class="sidebar-footer"><div class="tag soft">V0.39 · Démonstration</div><p>Usage de démonstration. Ne pas saisir de données personnelles.</p></div></aside>`;
 }
 function toolbar() {
   let communes = territory ? territory.communes : [];
@@ -1174,7 +1175,7 @@ function missionModal() {
 function render() {
   if (!territory) return;
   savePreferences();
-  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.38</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
+  root.innerHTML = `<div class="app-shell">${header()}<main class="workspace">${toolbar()}${notice ? `<div class="notice ${noticeLevel}" role="status">${esc(notice)} <button data-action="clear-notice" aria-label="Fermer le message">×</button></div>` : ""}<div class="content">${VIEWS[tab]()}</div><footer class="app-footer"><span>DemocrAction — V0.39</span><span>Prototype local · Données fictives uniquement · Ne pas utiliser en production</span></footer></main><div class="mobile-nav">${[
     ["dashboard", "▦", "Accueil"],
     ["territoires", "◎", "Territoires"],
     ["carte", "⌖", "Carte"],
@@ -1332,15 +1333,17 @@ const dlAnalysisComparison = () => {
   const byCode = new Map(territory.communes.map(commune => [commune.codeInsee, commune.nom]));
   const ballotA = first.selectedOptions[0]?.textContent || first.value;
   const ballotB = second?.value ? second.selectedOptions[0]?.textContent || second.value : '';
-  const fields = ['commune', 'code_insee', 'scrutin_a', 'inscrits_a', 'votants_a', 'participation_a', 'abstention_a', 'scrutin_b', 'inscrits_b', 'votants_b', 'participation_b', 'abstention_b', 'ecart_b_moins_a', 'source', 'mise_a_jour'];
+  const fields = ['commune', 'code_insee', 'scrutin_a', 'inscrits_a', 'votants_a', 'participation_a', 'abstention_a', 'scrutin_b', 'inscrits_b', 'votants_b', 'participation_b', 'abstention_b', 'ecart_b_moins_a', 'source', 'mise_a_jour', 'indicateur', 'valeur_a', 'valeur_b', 'unite'];
   const percent = rate => rate === null ? '' : rate.toFixed(2).replace('.', ',');
-  const records = territoryComparison(elections?.elections, codes, first.value, second?.value || '').map(row => ({
+  const measure = root.querySelector('#analysis-measure')?.value === 'abstention' ? 'abstention' : 'participation';
+  const records = territoryComparisonMeasure(elections?.elections, codes, first.value, second?.value || '', measure).map(row => ({
     commune: byCode.get(row.codeInsee) || row.codeInsee, code_insee: row.codeInsee,
     scrutin_a: ballotA, inscrits_a: row.first?.inscrits ?? '', votants_a: row.first?.votants ?? '',
     participation_a: percent(row.a), abstention_a: percent(row.a === null ? null : 100 - row.a),
     scrutin_b: ballotB, inscrits_b: row.second?.inscrits ?? '', votants_b: row.second?.votants ?? '',
     participation_b: percent(row.b), abstention_b: percent(row.b === null ? null : 100 - row.b),
-    ecart_b_moins_a: row.delta === null ? '' : percent(row.delta),
+    ecart_b_moins_a: row.measureDelta === null ? '' : percent(row.measureDelta),
+    indicateur: measure, valeur_a: percent(row.measureA), valeur_b: percent(row.measureB), unite: '% des inscrits ; écart en points',
     source: elections?.meta?.source || 'Ministère de l’Intérieur', mise_a_jour: elections?.meta?.miseAJour || '',
   }));
   download(serializeCsv(records, fields), `comparaison-communale-${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8');
@@ -1357,7 +1360,7 @@ function comparisonViewAction(action, viewId) {
       return toast("Choisissez deux scrutins du même type et du même tour.", "warning");
     try {
       const next = addComparisonView(savedComparisons, {
-        version: 1, id: crypto.randomUUID(), ballotA, ballotB, type: first.type, tour: first.tour,
+        version: 2, measure: filters.analysisMeasure === "abstention" ? "abstention" : "participation", id: crypto.randomUUID(), ballotA, ballotB, type: first.type, tour: first.tour,
         communeCodes: codes, savedAt: new Date().toISOString(),
         source: elections?.meta?.source || 'Ministère de l’Intérieur, via data.gouv.fr',
         sourceDate: elections?.meta?.miseAJour || '',
@@ -1374,6 +1377,7 @@ function comparisonViewAction(action, viewId) {
         territory.communes.map(commune => commune.codeInsee));
       filters.canton = ""; filters.epci = ""; filters.commune = ""; filters.query = "";
       filters.electionType = view.type; filters.electionTour = view.tour; filters.electionYear = "";
+      filters.analysisMeasure = view.version === 2 ? view.measure : "participation";
       filters.analysisBallotA = view.ballotA; filters.analysisBallotB = view.ballotB;
       filters.analysisCommuneCodes = [...view.communeCodes]; filters.analysisSearch = "";
       toast("Comparaison rouverte. Source enregistrée : " + view.source +
@@ -1518,6 +1522,7 @@ function dispatchAction(action) {
         compareRight: "",
         analysisBallotA: "",
         analysisBallotB: "",
+    analysisMeasure: "participation",
         analysisCommuneCodes: [],
         analysisSearch: "",
       };
@@ -1865,6 +1870,7 @@ root.addEventListener("change", (e) => {
     "election-tour": "electionTour",
     "analysis-ballot-a": "analysisBallotA",
     "analysis-ballot-b": "analysisBallotB",
+    "analysis-measure": "analysisMeasure",
     "map-ballot": "mapBallot",
     "map-layer": "mapLayer",
     "insee-grid-resolution": "gridResolution",

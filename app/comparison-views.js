@@ -3,14 +3,15 @@ const MAX_VIEWS = 8;
 const code = value => typeof value === 'string' && /^\d{5}$/.test(value);
 const short = (value, max = 160) => typeof value === 'string' && value.length > 0 && value.length <= max;
 const normalize = item => {
-  if (!item || item.version !== 1 || !short(item.id, 80) ||
+  if (!item || ![1, 2].includes(item.version) || !short(item.id, 80) ||
       !short(item.ballotA) || !short(item.ballotB) || item.ballotA === item.ballotB ||
       !short(item.type, 80) || !short(item.tour, 20) ||
       !Array.isArray(item.communeCodes) || item.communeCodes.length < 2 || item.communeCodes.length > 5 ||
       !item.communeCodes.every(code) || new Set(item.communeCodes).size !== item.communeCodes.length ||
       !short(item.savedAt, 40) || !Number.isFinite(Date.parse(item.savedAt)) ||
+      (item.version === 2 && !['participation','abstention'].includes(item.measure)) ||
       !short(item.source, 200) || typeof item.sourceDate !== 'string' || item.sourceDate.length > 40) return null;
-  return { version: 1, id: item.id, ballotA: item.ballotA, ballotB: item.ballotB,
+  return { version: item.version, ...(item.version === 2 ? {measure:item.measure} : {}), id: item.id, ballotA: item.ballotA, ballotB: item.ballotB,
     type: item.type, tour: item.tour, communeCodes: [...item.communeCodes],
     savedAt: item.savedAt, source: item.source, sourceDate: item.sourceDate };
 };
@@ -23,13 +24,13 @@ export function parseComparisonViews(raw) {
 export function addComparisonView(views, candidate) {
   const item = normalize(candidate);
   if (!item) throw new Error('Choisissez deux scrutins comparables et deux à cinq communes.');
-  const signature = value => [value.ballotA, value.ballotB, ...value.communeCodes.slice().sort()].join('|');
+  const signature = value => [value.version === 2 ? value.measure : 'participation', value.ballotA, value.ballotB, ...value.communeCodes.slice().sort()].join('|');
   if (views.some(value => signature(value) === signature(item)))
     throw new Error('Cette comparaison est déjà enregistrée.');
   return [item, ...views].slice(0, MAX_VIEWS);
 }
 export function findComparisonView(views, id, ballots, communeCodes) {
-  const view = views.find(item => item.id === id);
+  const view = normalize(views.find(item => item.id === id));
   if (!view) throw new Error('Vue enregistrée introuvable.');
   const first = ballots.find(ballot => ballot.id === view.ballotA);
   const second = ballots.find(ballot => ballot.id === view.ballotB);
