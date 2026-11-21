@@ -2031,7 +2031,7 @@ root.addEventListener("submit", (e) => {
       secteur: get("secteur"),
       zoneKind: editingMission?.zoneKind||"",
       zoneId: editingMission?.zoneId||"",
-      zoneCommunes: editingMission?.zoneCommunes||[commune],
+      zoneCommunes: editingMission?.zoneKind ? editingMission.zoneCommunes||[commune] : [commune],
       zoneGeometry: editingMission?.zoneGeometry||null,
       roadIds:editingMission?.roadIds||[],
       rues: fd

@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+import {openManualMission} from '../helpers/mission-simulation.js';
+
+test.use({serviceWorkers:'block'});
+test('ACT-02ab : action manuelle, rues explicites et commune rectifiée persistante',async({page,context})=>{
+ const key='democraction-v1-local',title='Action fictive commune-rues AB';let writes=0;
+ page.on('request',r=>{if(r.url().includes('/api/')&&r.method()!=='GET')writes++});
+ await page.goto('/');
+ await openManualMission(page,title);
+ await expect(page.locator('#mission-streets option:checked')).toHaveCount(0);
+ const names=['Allee de Verdun','Allee des Pins'];
+ await page.locator('#mission-streets').selectOption(names);
+ await page.locator('#mission-form [name=date]').fill('2026-11-21');
+ await page.locator('#mission-form [name=notifyEmail]').uncheck();
+ await page.locator('#mission-form [name=notifyApp]').uncheck();
+ await page.locator('#mission-form button[type=submit]').click();
+ const read=async p=>p.evaluate(({key,title})=>JSON.parse(localStorage.getItem(key)).missions.filter(m=>m.title===title),{key,title});
+ const initial=await read(page);expect(initial).toHaveLength(1);const saved=initial[0];
+ expect(saved.id).toBeTruthy();expect(saved.campaignId).toBe('demo');expect(saved.commune).toBe('Saint-André-de-Cubzac');expect(saved.zoneCommunes).toEqual([saved.commune]);expect(saved.rues).toEqual(names);expect(saved.roadIds).toEqual([]);expect(saved.zoneKind).toBe('');expect(saved.zoneId).toBe('');expect(saved.zoneGeometry).toBeNull();
+ const edit=async p=>{await p.locator('.sidebar [data-nav=actions]:visible, .mobile-nav [data-nav=actions]:visible').first().click();await p.locator('[data-edit-mission="'+saved.id+'"]').click()};
+ await page.reload();await edit(page);
+ await expect(page.locator('#mission-streets')).toHaveValues(names);
+ await page.locator('#mission-form [name=status]').selectOption('En cours');await page.locator('#mission-form [name=notes]').fill('Bilan logistique fictif AB.');await page.locator('#mission-form button[type=submit]').click();
+ const same=(await read(page))[0];expect(same.id).toBe(saved.id);expect(same.rues).toEqual(names);expect(same.zoneCommunes).toEqual([saved.commune]);expect(same.status).toBe('En cours');
+ await edit(page);await page.locator('#mission-commune').selectOption('Bourg');await expect(page.locator('#mission-streets option:checked')).toHaveCount(0);await page.locator('#mission-form button[type=submit]').click();
+ const moved=(await read(page))[0];expect(moved).toEqual({...same,commune:'Bourg',zoneCommunes:['Bourg'],rues:[]});
+ await page.close();const reopened=await context.newPage();await reopened.goto('/');await edit(reopened);
+ await expect(reopened.locator('#mission-commune')).toHaveValue('Bourg');await expect(reopened.locator('#mission-streets option:checked')).toHaveCount(0);await expect(reopened.locator('#mission-form [name=notes]')).toHaveValue('Bilan logistique fictif AB.');
+ await expect(reopened.locator('#mission-form [name=status]')).toHaveValue('En cours');expect(await read(reopened)).toEqual([moved]);await reopened.locator('#mission-form [data-action=close-modal]').click();
+ await reopened.locator('[data-action=new-mission]').click();await expect(reopened.locator('#mission-commune')).toHaveValue('');await expect(reopened.locator('#mission-streets option:checked')).toHaveCount(0);await reopened.locator('#mission-form [data-action=close-modal]').click();expect(await read(reopened)).toEqual([moved]);
+ expect(writes).toBe(0);
+});
